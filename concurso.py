@@ -186,8 +186,8 @@ def create_altair_donut(row):
             color='#2c3e50',
             subtitleColor='#576574'
         ),
-        width=350,
-        height=350
+        width=300,
+        height=300
     ).configure_view(strokeWidth=0)
     return chart
 
