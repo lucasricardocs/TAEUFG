@@ -10,14 +10,12 @@ import warnings
 import altair as alt
 import locale
 
-
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
     pass
-
 
 # --- Configurações ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
@@ -118,7 +116,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
         return False
 
-# --- Calcular progresso ---
+# --- Cálculo progresso ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -191,8 +189,8 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
 
 
 # --- Gráfico de barras horizontal colorido por disciplina ---
-def chart_questoes_horizontal(df_ordenado):
-    bars = alt.Chart(df_ordenado).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
+def chart_questoes_horizontal(df_ordenado, height):
+    bars = alt.Chart(df_ordenado).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
                 title=None,
@@ -200,9 +198,9 @@ def chart_questoes_horizontal(df_ordenado):
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
-                axis=alt.Axis(labels=False, ticks=False)
+                axis=alt.Axis(labels=False, ticks=False, domain=False),
                ),
-        color=alt.Color('Disciplinas:N', legend=None),  # colore por disciplina
+        color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
     )
     texts = alt.Chart(df_ordenado).mark_text(
@@ -217,39 +215,83 @@ def chart_questoes_horizontal(df_ordenado):
         x='Total_Conteudos:Q',
         text='Total_Conteudos:Q'
     )
-    return (bars + texts).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
+    return (bars + texts).properties(
+        width=350,
+        height=height,
+        title=None
+    ).configure_axis(
+        grid=False,
+        domain=False
+    )
 
 
 # --- Gráfico de colunas vertical percentual para Peso por Disciplina ---
-def bar_chart_peso_percentual():
+def bar_chart_peso_percentual(height):
     df = pd.DataFrame(ED_DATA)
     total_peso = df['Peso'].sum()
     df['Percentual'] = (df['Peso'] / total_peso) * 100
-    chart = alt.Chart(df).mark_bar(cornerRadius=5, stroke='#f1f1f1', strokeWidth=3).encode(
-        x=alt.X('Disciplinas:N', sort='-y', title='Disciplina',
-                axis=alt.Axis(labelAngle=-45, labelFontSize=12)),
-        y=alt.Y('Percentual:Q', title='Percentual (%)'),
+
+    chart = alt.Chart(df).mark_bar(
+        cornerRadius=5,
+        stroke='#d3d3d3',
+        strokeWidth=3
+    ).encode(
+        x=alt.X('Disciplinas:N',
+                sort='-y',
+                title=None,
+                axis=alt.Axis(labelAngle=0, labelFontSize=12, labels=False, ticks=False, domain=False)
+               ),
+        y=alt.Y('Percentual:Q',
+                title=None,
+                axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)
+               ),
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Percentual', format='.1f', title='Percentual')]
+        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Percentual', format='.1f', title='Percentual (%)')]
     ).properties(
         width=600,
-        height=350,
-        title='Peso Percentual por Disciplina'
-    ).configure_view(
-        stroke='#f1f1f1',
-        strokeWidth=3
+        height=height,
+        title=None
     )
-    return chart
+
+    # Rótulos de percentual dentro da barra
+    text_percent = alt.Chart(df).mark_text(
+        dy=-10,
+        color='black',
+        fontWeight='bold',
+        fontSize=12
+    ).encode(
+        x=alt.X('Disciplinas:N', sort='-y'),
+        y=alt.Y('Percentual:Q'),
+        text=alt.Text('Percentual:Q', format='.1f')
+    )
+
+    # Texto do nome da disciplina dentro da barra, alinhado horizontal
+    text_disciplinas = alt.Chart(df).mark_text(
+        align='center',
+        dy=12,
+        color='black',
+        fontWeight='bold',
+        fontSize=12
+    ).encode(
+        x=alt.X('Disciplinas:N', sort='-y'),
+        y=alt.value(height - 15),
+        text='Disciplinas:N'
+    )
+
+    return (chart + text_percent + text_disciplinas).configure_view(
+        strokeWidth=0
+    )
 
 
-# --- Mostrar gráficos lado a lado ---
+# --- Mostrar os dois gráficos lado a lado ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
+    altura = 600  # mesmíssima altura do gráfico de percentual concluído/pendente
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
-    chart_q = chart_questoes_horizontal(df_ordenado)
-    chart_p = bar_chart_peso_percentual()
+    chart_q = chart_questoes_horizontal(df_ordenado, altura)
+    chart_p = bar_chart_peso_percentual(altura)
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
@@ -279,7 +321,7 @@ def create_stacked_bar(df):
                             var_name='Status', value_name='Percentual')
     df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    chart = alt.Chart(df_melt).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
+    chart = alt.Chart(df_melt).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
                 title=None, axis=alt.Axis(labels=True, ticks=True)),
         x=alt.X('Percentual:Q', title=None,
@@ -289,7 +331,7 @@ def create_stacked_bar(df):
     ).properties(
         title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
         height=600
-    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
+    ).configure_view(stroke='#d3d3d3', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
 
 
@@ -340,7 +382,7 @@ def inject_css():
         color: #566e95;
     }
     .altair-chart {
-        border: 1px solid #f1f1f1;
+        border: 1px solid #d3d3d3 !important;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
@@ -382,7 +424,7 @@ def inject_css():
         font-size: 12px !important;
         color: #064820 !important;
         opacity: 0.75 !important;
-        margin-top: 40px !important;
+        margin-top: 10px !important;  /* próximo do separador */
         text-align: center !important;
         user-select: none !important;
         font-family: 'Inter', sans-serif !important;
@@ -529,17 +571,11 @@ def main():
                         st.error(f"Erro inesperado ao atualizar: {e}")
 
     st.markdown("---")
-
-    titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-    display_questoes_e_peso(df_summary)
-
-    st.markdown("---")
-
     rodape_motivacional()
 
 
-# --- Definição que faltava para os charts donut ---
-def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
+# --- Definição dos charts donut para progresso por disciplina e geral ---
+def donut_chart_progresso_geral(progresso_percentual, width=350, height=350,
                                colors=('#2ecc71', '#e74c3c'),
                                inner_radius=70, font_size=32,
                                text_color='#064820', show_tooltip=True):
@@ -556,7 +592,7 @@ def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
     )
     if show_tooltip:
         base = base.encode(tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')])
-    donut = base.mark_arc(innerRadius=inner_radius, stroke='#f1f1f1', strokeWidth=3).properties(
+    donut = base.mark_arc(innerRadius=inner_radius, stroke='#d3d3d3', strokeWidth=3).properties(
         width=width, height=height)
     text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
         fontSize=font_size, fontWeight='bold', color=text_color, dy=0).encode(text='text:N').properties(
@@ -583,11 +619,11 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
         size=24, fontWeight='bold', color='#064820'
-    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
-    chart = (donut + text).properties(width=280, height=280).configure_view(stroke='#f1f1f1', strokeWidth=3)
+    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=350, height=350)
+    chart = (donut + text).properties(width=350, height=350).configure_view(stroke='#d3d3d3', strokeWidth=3)
     return chart
 
 
@@ -595,7 +631,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
     total_charts = len(df_summary) + 1
     rows = (total_charts + max_cols - 1) // max_cols
     disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
+    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=350, height=350))
     chart_index = 0
     for _ in range(rows):
         cols = st.columns(max_cols, gap="medium")
