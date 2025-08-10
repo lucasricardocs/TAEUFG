@@ -214,7 +214,7 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format="d"), alt.Tooltip('Percentual', format='.1f')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#fff', strokeWidth=3)  # borda branca nas fatias aumentada
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # borda branca nas fatias aumentada
     
     # Texto centralizado, só com o percentual True
     text = alt.Chart(source_label).mark_text(size=20, fontWeight='bold', color='black').encode(
@@ -226,7 +226,7 @@ def create_altair_donut(row):
             text=str(row['Disciplinas']),
             subtitle=f"{row['Progresso_Ponderado']:.1f}% Progresso Ponderado",
             anchor='middle',
-            fontSize=20,
+            fontSize=18,
             fontWeight='bold',
             color='#2c3e50',
             subtitleColor='#576574'
@@ -235,7 +235,7 @@ def create_altair_donut(row):
         height=350
     ).configure_view(
         stroke='#d3d3d3',
-        strokeWidth=1
+        strokeWidth=3
     )
     return chart
 
@@ -383,7 +383,7 @@ def render_topbar_with_logo(dias_restantes):
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        height: 400px;
+        height: 300px;
         background-color: #f5f5f5;
         padding: 0 40px;
         border-radius: 12px;
