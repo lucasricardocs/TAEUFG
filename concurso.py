@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from google.oauth2.service_account import Credentials
-from gspread.exceptions import SpreadsheetNotFound
+from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 
@@ -28,7 +28,7 @@ ED_DATA = {
     'Peso': [2, 1, 1, 1, 3]
 }
 
-# --- Funções para conexão e leitura da planilha ---
+# --- Google Sheets Client ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -62,8 +62,9 @@ def get_worksheet():
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
+# --- Carregar dados da planilha com índice para facilitar updates ---
 @st.cache_data(ttl=600, show_spinner=False)
-def load_data():
+def load_data_with_row_indices():
     worksheet = get_worksheet()
     if worksheet is None:
         return pd.DataFrame()
@@ -73,24 +74,46 @@ def load_data():
             st.warning("⚠️ Planilha está vazia ou com poucos dados.")
             return pd.DataFrame()
         df = pd.DataFrame(data[1:], columns=data[0])
-
+        
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
             st.error(f"❌ Colunas obrigatórias faltando: {missing}")
             return pd.DataFrame()
-
+        
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
-
+        
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
+        
+        df.reset_index(inplace=True)  # índice no DataFrame
+        df['sheet_row'] = df['index'] + 2  # linha real na planilha (1 cabeçalho)
+        df.drop('index', axis=1, inplace=True)
+        
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
+
+# --- Atualizar status na planilha ---
+def update_status_in_sheet(sheet, row_number, new_status):
+    try:
+        header = sheet.row_values(1)
+        if 'Status' not in header:
+            st.error("❌ Coluna 'Status' não encontrada na planilha.")
+            return False
+        status_col_index = header.index('Status') + 1  # Coluna base 1 para atualizar
+        sheet.update_cell(row_number, status_col_index, new_status)
+        return True
+    except APIError as e:
+        st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
+        return False
+    except Exception as e:
+        st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
+        return False
 
 # --- Cálculo de métricas ---
 def calculate_progress(df):
@@ -149,14 +172,12 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Criação dos gráficos ---
+# --- Gráficos Altair com borda cinza claro ---
+
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
-    total = concluido + pendente
-    if total == 0:
-        pendente = 1
-        total = 1
+    total = max(concluido + pendente, 1)
 
     concluido_pct = round((concluido / total) * 100, 1)
     pendente_pct = round((pendente / total) * 100, 1)
@@ -186,16 +207,18 @@ def create_altair_donut(row):
             color='#2c3e50',
             subtitleColor='#576574'
         ),
-        width=300,
-        height=300
-    ).configure_view(strokeWidth=1)
+        width=350,
+        height=350
+    ).configure_view(
+        stroke='#d3d3d3',
+        strokeWidth=1
+    )
     return chart
 
 def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
         return
-
     df_group = df.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
     df_pivot['Total'] = df_pivot.sum(axis=1)
@@ -220,11 +243,14 @@ def create_stacked_bar(df):
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
         .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600)
-        .configure_view(strokeWidth=0)
+        .configure_view(
+            stroke='#d3d3d3',
+            strokeWidth=1
+        )
     )
     st.altair_chart(chart, use_container_width=True)
 
-# --- CSS para fundo branco e layout profissional ---
+# --- CSS para fundo branco, layout profissional, e contorno cinza claro nos gráficos ---
 def inject_css():
     st.markdown("""
     <style>
@@ -279,10 +305,11 @@ def inject_css():
     }
 
     .altair-chart {
-        background: #e0e9ff;
+        border: 1px solid #d3d3d3;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
+        background: #e0e9ff;
         margin-bottom: 2rem;
     }
 
@@ -348,8 +375,6 @@ def render_topbar_with_logo(dias_restantes):
 
 # --- Função dinâmica para exibir gráficos de rosca responsivamente ---
 def display_responsive_donuts(df_summary):
-    # Número máximo de colunas por linha: adaptável para telas wide, laptop, tablet e mobile
-    # Você pode ajustar essa variável para testar layout
     max_cols = 4
 
     num_charts = len(df_summary)
@@ -363,7 +388,7 @@ def display_responsive_donuts(df_summary):
             with cols[j]:
                 st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
-# --- Função principal ---
+# --- Função principal padrão do app ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
@@ -371,7 +396,8 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    df = load_data()
+    # Carregar dados com índice de linha para edição
+    df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
@@ -420,21 +446,30 @@ def main():
     st.markdown('---')
 
     st.markdown('### 📚 Conteúdos por Disciplina')
-    if df.empty:
+
+    worksheet = get_worksheet()
+    if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
     else:
         disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
+        
         for disc in disciplinas_ordenadas:
             conteudos_disciplina = df[df['Disciplinas'] == disc]
             with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
-                df_disp = conteudos_disciplina.copy()
-                df_disp['Ícone'] = df_disp['Status'].apply(lambda x: "✅" if x == 'True' else "❌")
-                df_disp_display = df_disp[['Conteúdos', 'Status', 'Ícone']].rename(columns={
-                    'Conteúdos': 'Conteúdo',
-                    'Status': 'Status',
-                    'Ícone': 'Ícone'
-                })
-                st.dataframe(df_disp_display, use_container_width=True)
-
+                for _, row in conteudos_disciplina.iterrows():
+                    key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
+                    checked = (row['Status'] == 'True')
+                    
+                    novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
+                    
+                    if novo_status != checked:
+                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
+                        if sucesso:
+                            st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
+                            load_data_with_row_indices.clear()
+                            st.experimental_rerun()
+                        else:
+                            st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
+                            
 if __name__ == "__main__":
     main()
