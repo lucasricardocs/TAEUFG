@@ -28,7 +28,7 @@ ED_DATA = {
     'Peso': [2, 1, 1, 1, 3]
 }
 
-# --- Conexão e Leitura da Planilha ---
+# --- Funções para conexão e leitura da planilha ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -92,7 +92,7 @@ def load_data():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# --- Processamento de Métricas ---
+# --- Cálculo de métricas ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -104,7 +104,7 @@ def calculate_progress(df):
     df['Concluido'] = (df['Status'] == 'True').astype(int)
     resumo = df.groupby('Disciplinas', observed=False)['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
 
-    df_merged = pd.merge(df_edital, resumo, left_on='Disciplinas', right_on='Disciplinas', how='left').fillna(0)
+    df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
 
     df_merged['Ponto_por_Conteudo'] = df_merged.apply(
@@ -133,7 +133,7 @@ def calculate_stats(df, df_summary):
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
 
-    df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
+    df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso'] if not df_summary.empty else 0
     maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas'] if not df_summary.empty else ""
 
     return {
@@ -146,7 +146,8 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Gráficos e Visualização ---
+# --- Criação dos gráficos ---
+
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -216,93 +217,39 @@ def create_stacked_bar(df):
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
-        .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', width=900, height=450)
+        .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', width=None, height=600)
+        .configure_view(strokeWidth=0)
     )
-    st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
-    st.altair_chart(chart, use_container_width=False)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.altair_chart(chart, use_container_width=True)
 
-# --- CSS claro e animado ---
+# --- CSS para fundo branco e layout profissional ---
 def inject_css():
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-    /* BODY E BACKGROUND */
     body, html, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
         margin: 0; padding: 0;
         height: 100%;
-        background: #e6f0ff;
+        background: #ffffff;
         overflow-x: hidden;
         color: #222831;
         position: relative;
     }
 
-    /* Contêiner para partículas animadas */
-    #animated-background {
-        pointer-events: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: -1;
-        background: radial-gradient(circle at center, #ffffff 0%, #d0e2ff 80%);
-        overflow: hidden;
-    }
-
-    /* Partículas com tom escuro para contraste */
-    .stars {
-        width: 3px;
-        height: 3px;
-        background: #334960;
-        border-radius: 50%;
-        position: absolute;
-        animation: twinkle 3s infinite ease-in-out alternate;
-    }
-
-    .stars::before {
-        content: "";
-        position: absolute;
-        width: 3px; height: 3px;
-        background: #334960;
-        border-radius: 50%;
-        box-shadow:
-            15vw 15vh #334960,
-            40vw 75vh #334960,
-            70vw 25vh #334960,
-            85vw 85vh #334960,
-            20vw 65vh #334960,
-            60vw 55vh #334960,
-            80vw 15vh #334960,
-            35vw 12vh #334960,
-            55vw 37vh #334960,
-            12vw 90vh #334960;
-        animation: twinkle 3s infinite ease-in-out alternate 1.5s;
-    }
-
-    @keyframes twinkle {
-        0% {opacity: 0.3;}
-        50% {opacity: 1;}
-        100% {opacity: 0.3;}
-    }
-
-    /* Container do Streamlit com fundo branco translúcido */
     .reportview-container, 
     .main, 
     .block-container {
-        background-color: rgba(255, 255, 255, 0.95) !important;
-        backdrop-filter: blur(10px);
+        background-color: #ffffff !important;
         color: #222831;
     }
 
-    /* Cabeçalhos e textos escuros */
     h1, h2, h3 {
         color: #2c3e50;
         font-weight: 600;
     }
 
-    /* Estilo dos cards */
     .metric-container {
         background: #f0f5ff;
         border-radius: 16px;
@@ -311,16 +258,17 @@ def inject_css():
         box-shadow: 0 4px 15px #a3bffa90;
         color: #2c3e50;
         transition: box-shadow 0.3s ease;
+        text-align: center;
     }
     .metric-container:hover {
         box-shadow: 0 0 30px #6a8edecc;
     }
 
-    /* Títulos e valores */
     .metric-value {
         font-size: 3rem;
         font-weight: 700;
         color: #355e9e;
+        margin-bottom: 0.2rem;
     }
     .metric-label {
         font-weight: 600;
@@ -328,26 +276,14 @@ def inject_css():
         color: #566e95;
     }
 
-    /* Scroll horizontal para gráficos e conteúdos */
-    .scroll-container {
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    /* Gráficos inline com sombra e fundo translúcido */
     .altair-chart {
-        display: inline-block !important;
-        vertical-align: top;
-        margin-right: 2rem;
         background: #e0e9ff;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
+        margin-bottom: 2rem;
     }
 
-    /* Expansores de disciplinas */
     [data-baseweb="accordion"] > div > div {
         background: #f2f7ff !important;
         border-radius: 14px !important;
@@ -359,13 +295,11 @@ def inject_css():
         background: #a3bffa55 !important;
     }
 
-    /* Conteúdo dentro dos expansores */
     .streamlit-expanderContent > div {
         color: #2c3e50;
         font-weight: 400;
     }
 
-    /* Tabela dentro expansores */
     table {
         width: 100% !important;
         border-collapse: collapse !important;
@@ -373,7 +307,7 @@ def inject_css():
     }
     th, td {
         border: 1px solid #a3bffa;
-        padding: 8px; 
+        padding: 8px;
         text-align: left;
     }
     th {
@@ -385,32 +319,19 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Injeta o background animado ---
-def inject_animated_background():
-    st.markdown("""
-        <div id="animated-background">
-            <div class="stars"></div>
-        </div>
-    """, unsafe_allow_html=True)
-
-# --- Função Principal ---
+# --- Função principal ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
-    inject_animated_background()
 
-    # Calcular dias restantes
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Caixa principal de dias restantes (destacada com gradiente)
-    st.markdown(f'<div class="metric-container" style="background: linear-gradient(135deg, #6574FF, #304FFE); font-size:2.7rem; font-weight:700; text-align:center; margin-bottom: 2rem;">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-container" style="background: linear-gradient(135deg, #6574FF, #304FFE); font-size:2.7rem; font-weight:700;">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
 
-    # Carregar dados e calcular métricas
     df = load_data()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Métricas principais em colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -445,7 +366,6 @@ def main():
 
     st.markdown('---')
 
-    # Gráficos de rosca lado a lado com st.columns
     st.markdown('### Progresso por Disciplina')
     num_graficos = len(df_summary)
     max_por_linha = 4
@@ -460,13 +380,11 @@ def main():
 
     st.markdown('---')
 
-    # Gráfico empilhado horizontal maior com scroll
     st.markdown('### Percentual de Conteúdos Concluídos e Pendentes por Disciplina')
     create_stacked_bar(df)
 
     st.markdown('---')
 
-    # Containers expansíveis para os conteúdos por disciplina
     st.markdown('### 📚 Conteúdos por Disciplina')
     if df.empty:
         st.info("Nenhum dado disponível para exibir conteúdos.")
@@ -483,7 +401,6 @@ def main():
                     'Ícone': 'Ícone'
                 })
                 st.dataframe(df_disp_display, use_container_width=True)
-
 
 if __name__ == "__main__":
     main()
