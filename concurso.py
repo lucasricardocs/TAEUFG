@@ -22,7 +22,6 @@ SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
-# Edital contendo dados estáticos de disciplinas, conteúdos, peso e número de questões
 ED_DATA = {
     'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [20, 15, 10, 15, 30],
@@ -30,19 +29,21 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- Conexão Google Sheets ---
-
+# --- Google Sheets Client ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
-              'https://www.googleapis.com/auth/spreadsheets.readonly']
+    SCOPES = [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/spreadsheets.readonly'
+    ]
     try:
         if "gcp_service_account" not in st.secrets:
             st.error("❌ Credenciais do Google Cloud ('gcp_service_account') não configuradas.")
             return None
         credentials_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
-        return gspread.authorize(creds)
+        client = gspread.authorize(creds)
+        return client
     except Exception as e:
         st.error(f"❌ Erro ao autenticar no Google Sheets: {e}")
         return None
@@ -62,7 +63,7 @@ def get_worksheet():
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
-# --- Carregar dados com índice para atualização ---
+# --- Carregar dados da planilha ---
 @st.cache_data(ttl=600, show_spinner=False)
 def load_data_with_row_indices():
     worksheet = get_worksheet()
@@ -86,14 +87,14 @@ def load_data_with_row_indices():
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # linha real na planilha
+        df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# --- Atualizar status na planilha ---
+# --- Atualizar status ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -104,13 +105,13 @@ def update_status_in_sheet(sheet, row_number, new_status):
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
     except APIError as e:
-        st.error(f"❌ Erro na API durante a atualização: {e}")
+        st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
         return False
     except Exception as e:
         st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
         return False
 
-# --- Calcular progresso ---
+# --- Cálculo progresso ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -135,7 +136,7 @@ def calculate_progress(df):
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
-# --- Estatísticas resumo topo ---
+# --- Estatísticas ---
 def calculate_stats(df, df_summary):
     now = datetime.now()
     dias_restantes = max((CONCURSO_DATE - now).days, 0)
@@ -181,7 +182,7 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
     </div>
     ''', unsafe_allow_html=True)
 
-# --- Topo com logo, dias e data ---
+# --- Topo com logo e data ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
@@ -223,7 +224,7 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Gráfico horizontal número de questões, com título e sem grade ---
+# --- Gráfico barras horizontal com título ---
 def chart_questoes_horizontal(df_ordenado, height):
     bars = alt.Chart(df_ordenado).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
@@ -239,11 +240,7 @@ def chart_questoes_horizontal(df_ordenado, height):
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Questões', title='Quantidade de Questões')]
     )
     texts = alt.Chart(df_ordenado).mark_text(
-        align='left',
-        baseline='middle',
-        dx=3,
-        fontSize=12,
-        color='#064820'
+        align='left', baseline='middle', dx=3, fontSize=12, color='#064820'
     ).encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Questões', order='ascending')),
@@ -259,28 +256,18 @@ def chart_questoes_horizontal(df_ordenado, height):
         domain=False
     )
 
-# --- Gráfico vertical colunas peso x questões, com título e rótulos ---
+# --- Gráfico colunas vertical peso × questões com título e rótulos ---
 def bar_chart_ponderado(height):
     df = pd.DataFrame(ED_DATA)
     df['Questoes_Ponderadas'] = df['Questões'] * df['Peso']
 
-    chart = alt.Chart(df).mark_bar(
-        cornerRadius=5,
-        stroke='#d3d3d3',
-        strokeWidth=3
-    ).encode(
-        x=alt.X('Disciplinas:N',
-                sort='-y',
-                title=None,
-                axis=alt.Axis(labelAngle=0, labels=False, ticks=False, domain=False)
-               ),
-        y=alt.Y('Questoes_Ponderadas:Q',
-                title=None,
-                axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)
-               ),
+    chart = alt.Chart(df).mark_bar(cornerRadius=5, stroke='#d3d3d3', strokeWidth=3).encode(
+        x=alt.X('Disciplinas:N', sort='-y', title=None,
+                axis=alt.Axis(labelAngle=0, labels=False, ticks=False, domain=False)),
+        y=alt.Y('Questoes_Ponderadas:Q', title=None,
+                axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)),
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'),
-                 alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
+        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'), alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
     ).properties(
         width=600,
         height=height,
@@ -312,7 +299,7 @@ def bar_chart_ponderado(height):
 
     return (chart + text_labels + text_disciplinas).configure_view(strokeWidth=0)
 
-# --- Container exibindo lado a lado os gráficos de questões e ponderação ---
+# --- Exibe os dois gráficos lado a lado em colunas ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
@@ -328,14 +315,17 @@ def display_questoes_e_peso(df_summary):
     with col2:
         st.altair_chart(chart_p, use_container_width=True)
 
-# --- Gestor dos gráficos donut para progresso ---
+# --- Gráfico donut para progresso geral ---
 def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
                                colors=('#2ecc71', '#e74c3c'),
                                inner_radius=70, font_size=32,
                                text_color='#064820', show_tooltip=True):
     concluido = max(0, min(progresso_percentual, 100))
     pendente = 100 - concluido
-    df = pd.DataFrame({'Status': ['Concluído', 'Pendente'], 'Valor': [concluido, pendente]})
+    df = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente]
+    })
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
     base = alt.Chart(df).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
@@ -349,6 +339,7 @@ def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
     ).encode(text='text:N').properties(width=width, height=height)
     return (donut + text).configure_view(strokeWidth=0)
 
+# --- Donuts por disciplina ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -393,7 +384,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
             chart_index += 1
 
-# --- Gráfico empilhado percentual conteúdos concluídos/pendentes ---
+# --- Gráfico empilhado percentual concluídos/pendentes ---
 def create_stacked_bar(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
@@ -428,7 +419,7 @@ def create_stacked_bar(df):
     ).configure_view(stroke='#d3d3d3', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
 
-# --- CSS e estilos gerais ---
+# --- CSS ---
 def inject_css():
     st.markdown("""
     <style>
@@ -529,7 +520,7 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Rodapé com emoticons e fonte pequena ---
+# --- Rodapé com estilo ---
 def rodape_motivacional():
     st.markdown("""
     <footer>
@@ -538,7 +529,7 @@ def rodape_motivacional():
     </footer>
     """, unsafe_allow_html=True)
 
-# --- Lista expansível de conteúdos com checkboxes para marcar ---
+# --- Lista expansível de conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
@@ -573,14 +564,13 @@ def main():
     inject_css()
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Topo com logo + dias restantes + data
     render_topbar_with_logo(dias_restantes)
 
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Indicadores topo (5 colunas)
+    # Indicadores topo em colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -615,31 +605,26 @@ def main():
 
     st.markdown("---")
 
-    # Progressos por disciplina com donuts
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
-    # Percentual de conteúdos concluídos e pendentes (gráfico empilhado)
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
     create_stacked_bar(df)
 
     st.markdown("---")
 
-    # Conteúdos por disciplina com caixas para marcar
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
-    # Gráficos número de questões e peso × questões lado a lado
+    # Aqui o código que você pediu com os gráficos lado a lado em colunas 1 e 2
     display_questoes_e_peso(df_summary)
 
     st.markdown("---")
 
-    # Rodapé motivacional
     rodape_motivacional()
-
 
 if __name__ == "__main__":
     main()
