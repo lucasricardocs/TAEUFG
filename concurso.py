@@ -187,7 +187,7 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráfico empilhado sem erros e sem legendas ---
+# --- Gráfico empilhado sem linhas verticais ---
 def create_stacked_bar(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
@@ -211,7 +211,9 @@ def create_stacked_bar(df):
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     chart = alt.Chart(df_melt).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
-                title=None, axis=alt.Axis(labels=True, ticks=True)),
+                title=None,
+                axis=alt.Axis(labels=False, ticks=False, grid=False)
+               ),
         x=alt.X('Percentual:Q', title=None,
                 axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
@@ -222,13 +224,14 @@ def create_stacked_bar(df):
     ).configure_view(stroke='#f1f1f1', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
 
-# --- Gráfico de número de questões com cor por disciplina ---
+
+# --- Gráfico de número de questões com cor e sem linhas verticais ---
 def chart_questoes_horizontal_com_cores(df_ordenado):
     bars = alt.Chart(df_ordenado).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
                 title=None,
-                axis=alt.Axis(labels=True, ticks=True)
+                axis=alt.Axis(labels=False, ticks=False, grid=False)
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
@@ -251,7 +254,8 @@ def chart_questoes_horizontal_com_cores(df_ordenado):
     )
     return (bars + texts).properties(width=600, height=600, title='Quantidade de Questões por Disciplina')
 
-# --- Gráfico mosaico percentual ponderado pelo peso ---
+
+# --- Gráfico mosaico percentual sem linhas verticais ---
 def mosaic_chart_peso_por_disciplina_percentual():
     df = pd.DataFrame(ED_DATA)
     total_peso = df['Peso'].sum()
@@ -264,12 +268,12 @@ def mosaic_chart_peso_por_disciplina_percentual():
 
     base = alt.Chart(df).encode(
         x=alt.X('start_norm:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
-        x2='end_norm',
-        y=alt.value(0),
-        y2=alt.value(1)
+        x2='end_norm'
     )
 
     bars = base.mark_rect(
+        y=0,
+        y2=1,
         cornerRadiusTopLeft=5,
         cornerRadiusTopRight=5,
         stroke='#f1f1f1',
@@ -319,44 +323,67 @@ def mosaic_chart_peso_por_disciplina_percentual():
 
     return chart
 
-# --- Gráfico radial com cores e estilos solicitados ---
+
+# --- Gráfico radial com valor "Concluído" dentro do arco ---
 def donut_chart_radial_personalizado(concluido_percentual):
-    # Constrói dados para True e False baseado no valor concluído
     pendente_percentual = max(0, 100 - concluido_percentual)
     source = pd.DataFrame({
-        "status": ["True", "False"],
-        "quantidade": [concluido_percentual, pendente_percentual]
+        "Status": ["Concluído", "Pendente"],
+        "Valor": [concluido_percentual, pendente_percentual]
     })
+
     base = alt.Chart(source).encode(
-        theta=alt.Theta("quantidade:Q", stack=True),
-        radius=alt.Radius("quantidade", scale=alt.Scale(type="sqrt", rangeMin=60)),
-        color=alt.Color("status:N",
+        theta=alt.Theta("Valor:Q", stack=True),
+        radius=alt.value(120),
+        color=alt.Color("Status:N",
             scale=alt.Scale(
-                domain=["True", "False"],
-                range=["#1f77b4", "#d62728"]  # Azul e vermelho vivos
+                domain=["Concluído", "Pendente"],
+                range=["#2ecc71", "#e74c3c"]
             ),
             legend=None
         )
     )
-    c1 = base.mark_arc(innerRadius=50, outerRadius=120, stroke="white", strokeWidth=2)
 
-    # Texto central com percentual arredondado
+    c1 = base.mark_arc(innerRadius=70, stroke="#f1f1f1", strokeWidth=3)
+
+    # Texto central com percentual total
     percentual_text = f"{concluido_percentual:.1f}%"
     c2 = alt.Chart(pd.DataFrame({'text': [percentual_text]})).mark_text(
         radius=0,
-        size=32,
+        size=24,
         fontWeight="bold",
         color="#064820"
     ).encode(
         text='text:N'
     )
 
-    chart = (c1 + c2).properties(
-        width=280,
-        height=280,
-        title="Progresso Geral"  # O título será exibido separado no Streamlit
+    # Texto com valor "Concluído" (True) dentro do segmento
+    # Ângulo médio para posicionar o texto centralizado no arco de "Concluído"
+    source_text = pd.DataFrame({
+        "Status": ["Concluído"],
+        "Valor": [concluido_percentual],
+        "angle_mid": [concluido_percentual / 2],  # Meio do arco em percentual
+        "radius": [95],  # Posicionado dentro dos arcos (entre innerRadius 70 e outerRadius 120)
+        "text": [f"{int(round(concluido_percentual))}"]
+    })
+
+    c3 = alt.Chart(source_text).mark_text(
+        size=24,
+        fontWeight="bold",
+        color="#064820"
+    ).encode(
+        theta=alt.Theta("angle_mid:Q", stack=False),
+        radius=alt.Radius("radius:Q"),
+        text='text:N'
     )
+
+    chart = (c1 + c2 + c3).properties(
+        width=280,
+        height=280
+    )
+
     return chart
+
 
 # --- CSS ---
 def inject_css():
@@ -579,6 +606,7 @@ def create_altair_donut(row):
     ).configure_view(stroke='#f1f1f1', strokeWidth=3)
     return chart
 
+
 # --- Main ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
@@ -640,6 +668,7 @@ def main():
     st.markdown("---")
 
     rodape_motivacional()
+
 
 if __name__ == "__main__":
     main()
