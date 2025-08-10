@@ -87,7 +87,7 @@ def load_data_with_row_indices():
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # índice real da planilha
+        df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
@@ -111,7 +111,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
         return False
 
-# --- Calcular progresso ---
+# --- Cálculo progresso ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -136,7 +136,7 @@ def calculate_progress(df):
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
-# --- Estatísticas resumo para topo ---
+# --- Estatísticas ---
 def calculate_stats(df, df_summary):
     now = datetime.now()
     dias_restantes = max((CONCURSO_DATE - now).days, 0)
@@ -182,7 +182,7 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
     </div>
     ''', unsafe_allow_html=True)
 
-# --- Topo: logo, contagem regressiva, data ---
+# --- Topo com logo e data ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
@@ -248,62 +248,56 @@ def chart_questoes_horizontal(df_ordenado, height):
         text='Questões:Q'
     )
     return (bars + texts).properties(
-        width=350,
+        width=400,
         height=height,
-        title="Quantidade de Questões por Disciplina"
+        title="Número de Questões"
     ).configure_axis(
         grid=False,
         domain=False
     )
 
-# --- Gráfico vertical peso × questões ---
-def bar_chart_ponderado(height):
+# --- Gráfico horizontal peso × questões ---
+def bar_chart_ponderado_horizontal(height):
     df = pd.DataFrame(ED_DATA)
     df['Questoes_Ponderadas'] = df['Questões'] * df['Peso']
 
-    chart = alt.Chart(df).mark_bar(
-        cornerRadius=5, stroke='#d3d3d3', strokeWidth=3
-    ).encode(
-        x=alt.X('Disciplinas:N', sort='-y', title=None,
-                axis=alt.Axis(labelAngle=0, labels=False, ticks=False, domain=False)),
-        y=alt.Y('Questoes_Ponderadas:Q', title=None,
-                axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)),
+    bars = alt.Chart(df).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field='Questoes_Ponderadas', order='ascending'),
+                title=None, axis=alt.Axis(labels=True, ticks=True)),
+        x=alt.X('Questoes_Ponderadas:Q',
+                title=None,
+                axis=alt.Axis(grid=False, labels=False, ticks=False, domain=False)),
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'), alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
-    ).properties(
-        width=600,
-        height=height,
-        title="Peso × Questões por Disciplina"
+        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
     )
-
-    text_labels = alt.Chart(df).mark_text(
-        dy=-10, fontWeight='bold', fontSize=12, color='black'
+    texts = alt.Chart(df).mark_text(
+        align='left', baseline='middle', dx=3, fontSize=12, color='#064820'
     ).encode(
-        x=alt.X('Disciplinas:N', sort='-y'),
-        y='Questoes_Ponderadas:Q',
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field='Questoes_Ponderadas', order='ascending')),
+        x='Questoes_Ponderadas:Q',
         text=alt.Text('Questoes_Ponderadas:Q')
     )
-
-    text_disciplinas = alt.Chart(df).mark_text(
-        align='center', dy=12, fontWeight='bold', fontSize=12, color='black'
-    ).encode(
-        x=alt.X('Disciplinas:N', sort='-y'),
-        y=alt.value(height - 15),
-        text='Disciplinas:N'
+    return (bars + texts).properties(
+        width=400,
+        height=height,
+        title="Peso × Número de Questões"
+    ).configure_axis(
+        grid=False,
+        domain=False
     )
 
-    return (chart + text_labels + text_disciplinas).configure_view(strokeWidth=0)
-
-# --- Exibe dois gráficos lado a lado em colunas separadas ---
-def display_questoes_e_peso(df_summary):
+# --- Exibe os dois histogramas horizontais lado a lado ---
+def display_questoes_e_peso_hist(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
-    titulo_com_destaque("📝 Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
+    titulo_com_destaque("📝 Questões e Peso × Questões por Disciplina (Histogramas Horizontais)", cor_lateral="#8e44ad")
     altura = 600
     df_ed = pd.DataFrame(ED_DATA)
     chart_q = chart_questoes_horizontal(df_ed, altura)
-    chart_p = bar_chart_ponderado(altura)
+    chart_p = bar_chart_ponderado_horizontal(altura)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -311,21 +305,71 @@ def display_questoes_e_peso(df_summary):
     with col2:
         st.altair_chart(chart_p, use_container_width=True)
 
-# --- Gráficos donut, barras empilhadas, CSS, rodapé e lista com checkboxes
-# (São assumidos já definidos conforme os exemplos anteriores, para brevidade não repito aqui)
+# --- Outras funções gráficas (donuts, stacked bars), CSS, rodapé e checklist são os mesmos do código anterior ---
 
-# Mesma estrutura das funções para progresso, estatísticas e checklist de conteúdos
-# ... (código conforme enviado anteriormente).
-
-# --- CSS global simples ---
 def inject_css():
     st.markdown("""
     <style>
-    /* Seu CSS completo aqui */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body, html, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+        margin: 0; padding: 0;
+        height: 100%;
+        background: #ffffff;
+        overflow-x: hidden;
+        color: #222831;
+        position: relative;
+    }
+    .metric-container {
+        background: #f0f5ff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 4px 15px #a3bffa90;
+        color: #2c3e50;
+        transition: box-shadow 0.3s ease;
+        text-align: center;
+    }
+    .metric-container:hover {
+        box-shadow: 0 0 30px #6a8edecc;
+    }
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #355e9e;
+        margin-bottom: 0.2rem;
+    }
+    .metric-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #566e95;
+    }
+    .altair-chart {
+        border: 1px solid #d3d3d3 !important;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 0 15px #a3bffa88;
+        background: #e0e9ff;
+        margin-bottom: 2rem;
+    }
+    /* Restante do CSS conforme necessário */
+    footer {
+        font-style: italic !important;
+        font-size: 12px !important;
+        color: #064820 !important;
+        opacity: 0.75 !important;
+        margin-top: 10px !important;
+        text-align: center !important;
+        user-select: none !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    footer span {
+        font-weight: 500 !important;
+        color: #355e9e !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Rodapé ---
 def rodape_motivacional():
     st.markdown("""
     <footer>
@@ -334,7 +378,6 @@ def rodape_motivacional():
     </footer>
     """, unsafe_allow_html=True)
 
-# --- Conteúdos por disciplina com checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
@@ -410,15 +453,18 @@ def main():
 
     st.markdown("---")
 
-    # Coloque aqui as chamadas às outras seções: progresso com donut, gráfico empilhado etc.
+    # Aqui você pode chamar outras seções conforme seu projeto:
+    # exemplo: display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
+    # exemplo: create_stacked_bar(df)
 
-    # Exibe conteúdos com checkboxes para marcar concluído
+    st.markdown("---")
+
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
-    # Por último: dois gráficos lado a lado, totalmente visíveis
-    display_questoes_e_peso(df_summary)
+    # Exibe os histogramas horizontais lado a lado no último título
+    display_questoes_e_peso_hist(df_summary)
 
     st.markdown("---")
 
