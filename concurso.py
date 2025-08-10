@@ -67,9 +67,6 @@ def bar_chart_ponderado(height):
 
 def display_questoes_e_peso():
     df = pd.DataFrame(ED_DATA)
-    if df.empty:
-        st.info("Nenhum dado para mostrar.")
-        return
     titulo_com_destaque("📝 Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     altura = 600
     chart_q = chart_questoes_horizontal(df, altura)
