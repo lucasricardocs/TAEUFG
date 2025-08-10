@@ -165,7 +165,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Título lateral destacado ---
+# --- Destaque lateral títulos ---
 def titulo_com_destaque(texto, cor_lateral="#3498db"):
     st.markdown(f'''
         <div style="
@@ -187,7 +187,7 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráfico barras horizontal colorido por disciplina ---
+# --- Gráfico de barras horizontal colorido por disciplina ---
 def chart_questoes_horizontal(df_ordenado, height):
     bars = alt.Chart(df_ordenado).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
@@ -197,7 +197,7 @@ def chart_questoes_horizontal(df_ordenado, height):
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
-                axis=alt.Axis(labels=False, ticks=False, domain=False)
+                axis=alt.Axis(labels=False, ticks=False, domain=False),
                ),
         color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
@@ -217,12 +217,13 @@ def chart_questoes_horizontal(df_ordenado, height):
     return (bars + texts).properties(
         width=350,
         height=height,
+        title=None
     ).configure_axis(
         grid=False,
         domain=False
     )
 
-# --- Gráfico colunas vertical percentual para Peso por Disciplina ---
+# --- Gráfico de colunas vertical percentual para Peso por Disciplina ---
 def bar_chart_peso_percentual(height):
     df = pd.DataFrame(ED_DATA)
     total_peso = df['Peso'].sum()
@@ -246,10 +247,11 @@ def bar_chart_peso_percentual(height):
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Percentual', format='.1f', title='Percentual (%)')]
     ).properties(
         width=600,
-        height=height
+        height=height,
+        title=None
     )
 
-    # Rótulo percentual dentro da barra
+    # Rótulos de percentual dentro da barra
     text_percent = alt.Chart(df).mark_text(
         dy=-10,
         color='black',
@@ -257,11 +259,11 @@ def bar_chart_peso_percentual(height):
         fontSize=12
     ).encode(
         x=alt.X('Disciplinas:N', sort='-y'),
-        y='Percentual:Q',
+        y=alt.Y('Percentual:Q'),
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    # Nome da disciplina dentro da barra, texto horizontal
+    # Texto do nome da disciplina dentro da barra, alinhado horizontal
     text_disciplinas = alt.Chart(df).mark_text(
         align='center',
         dy=12,
@@ -278,13 +280,13 @@ def bar_chart_peso_percentual(height):
         strokeWidth=0
     )
 
-# --- Container com título e gráficos lado a lado ---
+# --- Container com título e gráficos lado a lado: Quantidade de Questões e Peso ---
 def display_questoes_e_peso_com_container(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-    altura = 600
+    altura = 600  # mesma altura do gráfico percentual concluído/pendente
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado, altura)
     chart_p = bar_chart_peso_percentual(altura)
@@ -295,7 +297,7 @@ def display_questoes_e_peso_com_container(df_summary):
         with col2:
             st.altair_chart(chart_p, use_container_width=True)
 
-# --- Gráfico empilhado percentual de conteúdos concluídos/pendentes ---
+# --- Gráfico empilhado (percentual conteúdos concluídos e pendentes) ---
 def create_stacked_bar(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
@@ -329,7 +331,6 @@ def create_stacked_bar(df):
         height=600
     ).configure_view(stroke='#d3d3d3', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
-
 
 # --- CSS ---
 def inject_css():
@@ -474,7 +475,7 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Rodapé discreto ---
+# --- Rodapé com emoticons e fonte tamanho 12 ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
@@ -482,6 +483,79 @@ def rodape_motivacional():
             <br><span>Mantenha o foco, você está no caminho certo! 💪😊</span>
         </footer>
     """, unsafe_allow_html=True)
+
+# --- Gráficos donut para progresso geral e por disciplina ---
+def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
+                               colors=('#2ecc71', '#e74c3c'),
+                               inner_radius=70, font_size=32,
+                               text_color='#064820', show_tooltip=True):
+    concluido = max(0, min(progresso_percentual, 100))
+    pendente = 100 - concluido
+    df = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente]
+    })
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
+    base = alt.Chart(df).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None)
+    )
+    if show_tooltip:
+        base = base.encode(tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')])
+    donut = base.mark_arc(innerRadius=inner_radius, stroke='#d3d3d3', strokeWidth=3).properties(
+        width=width, height=height)
+    text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
+        fontSize=font_size, fontWeight='bold', color=text_color, dy=0).encode(text='text:N').properties(
+        width=width, height=height)
+    chart = (donut + text).configure_view(strokeWidth=0)
+    return chart
+
+
+def create_altair_donut(row):
+    concluido = int(row['Conteudos_Concluidos'])
+    pendente = int(row['Conteudos_Pendentes'])
+    total = max(concluido + pendente, 1)
+    concluido_pct = round((concluido / total) * 100, 1)
+    pendente_pct = round((pendente / total) * 100, 1)
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente],
+        'Percentual': [concluido_pct, pendente_pct]
+    })
+    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    base_chart = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
+    )
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+    text = alt.Chart(source_label).mark_text(
+        size=24, fontWeight='bold', color='#064820'
+    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
+    chart = (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
+    return chart
+
+
+def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
+    total_charts = len(df_summary) + 1
+    rows = (total_charts + max_cols - 1) // max_cols
+    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
+    chart_index = 0
+    for _ in range(rows):
+        cols = st.columns(max_cols, gap="medium")
+        for c in range(max_cols):
+            if chart_index >= total_charts:
+                break
+            with cols[c]:
+                if chart_index < len(df_summary):
+                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
+                else:
+                    nome = "Progresso Geral"
+                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
+                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
+            chart_index += 1
 
 
 # --- Main ---
@@ -558,7 +632,7 @@ def main():
                             if sucesso:
                                 st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                                 load_data_with_row_indices.clear()
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                     except Exception as e:
