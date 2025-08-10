@@ -302,15 +302,13 @@ def chart_questoes_horizontal(df_ordenado):
     )
     return (bars + texts).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-# --- Novo gráfico mosaico inspirado no seu exemplo, com ED_DATA ---
-def mosaic_chart_peso_importancia():
+# --- Gráfico mosaico ponderando apenas pelo peso da disciplina ---
+def mosaic_chart_peso_por_disciplina():
     df = pd.DataFrame(ED_DATA)
-    df['Peso_Ponderado'] = df['Total_Conteudos'] * df['Peso']
-    df = df.sort_values('Peso_Ponderado', ascending=False).reset_index(drop=True)
-
-    total_peso = df['Peso_Ponderado'].sum()
-    df['start'] = df['Peso_Ponderado'].cumsum() - df['Peso_Ponderado']
-    df['end'] = df['Peso_Ponderado'].cumsum()
+    total_peso = df['Peso'].sum()
+    df = df.sort_values('Peso', ascending=False).reset_index(drop=True)
+    df['start'] = df['Peso'].cumsum() - df['Peso']
+    df['end'] = df['Peso'].cumsum()
     df['start_norm'] = df['start'] / total_peso
     df['end_norm'] = df['end'] / total_peso
 
@@ -329,8 +327,6 @@ def mosaic_chart_peso_importancia():
         color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N', title='Disciplina'),
-            alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado'),
-            alt.Tooltip('Total_Conteudos:Q', title='Total de Conteúdos'),
             alt.Tooltip('Peso:Q', title='Peso')
         ]
     )
@@ -343,7 +339,7 @@ def mosaic_chart_peso_importancia():
         color='black'
     ).encode(
         text='Disciplinas:N',
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0, 1]))
     )
 
     text_peso = base.mark_text(
@@ -352,14 +348,14 @@ def mosaic_chart_peso_importancia():
         dy=5,
         color='black'
     ).encode(
-        text=alt.Text('Peso_Ponderado:Q', format='.0f'),
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
+        text=alt.Text('Peso:Q', format='.0f'),
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0, 1]))
     )
 
     mosaic_chart = (bars + text_disciplina + text_peso).properties(
         width=600,
         height=200,
-        title='Peso Ponderado por Disciplina (Mosaic Chart)'
+        title='Peso por Disciplina (Mosaic Chart)'
     ).configure_view(
         strokeWidth=0
     ).configure_axis(
@@ -371,14 +367,14 @@ def mosaic_chart_peso_importancia():
 
     return mosaic_chart
 
-# --- Mostrar os dois gráficos lado a lado (questões e mosaico) ---
+# --- Mostrar os dois gráficos lado a lado (questões e peso da disciplina) ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado)
-    chart_p = mosaic_chart_peso_importancia()
+    chart_p = mosaic_chart_peso_por_disciplina()
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
