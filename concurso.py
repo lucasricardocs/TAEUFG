@@ -11,7 +11,7 @@ import altair as alt
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# --- Configurações e Constantes ---
+# --- Configurações ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -90,7 +90,7 @@ def load_data_with_row_indices():
         df['Status'] = df['Status'].str.title()
         
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # Linha real na planilha (1 cabeçalho)
+        df['sheet_row'] = df['index'] + 2  # Linha real na planilha (linha 1 é o cabeçalho)
         df.drop('index', axis=1, inplace=True)
         
         return df.reset_index(drop=True)
@@ -105,7 +105,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-        status_col_index = header.index('Status') + 1
+        status_col_index = header.index('Status') + 1  # índice base 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
     except APIError as e:
@@ -172,7 +172,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Gráficos Altair com borda cinza claro ---
+# --- Gráficos Altair com bordas cinza claras ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -225,9 +225,9 @@ def create_stacked_bar(df):
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
     df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1)
-    df_pivot['False_Pct'] = (df_pivot['False'] / df_pivot['Total'] * 100).round(1)
-
-    df_melt = df_pivot.melt(id_vars=['Disciplinas', 'Pct_True'], value_vars=['True_Pct', 'False_Pct'], var_name='Status', value_name='Percentual')
+    df_pivot['False_Pct'] = 100 - df_pivot['True_Pct']  # corrigido para soma exata 100
+    
+    df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'], var_name='Status', value_name='Percentual')
     df_melt['Status'] = df_melt['Status'].map({'True_Pct':'Concluído', 'False_Pct':'Pendente'})
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
@@ -237,7 +237,7 @@ def create_stacked_bar(df):
         .mark_bar()
         .encode(
             y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
-            x=alt.X('Percentual:Q', title='Percentual (%)', axis=alt.Axis(format='%')),
+            x=alt.X('Percentual:Q', title='Percentual (%)', axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 100])),
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
@@ -347,33 +347,34 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Função para renderizar topo com logo e título maior ---
+# --- Função para renderizar topo com logo e título grande ---
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div style="
         display: flex;
         align-items: center;
         justify-content: flex-start;
+        height: 400px;           /* altura fixa do box do topo */
         background-color: #f5f5f5;
-        padding: 20px 20px 20px 20px;  /* maior padding para altura maior */
+        padding: 0 40px;         /* padding horizontal */
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     ">
-        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px; margin-right: 20px;">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 200px; margin-right: 40px;">
         <div style="
-            font-size: 3.5rem;  /* fonte maior para título mais alto */
+            font-size: 3rem;
             font-weight: 700;
             color: #2c3e50;
             white-space: nowrap;
-            line-height: 1.5;
+            line-height: 1.2;
         ">
-            ⏰ Faltam {dias_restantes} dias para o Concurso 2025
+            ⏰ Faltam {dias_restantes} dias para o concurso de TAE
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- Função dinâmica para exibir gráficos de rosca responsivamente ---
+# --- Função dinâmica para mostrar gráficos de rosca responsivos ---
 def display_responsive_donuts(df_summary):
     max_cols = 4
 
@@ -396,12 +397,10 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    # Dados com índice de planilha para atualização
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Métricas principais em colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
