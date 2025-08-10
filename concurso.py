@@ -225,77 +225,117 @@ def create_stacked_bar(df):
         )
         .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', width=900, height=450)
     )
-    # Usar scroll horizontal para o container do gráfico
     st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
     st.altair_chart(chart, use_container_width=False)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- CSS com background animado e estilos bons ---
+# --- CSS com background animado e estilos bons com partículas em tom lilás suave ---
 def inject_css():
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
+    /* BODY E BACKGROUND */
     body, html, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
-        background: #0e0e2c url('https://www.script-tutorials.com/demos/360/images/stars.png') repeat center top;
-        animation: moveBackground 200s linear infinite;
-        color: #F5F5F5;
+        margin: 0; padding: 0;
+        height: 100%;
+        background: #0c0c2f;
         overflow-x: hidden;
+        color: #f0f4ff;
+        position: relative;
     }
 
-    @keyframes moveBackground {
-        from {background-position: 0 0;}
-        to {background-position: -10000px 5000px;}
+    /* Contêiner que cobre toda a viewport para as partículas */
+    #animated-background {
+        pointer-events: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        background: radial-gradient(ellipse at center, #1a1a4d 0%, #0c0c2f 70%);
+        overflow: hidden;
     }
 
+    /* Criando estrelas com animação usando box-shadow */
+    .stars {
+        width: 2px;
+        height: 2px;
+        background: #b39ddb;  /* lilás suave */
+        border-radius: 50%;
+        position: absolute;
+        animation: twinkle 3s infinite ease-in-out alternate;
+    }
+
+    .stars::before {
+        content: "";
+        position: absolute;
+        width: 2px; height: 2px;
+        background: #b39ddb;  /* lilás suave */
+        border-radius: 50%;
+        box-shadow:
+            20vw 20vh #b39ddb,
+            40vw 80vh #b39ddb,
+            70vw 30vh #b39ddb,
+            90vw 90vh #b39ddb,
+            10vw 70vh #b39ddb,
+            60vw 50vh #b39ddb,
+            80vw 20vh #b39ddb,
+            30vw 10vh #b39ddb,
+            50vw 40vh #b39ddb,
+            15vw 90vh #b39ddb;
+        animation: twinkle 3s infinite ease-in-out alternate 1.5s;
+    }
+
+    /* Animação suave de opacidade pulsante */
+    @keyframes twinkle {
+        0% {opacity: 0.3;}
+        50% {opacity: 1;}
+        100% {opacity: 0.3;}
+    }
+
+    /* Container do Streamlit com semi-transparência para deixar o background visível */
+    .reportview-container, 
+    .main, 
+    .block-container {
+        background-color: rgba(12, 12, 47, 0.80) !important;
+        backdrop-filter: blur(8px);
+    }
+
+    /* Cabeçalhos e textos */
     h1, h2, h3 {
-        color: #8ab4f8;
+        color: #aab6ff;
         font-weight: 600;
     }
 
-    .days-remaining-box {
-        background: linear-gradient(135deg, #6574FF, #304FFE);
-        border-radius: 16px;
-        padding: 2rem;
-        text-align: center;
-        color: white;
-        font-weight: 700;
-        font-size: 2.5rem;
-        box-shadow: 0 6px 25px rgba(101, 116, 255, 0.7);
-        margin-bottom: 2rem;
-    }
-
+    /* Estilo dos cards (caixas métricas) */
     .metric-container {
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 12px;
-        padding: 1.3rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(101, 116, 255, 0.7);
-        text-align: center;
-        backdrop-filter: blur(10px);
-        color: #f5f5f5;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: rgba(26, 26, 77, 0.6);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 0 15px #677effaa;
+        color: #dde5ff;
+        transition: box-shadow 0.3s ease;
     }
     .metric-container:hover {
-        transform: translateY(-7px);
-        box-shadow: 0 8px 30px rgba(101, 116, 255, 0.9);
+        box-shadow: 0 0 30px #99aaffcc;
     }
 
+    /* Títulos e valores */
     .metric-value {
         font-size: 3rem;
         font-weight: 700;
-        color: #a3bffa;
-        margin-bottom: 0.2rem;
+        color: #d6dbff;
     }
-
     .metric-label {
         font-weight: 600;
-        color: #d6d6f5;
         font-size: 1.1rem;
+        color: #b2bbff;
     }
 
-    /* Scroll horizontal para containers de gráficos e listas */
+    /* Scroll horizontal para gráficos e conteúdos */
     .scroll-container {
         overflow-x: auto;
         white-space: nowrap;
@@ -303,63 +343,74 @@ def inject_css():
         margin-bottom: 2rem;
     }
 
-    /* Estilo para os gráficos Altair dentro dos containers */
+    /* Gráficos inline com sombra e fundo translucido */
     .altair-chart {
         display: inline-block !important;
         vertical-align: top;
         margin-right: 2rem;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(26, 26, 77, 0.5);
         border-radius: 16px;
         padding: 1rem;
-        box-shadow: 0 4px 15px rgba(101, 116, 255, 0.5);
+        box-shadow: 0 0 15px #677effbb;
     }
 
-    /* Expansive containers para conteúdos das disciplinas */
+    /* Expansores de disciplinas */
     [data-baseweb="accordion"] > div > div {
-        background: rgba(255, 255, 255, 0.1) !important;
+        background: rgba(26, 26, 77, 0.5) !important;
         border-radius: 14px !important;
-        color: #e0e0ff !important;
+        color: #bbc9ff !important;
         font-weight: 500;
         transition: background 0.3s ease;
     }
     [data-baseweb="accordion"] > div > div:hover {
-        background: rgba(101, 116, 255, 0.3) !important;
+        background: rgba(103, 126, 255, 0.3) !important;
     }
 
-    /* Conteúdo das linhas das tabelas dentro dos expansives */
+    /* Conteúdo dentro dos expansores */
     .streamlit-expanderContent > div {
-        color: #e0e0ff;
+        color: #d1d9ff;
         font-weight: 400;
     }
 
-    /* Table styles inside detail */
+    /* Tabela dentro expansores */
     table {
         width: 100% !important;
         border-collapse: collapse !important;
-        color: #cfcfff;
+        color: #cfd9ff;
     }
     th, td {
-        border: 1px solid #444; padding: 8px; text-align: left;
+        border: 1px solid #444d8f; 
+        padding: 8px; 
+        text-align: left;
     }
     th {
-        background: rgba(101, 116, 255, 0.3);
+        background: rgba(103, 126, 255, 0.5);
     }
     tr:nth-child(even) {
-        background: rgba(101, 116, 255, 0.15);
+        background: rgba(103, 126, 255, 0.15);
     }
     </style>
+    """, unsafe_allow_html=True)
+
+# --- Injeta o background animado no DOM ---
+def inject_animated_background():
+    st.markdown("""
+        <div id="animated-background">
+            <div class="stars"></div>
+        </div>
     """, unsafe_allow_html=True)
 
 # --- Função Principal ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
+    inject_animated_background()
 
     # Calcular dias restantes
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
     # Caixa principal de dias restantes
-    st.markdown(f'<div class="days-remaining-box">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-container" style="background: linear-gradient(135deg, #6574FF, #304FFE); font-size:2.7rem; font-weight:700; text-align:center; margin-bottom: 2rem;">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
 
     # Carregar dados e cálculos
     df = load_data()
@@ -401,16 +452,18 @@ def main():
 
     st.markdown('---')
 
-    # Mostrar gráficos de donut com scroll horizontal
+    # Gráficos de rosca lado a lado, usando st.columns
     st.markdown('### Progresso por Disciplina')
-    with st.container():
-        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-        num_cols = min(len(df_summary), 10)
-        for idx, row in df_summary.iterrows():
-            st.markdown(f'<div class="altair-chart" style="width:360px; display:inline-block;">', unsafe_allow_html=True)
-            st.altair_chart(create_altair_donut(row), use_container_width=False)
-            st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    num_graficos = len(df_summary)
+    max_por_linha = 4
+    linhas = (num_graficos + max_por_linha - 1) // max_por_linha
+    for i in range(linhas):
+        inicio = i * max_por_linha
+        fim = min(inicio + max_por_linha, num_graficos)
+        cols = st.columns(fim - inicio)
+        for j, idx in enumerate(range(inicio, fim)):
+            with cols[j]:
+                st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
     st.markdown('---')
 
