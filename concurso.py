@@ -172,7 +172,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Gráficos Altair com bordas cinza claras ---
+# --- Gráficos Altair com bordas cinza claras, strokeWidth 3 nas roscas e rótulo interno ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -192,10 +192,13 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format="d"), alt.Tooltip('Percentual', format='.1f')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#fff', strokeWidth=2)
-    text = base_chart.mark_text(radius=110, size=16, fontWeight='bold', color='black').encode(
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#fff', strokeWidth=3)  # strokeWidth aumentado para 3
+    
+    # Texto centralizado dentro do "furo" da rosca
+    text = base_chart.mark_text(radius=0, size=20, fontWeight='bold', color='black').encode(
         text=alt.Text('Percentual:Q', format='.1f')
     )
+    
     chart = (donut + text).properties(
         title=alt.TitleParams(
             text=str(row['Disciplinas']),
@@ -218,17 +221,19 @@ def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
         return
+
     df_group = df.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
     df_pivot['Total'] = df_pivot.sum(axis=1)
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1)
-    df_pivot['False_Pct'] = 100 - df_pivot['True_Pct']  # corrigido para soma exata 100
-    
-    df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'], var_name='Status', value_name='Percentual')
-    df_melt['Status'] = df_melt['Status'].map({'True_Pct':'Concluído', 'False_Pct':'Pendente'})
+    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1).clip(upper=100)
+    df_pivot['False_Pct'] = 100 - df_pivot['True_Pct']
+
+    df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'],
+                            var_name='Status', value_name='Percentual')
+    df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
@@ -237,7 +242,8 @@ def create_stacked_bar(df):
         .mark_bar()
         .encode(
             y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
-            x=alt.X('Percentual:Q', title='Percentual (%)', axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 100])),
+            x=alt.X('Percentual:Q', title='Percentual (%)',
+                    axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 100])),
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
@@ -354,14 +360,15 @@ def render_topbar_with_logo(dias_restantes):
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        height: 400px;           /* altura fixa do box do topo */
+        height: 400px;
         background-color: #f5f5f5;
-        padding: 0 40px;         /* padding horizontal */
+        padding: 0 40px;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     ">
-        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 200px; margin-right: 40px;">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" 
+             style="height: 200px; margin-right: 40px;">
         <div style="
             font-size: 3rem;
             font-weight: 700;
@@ -376,7 +383,7 @@ def render_topbar_with_logo(dias_restantes):
 
 # --- Função dinâmica para mostrar gráficos de rosca responsivos ---
 def display_responsive_donuts(df_summary):
-    max_cols = 5
+    max_cols = 4
 
     num_charts = len(df_summary)
     rows = (num_charts + max_cols - 1) // max_cols
