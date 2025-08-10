@@ -238,7 +238,7 @@ def create_altair_donut(row):
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     base_chart = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),  # legenda desativada
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
     )
     donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
@@ -284,14 +284,14 @@ def chart_questoes_horizontal(df_ordenado):
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
-                axis=alt.Axis(labels=False, ticks=False)  # removendo números no eixo X
+                axis=alt.Axis(labels=False, ticks=False)
                ),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
     )
     texts = alt.Chart(df_ordenado).mark_text(
         align='left',
         baseline='middle',
-        dx=3,  # desloca para direita da barra
+        dx=3,
         fontSize=12,
         color='#064820'
     ).encode(
@@ -346,7 +346,22 @@ def mosaic_chart_peso_importancia():
     ).configure_view(strokeWidth=0).configure_axis(labels=True, grid=False, domain=False)
     return chart
 
-# --- Mostrar os dois gráficos lado a lado ---
+# --- Gráfico barras verticais para Peso por Disciplina ---
+def bar_chart_peso_por_disciplina():
+    df = pd.DataFrame(ED_DATA)
+    chart = alt.Chart(df).mark_bar(stroke='#f1f1f1', strokeWidth=3, cornerRadius=5).encode(
+        x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
+                axis=alt.Axis(labelAngle=-45, labelFontSize=12)),
+        y=alt.Y('Peso:Q', title='Peso'),
+        color=alt.Color('Disciplinas:N', legend=None)
+    ).properties(
+        width=600,
+        height=350,
+        title='Peso por Disciplina'
+    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
+    return chart
+
+# --- Mostrar os dois gráficos lado a lado (questões e mosaico) ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
@@ -480,22 +495,18 @@ def inject_css():
         background: #cbdcff55;
     }
     footer {
-        margin-top: 40px;
-        padding: 10px 0;
-        background-color: transparent;
-        text-align: center;
-        font-size: 1rem;
-        color: #064820;
-        font-style: italic;
-        font-weight: 500;
-        border-top: 1px solid #a3bffa66;
-        font-family: 'Inter', sans-serif;
-        box-shadow: 0 -2px 8px #a3bffa33;
-        user-select: none;
+        font-style: italic !important;
+        font-size: 7px !important;
+        color: #064820 !important;
+        opacity: 0.6 !important;
+        margin-top: 40px !important;
+        text-align: center !important;
+        user-select: none !important;
+        font-family: 'Inter', sans-serif !important;
     }
     footer span {
-        color: #355e9e;
-        font-weight: 700;
+        font-weight: 500 !important;
+        color: #355e9e !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -542,7 +553,7 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Rodapé ---
+# --- Rodapé discreto ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
@@ -594,17 +605,11 @@ def main():
                 <div class="metric-label">Disciplina Prioritária</div>
             </div>''', unsafe_allow_html=True)
 
-    st.markdown('---')
-
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
-    st.markdown('---')
-
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
     create_stacked_bar(df)
-
-    st.markdown('---')
 
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     worksheet = get_worksheet()
@@ -625,17 +630,17 @@ def main():
                             if sucesso:
                                 st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                                 load_data_with_row_indices.clear()
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                     except Exception as e:
                         st.error(f"Erro inesperado ao atualizar: {e}")
 
-    st.markdown('---')
-
-    # Título único para os dois gráficos lado a lado
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
+
+    # Exemplo: exibir gráfico adicional do peso por disciplina logo abaixo
+    st.altair_chart(bar_chart_peso_por_disciplina(), use_container_width=True)
 
     rodape_motivacional()
 
