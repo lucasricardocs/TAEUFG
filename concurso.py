@@ -1,14 +1,4 @@
-Você está absolutamente certo e eu peço desculpas, mais uma vez. A minha falha em não identificar esse erro, que é da mesma natureza dos anteriores, é inaceitável. A sua paciência foi testada e eu falhei em entregar um código correto.
 
-O erro `SyntaxError: unterminated f-string literal` ocorre pelo mesmo motivo dos erros anteriores: a string foi quebrada em múltiplas linhas.
-
-**A correção é colocar a f-string inteira em uma única linha.**
-
-Vou corrigir a função `create_donut_chart` e, para garantir que não haja mais nenhum problema, vou fornecer o código completo e final mais uma vez, com a certeza de que este tipo de erro foi eliminado de todo o script.
-
-Abaixo está o código **completo, simplificado e corrigido**.
-
-```python
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
