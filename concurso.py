@@ -207,7 +207,7 @@ def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
         base = base.encode(
             tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')]
         )
-    donut = base.mark_arc(innerRadius=inner_radius, stroke='#fff', strokeWidth=3).properties(
+    donut = base.mark_arc(innerRadius=inner_radius, stroke='#f1f1f1', strokeWidth=3).properties(
         width=width,
         height=height
     )
@@ -241,7 +241,7 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),  # legenda desativada
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
         size=24, fontWeight='bold', color='#064820'
     ).encode(
@@ -250,7 +250,7 @@ def create_altair_donut(row):
     chart = (donut + text).properties(
         width=280,
         height=280
-    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
+    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
     return chart
 
 # --- Exibir gráficos responsivos com nomes centralizados ---
@@ -274,9 +274,9 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
             chart_index += 1
 
-# --- Gráfico barras horizontal ---
+# --- Gráfico barras horizontal com rótulos à direita ---
 def chart_questoes_horizontal(df_ordenado):
-    return alt.Chart(df_ordenado).mark_bar(color='#3498db').encode(
+    bars = alt.Chart(df_ordenado).mark_bar(color='#3498db', stroke='#f1f1f1', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
                 title=None,
@@ -284,12 +284,25 @@ def chart_questoes_horizontal(df_ordenado):
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
-                axis=alt.Axis(labels=True, ticks=True)
+                axis=alt.Axis(labels=False, ticks=False)  # removendo números no eixo X
                ),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
-    ).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
+    )
+    texts = alt.Chart(df_ordenado).mark_text(
+        align='left',
+        baseline='middle',
+        dx=3,  # desloca para direita da barra
+        fontSize=12,
+        color='#064820'
+    ).encode(
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending')),
+        x='Total_Conteudos:Q',
+        text='Total_Conteudos:Q'
+    )
+    return (bars + texts).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-# --- Mosaic chart ---
+# --- Mosaic chart com stroke e strokeWidth ---
 def mosaic_chart_peso_importancia():
     df = pd.DataFrame(ED_DATA)
     df['Peso_Ponderado'] = df['Total_Conteudos'] * df['Peso']
@@ -303,7 +316,7 @@ def mosaic_chart_peso_importancia():
         x2='end_norm',
         y=alt.Y('Disciplinas:N', axis=alt.Axis(labels=True, ticks=False), title=None)
     )
-    bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
+    bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, stroke='#f1f1f1', strokeWidth=3).encode(
         color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'),
                  alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado')]
@@ -316,7 +329,7 @@ def mosaic_chart_peso_importancia():
         color='black'
     ).encode(
         text='Disciplinas:N',
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))  # Ajuste para garantir escala correta
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
     )
     text_valor = base.mark_text(
         align='center',
@@ -333,7 +346,7 @@ def mosaic_chart_peso_importancia():
     ).configure_view(strokeWidth=0).configure_axis(labels=True, grid=False, domain=False)
     return chart
 
-# --- Mostrar gráficos lado a lado ---
+# --- Mostrar os dois gráficos lado a lado ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
@@ -341,8 +354,6 @@ def display_questoes_e_peso(df_summary):
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado)
     chart_p = mosaic_chart_peso_importancia()
-    # Remover o título duplicado daqui - título só no main()
-    st.markdown('<div style="margin-bottom: 40px;"></div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
@@ -371,7 +382,7 @@ def create_stacked_bar(df):
                             var_name='Status', value_name='Percentual')
     df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    chart = alt.Chart(df_melt).mark_bar().encode(
+    chart = alt.Chart(df_melt).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
                 title=None, axis=alt.Axis(labels=True, ticks=True)),
         x=alt.X('Percentual:Q', title=None,
@@ -381,7 +392,7 @@ def create_stacked_bar(df):
     ).properties(
         title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
         height=600
-    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
+    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
 
 # --- CSS ---
@@ -431,7 +442,7 @@ def inject_css():
         color: #566e95;
     }
     .altair-chart {
-        border: 1px solid #d3d3d3;
+        border: 1px solid #f1f1f1;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
@@ -489,7 +500,7 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Container topo ---
+# --- Container topo com sombra ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
@@ -502,7 +513,7 @@ def render_topbar_with_logo(dias_restantes):
         background-color: #f5f5f5;
         padding: 0 40px;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         margin-bottom: 20px;
         font-family: 'Inter', sans-serif;
     ">
@@ -622,7 +633,7 @@ def main():
 
     st.markdown('---')
 
-    # <-- Mantemos o título somente aqui, retirado da função display_questoes_e_peso() -->
+    # Título único para os dois gráficos lado a lado
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
 
