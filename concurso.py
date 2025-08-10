@@ -259,7 +259,7 @@ def create_stacked_bar(df):
     chart = alt.Chart(df_melt).mark_bar().encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
         x=alt.X('Percentual:Q', title=None, axis=alt.Axis(format='%', tickCount=11), scale=alt.Scale(domain=[0, 1])),
-        color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
+        color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title=None)),
         tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
     ).properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600).configure_view(
         stroke='#d3d3d3', strokeWidth=1)
