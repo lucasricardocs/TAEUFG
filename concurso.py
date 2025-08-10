@@ -37,7 +37,7 @@ def get_gspread_client():
     ]
     try:
         if "gcp_service_account" not in st.secrets:
-            st.error("❌ Credenciais do Google Cloud ('gcp_service_account') não configuradas. Configure em secrets.")
+            st.error("❌ Credenciais do Google Cloud ('gcp_service_account') não configuradas.")
             return None
         credentials_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
@@ -85,12 +85,11 @@ def load_data_with_row_indices():
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
-
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
 
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # Linha real na planilha (linha 1 é o cabeçalho)
+        df['sheet_row'] = df['index'] + 2  # linha da planilha real (linha 1 é cabeçalho)
         df.drop('index', axis=1, inplace=True)
 
         return df.reset_index(drop=True)
@@ -98,7 +97,7 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# --- Atualizar status na planilha com tratamento de erro ---
+# --- Atualizar status na planilha ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -115,7 +114,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
         return False
 
-# --- Cálculo de métricas ---
+# --- Cálculo progresso ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -172,25 +171,30 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Container título ---
-def titulo_com_destaque(texto):
+# --- Títulos com destaque e barra colorida lateral ---
+def titulo_com_destaque(texto, cor_lateral="#3498db"):
     st.markdown(f'''
         <div style="
+            display: flex;
+            align-items: center;
+            border-left: 6px solid {cor_lateral};
+            padding-left: 16px;
             background-color: #f5f5f5;
-            padding: 12px 20px;
+            padding-top: 12px;
+            padding-bottom: 12px;
             border-radius: 12px;
             box-shadow: 0 4px 10px #a3bffa88;
             margin-bottom: 40px;
             font-weight: 700;
             font-size: 1.6rem;
             color: #2c3e50;
-            display: flex; align-items: center; gap: 1rem;
         ">
             {texto}
-    ''' + '</div>', unsafe_allow_html=True)
+        </div>
+    ''', unsafe_allow_html=True)
 
-# --- Gráfico rosca geral do progresso (radial) ---
-def donut_chart_progresso_geral(progresso_percentual, width=300, height=300,
+# --- Gráfico rosca radial do progresso geral ---
+def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
                                colors=('#2ecc71', '#e74c3c'),
                                inner_radius=70, font_size=24,
                                text_color='#064820', show_tooltip=True):
@@ -229,10 +233,9 @@ def donut_chart_progresso_geral(progresso_percentual, width=300, height=300,
     ).properties(width=width, height=height)
 
     chart = (donut + text).configure_view(strokeWidth=0)
-
     return chart
 
-# --- Gráfico rosca por disciplina ---
+# --- Gráficos rosca por disciplina ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -257,25 +260,35 @@ def create_altair_donut(row):
     donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(size=20, fontWeight='bold', color='#064820').encode(
         text=alt.Text('Percentual:Q', format='.0%')
-    ).properties(width=350, height=350)
+    ).properties(width=280, height=280)
 
     chart = (donut + text).properties(
-        title=alt.TitleParams(
-            text=str(row['Disciplinas']),
-            subtitle=f"{row['Progresso_Ponderado']:.1f}% Progresso Ponderado",
-            anchor='middle',
-            fontSize=20,
-            fontWeight='bold',
-            color='#2c3e50',
-            subtitleColor='#576574'
-        ),
-        width=350,
-        height=350
+        width=280,
+        height=280
     ).configure_view(stroke='#d3d3d3', strokeWidth=1)
 
     return chart
 
-# --- Gráfico empilhado percentual ---
+# --- Exibe gráficos discos por disciplina e radial geral alinhado ---
+def display_responsive_donuts_com_geral(df_summary, progresso_geral):
+    max_cols = 4
+    num_charts = len(df_summary)
+    rows = (num_charts + max_cols - 1) // max_cols
+
+    for i in range(rows):
+        start_idx = i * max_cols
+        end_idx = min(start_idx + max_cols, num_charts)
+        cols = st.columns(end_idx - start_idx)
+        for j, idx in enumerate(range(start_idx, end_idx)):
+            with cols[j]:
+                st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
+
+    # Linha nova com colunas iguais para alinhamento do gráfico geral no centro
+    col_general = st.columns(max_cols)
+    with col_general[max_cols // 2]:
+        st.altair_chart(donut_chart_progresso_geral(progresso_geral, width=280, height=280), use_container_width=False)
+
+# --- Gráfico empilhado percentual com rótulos visíveis, legendas removidas ---
 def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
@@ -286,7 +299,6 @@ def create_stacked_bar(df):
     df_pivot['Total'] = df_pivot.sum(axis=1)
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
-
     df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total']).round(3).clip(upper=1)
     df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
 
@@ -297,50 +309,57 @@ def create_stacked_bar(df):
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     chart = alt.Chart(df_melt).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None, axis=alt.Axis(labels=False, ticks=False)),
-        x=alt.X('Percentual:Q', title=None,
-                axis=alt.Axis(format='%', tickCount=11, labels=False, ticks=False)),
+        y=alt.Y('Disciplinas:N',
+                sort=df_pivot['Disciplinas'].tolist(),
+                title=None,
+                axis=alt.Axis(labels=True, ticks=True)
+               ),
+        x=alt.X('Percentual:Q',
+                title=None,
+                axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)
+               ),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
-    ).properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600).configure_view(
-        stroke='#d3d3d3', strokeWidth=1)
+    ).properties(
+        title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
+        height=600
+    ).configure_view(
+        stroke='#d3d3d3',
+        strokeWidth=1
+    )
 
     st.altair_chart(chart, use_container_width=True)
 
-# --- Gráfico barras horizontais número de questões ---
+# --- Gráfico barras horizontais número de questões com rótulos visíveis ---
 def chart_questoes(df_ordenado):
     return alt.Chart(df_ordenado).mark_bar(color='#3498db').encode(
-        x=alt.X('Total_Conteudos:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'), title=None,
-                axis=alt.Axis(labels=False, ticks=False)),
+        x=alt.X('Total_Conteudos:Q', title=None, axis=alt.Axis(labels=True, ticks=True)),
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
+                title=None,
+                axis=alt.Axis(labels=True, ticks=True)
+               ),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
     ).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-# --- Mosaic Chart peso ponderado ---
+# --- Mosaic Chart peso ponderado com rótulos visíveis no eixo y e sem legendas ---
 def mosaic_chart_peso_importancia():
     df = pd.DataFrame(ED_DATA)
     df['Peso_Ponderado'] = df['Total_Conteudos'] * df['Peso']
     df = df.sort_values('Peso_Ponderado', ascending=False).reset_index(drop=True)
-
     total_pp = df['Peso_Ponderado'].sum()
     df['start'] = df['Peso_Ponderado'].cumsum() - df['Peso_Ponderado']
     df['start_norm'] = df['start'] / total_pp
     df['end_norm'] = (df['start'] + df['Peso_Ponderado']) / total_pp
-
     base = alt.Chart(df).encode(
         x=alt.X('start_norm:Q', title=None, axis=None),
         x2='end_norm',
-        y=alt.Y('Disciplinas:N', axis=None, title=None, labels=False, ticks=False),
+        y=alt.Y('Disciplinas:N', axis=alt.Axis(labels=True, ticks=False), title=None)
     )
-
     bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N', title='Disciplina'),
-            alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado')
-        ]
+        tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'), alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado')]
     )
-
     text_disciplina = base.mark_text(
         align='center',
         baseline='middle',
@@ -351,7 +370,6 @@ def mosaic_chart_peso_importancia():
         text='Disciplinas:N',
         x='start_norm:Q'
     )
-
     text_valor = base.mark_text(
         align='center',
         baseline='middle',
@@ -360,26 +378,21 @@ def mosaic_chart_peso_importancia():
     ).encode(
         text=alt.Text('Peso_Ponderado:Q', format='.0f')
     )
-
     chart = (bars + text_disciplina + text_valor).properties(
         width=600,
         height=150,
         title='Importância Relativa das Disciplinas (Peso Ponderado)'
-    ).configure_view(strokeWidth=0).configure_axis(labels=False, grid=False, domain=False)
-
+    ).configure_view(strokeWidth=0).configure_axis(labels=True, grid=False, domain=False)
     return chart
 
-# --- Exposição dos gráficos lado a lado ---
+# --- Exibe gráficos lado a lado (questões e peso) ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
-
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
-
     chart_q = chart_questoes(df_ordenado)
     chart_p = mosaic_chart_peso_importancia()
-
     st.markdown('<div style="margin-bottom: 40px;"></div>', unsafe_allow_html=True)
     st.markdown(f'''
         <div style="
@@ -396,14 +409,13 @@ def display_questoes_e_peso(df_summary):
             📝⚖️ Quantidade de Questões e Peso por Disciplina
         </div>
     ''', unsafe_allow_html=True)
-
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
     with col2:
         st.altair_chart(chart_p, use_container_width=True)
 
-# --- CSS ---
+# --- CSS estilo geral ---
 def inject_css():
     st.markdown("""
     <style>
@@ -508,7 +520,7 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Topbar com logo e dias faltantes ---
+# --- Barra topo com logo e dias restantes ---
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div style="
@@ -522,7 +534,7 @@ def render_topbar_with_logo(dias_restantes):
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     ">
-        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" 
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
              style="height: 150px; margin-right: 40px;">
         <div style="
             font-size: 3rem;
@@ -536,20 +548,7 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Mostrar gráficos rosca responsivos ---
-def display_responsive_donuts(df_summary):
-    max_cols = 4
-    num_charts = len(df_summary)
-    rows = (num_charts + max_cols - 1) // max_cols
-    for i in range(rows):
-        start_idx = i * max_cols
-        end_idx = min(start_idx + max_cols, num_charts)
-        cols = st.columns(end_idx - start_idx)
-        for j, idx in enumerate(range(start_idx, end_idx)):
-            with cols[j]:
-                st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
-
-# --- Rodapé ---
+# --- Rodapé motivacional ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
@@ -570,7 +569,7 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Indicadores no topo
+    # Indicadores do topo
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -605,25 +604,17 @@ def main():
 
     st.markdown('---')
 
-    # Título com gráfico rosca de progresso geral junto
-    col_title, col_donut = st.columns([4, 1])
-    with col_title:
-        titulo_com_destaque("📊 Progresso por Disciplina")
-    with col_donut:
-        st.altair_chart(donut_chart_progresso_geral(progresso_geral, width=150, height=150), use_container_width=False)
-
-    # Gráficos rosca por disciplina
-    display_responsive_donuts(df_summary)
+    titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
+    display_responsive_donuts_com_geral(df_summary, progresso_geral)
 
     st.markdown('---')
 
-    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina")
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
     create_stacked_bar(df)
 
     st.markdown('---')
 
-    titulo_com_destaque("📚 Conteúdos por Disciplina")
-
+    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
@@ -632,7 +623,6 @@ def main():
         for disc in disciplinas_ordenadas:
             conteudos_disciplina = df[df['Disciplinas'] == disc]
             with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
-                # Checkbox com tratamento para evitar erro e limpar cache antes do rerun
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
                     checked = (row['Status'] == 'True')
@@ -643,14 +633,15 @@ def main():
                             if sucesso:
                                 st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                                 load_data_with_row_indices.clear()
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                     except Exception as e:
                         st.error(f"Erro inesperado ao atualizar: {e}")
 
     st.markdown('---')
-    titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina")
+
+    titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
 
     rodape_motivacional()
