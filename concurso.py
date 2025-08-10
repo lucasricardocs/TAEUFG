@@ -264,13 +264,12 @@ def mosaic_chart_peso_por_disciplina_percentual():
 
     base = alt.Chart(df).encode(
         x=alt.X('start_norm:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
-        x2='end_norm'
-        # removidos y, y2 do encode
+        x2='end_norm',
+        y=alt.value(0),
+        y2=alt.value(1)
     )
 
     bars = base.mark_rect(
-        y=0,
-        y2=1,
         cornerRadiusTopLeft=5,
         cornerRadiusTopRight=5,
         stroke='#f1f1f1',
@@ -318,42 +317,6 @@ def mosaic_chart_peso_por_disciplina_percentual():
         grid=False
     )
 
-    return chart
-
-# --- Gráfico radial com cores e estilos solicitados ---
-def donut_chart_radial_personalizado(concluido_percentual):
-    pendente_percentual = max(0, 100 - concluido_percentual)
-    source = pd.DataFrame({
-        "Status": ["Concluído", "Pendente"],
-        "Valor": [concluido_percentual, pendente_percentual]
-    })
-    base = alt.Chart(source).encode(
-        theta=alt.Theta("Valor:Q", stack=True),
-        radius=alt.value(120),  # raio fixo para consistência com os donouts
-        color=alt.Color("Status:N",
-            scale=alt.Scale(
-                domain=["Concluído", "Pendente"],
-                range=["#2ecc71", "#e74c3c"]
-            ),
-            legend=None
-        )
-    )
-    c1 = base.mark_arc(innerRadius=70, stroke="#f1f1f1", strokeWidth=3)
-
-    percentual_text = f"{concluido_percentual:.1f}%"
-    c2 = alt.Chart(pd.DataFrame({'text': [percentual_text]})).mark_text(
-        radius=0,
-        size=24,
-        fontWeight="bold",
-        color="#064820"
-    ).encode(
-        text='text:N'
-    )
-    chart = (c1 + c2).properties(
-        width=280,
-        height=280
-        # título removido para evitar duplicação na interface
-    )
     return chart
 
 # --- CSS ---
@@ -523,60 +486,6 @@ def display_questoes_e_peso(df_summary):
         chart_p = mosaic_chart_peso_por_disciplina_percentual()
         st.altair_chart(chart_p, use_container_width=True)
 
-# --- Exibir os gráficos donut e radial responsivos ---
-def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1
-    rows = (total_charts + max_cols - 1) // max_cols
-    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-    # adiciona o radial modificado como o último gráfico
-    radial_chart = donut_chart_radial_personalizado(progresso_geral)
-    disciplina_charts.append(radial_chart)
-    chart_index = 0
-    for r in range(rows):
-        cols = st.columns(max_cols, gap="medium")
-        for c in range(max_cols):
-            if chart_index >= total_charts:
-                break
-            with cols[c]:
-                if chart_index < len(df_summary):
-                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
-                else:
-                    nome = "Progresso Geral"
-                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
-                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
-            chart_index += 1
-
-# --- Gráfico donut por disciplina sem legenda ---
-def create_altair_donut(row):
-    concluido = int(row['Conteudos_Concluidos'])
-    pendente = int(row['Conteudos_Pendentes'])
-    total = max(concluido + pendente, 1)
-    concluido_pct = round((concluido / total) * 100, 1)
-    pendente_pct = round((pendente / total) * 100, 1)
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente],
-        'Percentual': [concluido_pct, pendente_pct]
-    })
-    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base_chart = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
-    )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
-    text = alt.Chart(source_label).mark_text(
-        size=24, fontWeight='bold', color='#064820'
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%')
-    ).properties(width=280, height=280)
-    chart = (donut + text).properties(
-        width=280,
-        height=280
-    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
-    return chart
-
 # --- Main ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
@@ -623,7 +532,7 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
-    display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
+    # display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)  # Você pode incluir se quiser os donuts
 
     st.markdown("---")
 
