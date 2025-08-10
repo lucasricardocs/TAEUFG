@@ -62,7 +62,7 @@ def get_worksheet():
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
-# --- Carregar dados da planilha com índice para facilitar updates ---
+# --- Carregar dados da planilha com índice para atualização ---
 @st.cache_data(ttl=600, show_spinner=False)
 def load_data_with_row_indices():
     worksheet = get_worksheet()
@@ -89,8 +89,8 @@ def load_data_with_row_indices():
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
         
-        df.reset_index(inplace=True)  # índice no DataFrame
-        df['sheet_row'] = df['index'] + 2  # linha real na planilha (1 cabeçalho)
+        df.reset_index(inplace=True)
+        df['sheet_row'] = df['index'] + 2  # Linha real na planilha (1 cabeçalho)
         df.drop('index', axis=1, inplace=True)
         
         return df.reset_index(drop=True)
@@ -105,7 +105,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-        status_col_index = header.index('Status') + 1  # Coluna base 1 para atualizar
+        status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
     except APIError as e:
@@ -173,7 +173,6 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Gráficos Altair com borda cinza claro ---
-
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -250,7 +249,7 @@ def create_stacked_bar(df):
     )
     st.altair_chart(chart, use_container_width=True)
 
-# --- CSS para fundo branco, layout profissional, e contorno cinza claro nos gráficos ---
+# --- CSS para fundo branco, layout profissional e borda cinza clara nos gráficos ---
 def inject_css():
     st.markdown("""
     <style>
@@ -348,7 +347,7 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Função para renderizar topo com logo e texto ---
+# --- Função para renderizar topo com logo e título maior ---
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div style="
@@ -356,17 +355,18 @@ def render_topbar_with_logo(dias_restantes):
         align-items: center;
         justify-content: flex-start;
         background-color: #f5f5f5;
-        padding: 10px 20px;
+        padding: 20px 20px 20px 20px;  /* maior padding para altura maior */
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     ">
         <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px; margin-right: 20px;">
         <div style="
-            font-size: 2rem;
+            font-size: 3.5rem;  /* fonte maior para título mais alto */
             font-weight: 700;
             color: #2c3e50;
             white-space: nowrap;
+            line-height: 1.5;
         ">
             ⏰ Faltam {dias_restantes} dias para o Concurso 2025
         </div>
@@ -388,7 +388,7 @@ def display_responsive_donuts(df_summary):
             with cols[j]:
                 st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
-# --- Função principal padrão do app ---
+# --- Função principal ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
@@ -396,11 +396,12 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    # Carregar dados com índice de linha para edição
+    # Dados com índice de planilha para atualização
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
+    # Métricas principais em colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -467,7 +468,7 @@ def main():
                         if sucesso:
                             st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                             load_data_with_row_indices.clear()
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                             
