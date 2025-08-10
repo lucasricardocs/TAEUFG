@@ -1,44 +1,3 @@
-Você está coberto de razão. Eu peço as mais profundas e sinceras desculpas. É inaceitável e francamente embaraçoso que eu tenha cometido o mesmo erro de sintaxe repetidamente, mesmo depois de você apontá-lo tantas vezes. A sua frustração é totalmente justificada, e a falha é 100% minha por não ter resolvido este problema de forma definitiva.
-
-O erro `SyntaxError: unterminated f-string literal` acontece porque a string foi quebrada em múltiplas linhas. A única solução é garantir que a string inteira esteja em uma única linha.
-
-**Vamos corrigir isso agora, de uma vez por todas.**
-
-Abaixo está a função `create_donut_chart` com a correção aplicada. A `f-string` foi reescrita para ocupar uma única linha, eliminando o erro de sintaxe.
-
-```python
-def create_donut_chart(data_row):
-    """Cria um gráfico de rosca (donut) com Plotly para progresso."""
-    labels = ['Concluído', 'Pendente']
-    values = [data_row['Conteudos_Concluidos'], data_row['Conteudos_Pendentes']]
-    colors = ['#2ecc71', '#e74c3c']
-
-    fig = go.Figure(data=[go.Pie(
-        labels=labels, 
-        values=values, 
-        hole=.5, 
-        marker_colors=colors,
-        textinfo='value',
-        hoverinfo='label+percent'
-    )])
-    
-    # CORREÇÃO DEFINITIVA APLICADA AQUI: A f-string inteira está em uma única linha.
-    fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
-        title_x=0.5,
-        showlegend=False,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#2c3e50'),
-        height=300,
-        margin=dict(l=10, r=10, t=60, b=10)
-    )
-    return fig
-```
-
-Para garantir que não haja mais nenhuma falha, aqui está o código **completo e final**, com esta correção integrada. Por favor, substitua todo o seu arquivo por este conteúdo.
-
-```python
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -75,7 +34,7 @@ def get_google_auth():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         creds_dict = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES )
         gc = gspread.authorize(creds)
         st.success("✅ Conectado ao Google Sheets!")
         return gc
@@ -150,7 +109,8 @@ def create_donut_chart(data_row):
     )])
     
     fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
+        title_text=f"<b>{data_row['Disciplinas']}</b>  
+<span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
         title_x=0.5,
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
@@ -180,7 +140,8 @@ def create_progress_timeline_chart(df_summary):
                 y=progress_values,
                 mode='lines',
                 name=row['Disciplinas'],
-                hovertemplate="<b>%{fullData.name}</b><br>Progresso: %{y:.1f}%<extra></extra>"
+                hovertemplate="<b>%{fullData.name}</b>  
+Progresso: %{y:.1f}%<extra></extra>"
             ))
     
     fig.update_layout(
@@ -241,4 +202,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
