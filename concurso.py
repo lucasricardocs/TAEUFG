@@ -316,7 +316,7 @@ def mosaic_chart_peso_importancia():
         color='black'
     ).encode(
         text='Disciplinas:N',
-        x='start_norm:Q'
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))  # Ajuste para garantir escala correta
     )
     text_valor = base.mark_text(
         align='center',
@@ -341,23 +341,8 @@ def display_questoes_e_peso(df_summary):
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado)
     chart_p = mosaic_chart_peso_importancia()
+    # Remover o título duplicado daqui - título só no main()
     st.markdown('<div style="margin-bottom: 40px;"></div>', unsafe_allow_html=True)
-    st.markdown(f'''
-        <div style="
-            background-color: #f5f5f5;
-            padding: 12px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px #a3bffa88;
-            margin-bottom: 20px;
-            font-weight: 700;
-            font-size: 1.6rem;
-            color: #2c3e50;
-            display: flex; justify-content: center; align-items: center;
-            user-select:none;
-        ">
-            📝⚖️ Quantidade de Questões e Peso por Disciplina
-        </div>
-    ''', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
@@ -629,7 +614,7 @@ def main():
                             if sucesso:
                                 st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                                 load_data_with_row_indices.clear()
-                                st.rerun()
+                                st.experimental_rerun()
                             else:
                                 st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                     except Exception as e:
@@ -637,6 +622,7 @@ def main():
 
     st.markdown('---')
 
+    # <-- Mantemos o título somente aqui, retirado da função display_questoes_e_peso() -->
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
 
