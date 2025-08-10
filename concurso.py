@@ -187,73 +187,96 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- CSS: luz radiante e vibrante no topo ---
-def inject_css():
-    st.markdown("""
-    <style>
-    /* Luz radiante vibrante no topo, vibrando com sombra até 10px */
-    @keyframes glowing {
-      0%, 100% {
-        box-shadow: 0 0 8px 2px rgba(255, 255, 200, 0.6);
-      }
-      50% {
-        box-shadow: 0 0 18px 7px rgba(255, 255, 200, 0.9);
-      }
-    }
-    .top-container-glow {
-      animation: glowing 3s ease-in-out infinite;
-      border-radius: 12px;
-      box-shadow: 0 0 10px 5px rgba(255, 255, 200, 0.7);
-    }
-    /* Demais estilos CSS originais mantidos */
-    /* ... */
-    </style>
-    """, unsafe_allow_html=True)
+# --- Gráfico radial geral sem legenda ---
+def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
+                               colors=('#2ecc71', '#e74c3c'),
+                               inner_radius=70, font_size=32,
+                               text_color='#064820', show_tooltip=True):
+    concluido = max(0, min(progresso_percentual, 100))
+    pendente = 100 - concluido
+    df = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente]
+    })
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
+    base = alt.Chart(df).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None)  # legenda desativada
+    )
+    if show_tooltip:
+        base = base.encode(
+            tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')]
+        )
+    donut = base.mark_arc(innerRadius=inner_radius, stroke='#fff', strokeWidth=3).properties(
+        width=width,
+        height=height
+    )
+    text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
+        fontSize=font_size,
+        fontWeight='bold',
+        color=text_color,
+        dy=0
+    ).encode(
+        text='text:N'
+    ).properties(width=width, height=height)
+    chart = (donut + text).configure_view(strokeWidth=0)
+    return chart
 
-# --- Container topo com efeito ---
-def render_topbar_with_logo(dias_restantes):
-    hoje_texto = datetime.now().strftime('%d de %B de %Y')
-    st.markdown(f"""
-    <div class="top-container-glow" style="
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        height: 250px;
-        background-color: #f5f5f5;
-        padding: 0 40px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        font-family: 'Inter', sans-serif;
-    ">
-        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
-             style="height: 150px; margin-right: 40px;">
-        <div style="
-            font-size: 3rem;
-            font-weight: 700;
-            color: #2c3e50;
-            white-space: nowrap;
-            line-height: 1.2;
-        ">
-            ⏰ Faltam {dias_restantes} dias para o concurso de TAE
-        </div>
-        <div style="
-            position: absolute;
-            top: 8px;
-            right: 16px;
-            font-size: 15px;
-            font-weight: 600;
-            color: #2c3e50;
-            user-select: none;
-        ">
-            Goiânia, {hoje_texto}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+# --- Gráfico donut por disciplina sem legenda ---
+def create_altair_donut(row):
+    concluido = int(row['Conteudos_Concluidos'])
+    pendente = int(row['Conteudos_Pendentes'])
+    total = max(concluido + pendente, 1)
+    concluido_pct = round((concluido / total) * 100, 1)
+    pendente_pct = round((pendente / total) * 100, 1)
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente],
+        'Percentual': [concluido_pct, pendente_pct]
+    })
+    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    base_chart = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),  # legenda desativada
+        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
+    )
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+    text = alt.Chart(source_label).mark_text(
+        size=24, fontWeight='bold', color='#064820'
+    ).encode(
+        text=alt.Text('Percentual:Q', format='.0%')
+    ).properties(width=280, height=280)
+    chart = (donut + text).properties(
+        width=280,
+        height=280
+    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
+    return chart
 
-# --- Gráfico barras horizontal com rótulos ao lado direito e sem números eixo X ---
+# --- Exibir gráficos responsivos com nomes centralizados ---
+def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
+    total_charts = len(df_summary) + 1
+    rows = (total_charts + max_cols - 1) // max_cols
+    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
+    chart_index = 0
+    for r in range(rows):
+        cols = st.columns(max_cols, gap="medium")
+        for c in range(max_cols):
+            if chart_index >= total_charts:
+                break
+            with cols[c]:
+                if chart_index < len(df_summary):
+                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
+                else:
+                    nome = "Progresso Geral"
+                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
+                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
+            chart_index += 1
+
+# --- Gráfico barras horizontal ---
 def chart_questoes_horizontal(df_ordenado):
-    base = alt.Chart(df_ordenado).mark_bar(color='#3498db', stroke='#f1f1f1', strokeWidth=3).encode(
+    return alt.Chart(df_ordenado).mark_bar(color='#3498db').encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
                 title=None,
@@ -261,25 +284,12 @@ def chart_questoes_horizontal(df_ordenado):
                ),
         x=alt.X('Total_Conteudos:Q',
                 title=None,
-                axis=alt.Axis(labels=False, ticks=False, domain=False)  # remove números eixo X
+                axis=alt.Axis(labels=True, ticks=True)
                ),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
     ).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-    # Rótulos ao lado direito das barras, tamanho 12
-    text = base.mark_text(
-        align='left',
-        baseline='middle',
-        dx=3,
-        fontSize=12,
-        color='black'
-    ).encode(
-        x='Total_Conteudos:Q',
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'))
-    )
-    return base + text
-
-# --- Mosaic chart corrigido com stroke ---
+# --- Mosaic chart ---
 def mosaic_chart_peso_importancia():
     df = pd.DataFrame(ED_DATA)
     df['Peso_Ponderado'] = df['Total_Conteudos'] * df['Peso']
@@ -293,8 +303,7 @@ def mosaic_chart_peso_importancia():
         x2='end_norm',
         y=alt.Y('Disciplinas:N', axis=alt.Axis(labels=True, ticks=False), title=None)
     )
-    bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5,
-                         stroke='#f1f1f1', strokeWidth=3).encode(
+    bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
         color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'),
                  alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado')]
@@ -307,7 +316,7 @@ def mosaic_chart_peso_importancia():
         color='black'
     ).encode(
         text='Disciplinas:N',
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))  # Ajuste para garantir escala correta
     )
     text_valor = base.mark_text(
         align='center',
@@ -324,7 +333,7 @@ def mosaic_chart_peso_importancia():
     ).configure_view(strokeWidth=0).configure_axis(labels=True, grid=False, domain=False)
     return chart
 
-# --- Mostrar os dois gráficos lado a lado com o título ---
+# --- Mostrar gráficos lado a lado ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
@@ -332,14 +341,15 @@ def display_questoes_e_peso(df_summary):
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado)
     chart_p = mosaic_chart_peso_importancia()
-
+    # Remover o título duplicado daqui - título só no main()
+    st.markdown('<div style="margin-bottom: 40px;"></div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
     with col2:
         st.altair_chart(chart_p, use_container_width=True)
 
-# --- Gráfico empilhado ---
+# --- Gráfico empilhado sem erros e sem legendas ---
 def create_stacked_bar(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
@@ -371,8 +381,164 @@ def create_stacked_bar(df):
     ).properties(
         title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
         height=600
-    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
+    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
     st.altair_chart(chart, use_container_width=True)
+
+# --- CSS ---
+def inject_css():
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body, html, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+        margin: 0; padding: 0;
+        height: 100%;
+        background: #ffffff;
+        overflow-x: hidden;
+        color: #222831;
+        position: relative;
+    }
+    .reportview-container, .main, .block-container {
+        background-color: #ffffff !important;
+        color: #222831;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    .metric-container {
+        background: #f0f5ff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 4px 15px #a3bffa90;
+        color: #2c3e50;
+        transition: box-shadow 0.3s ease;
+        text-align: center;
+    }
+    .metric-container:hover {
+        box-shadow: 0 0 30px #6a8edecc;
+    }
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #355e9e;
+        margin-bottom: 0.2rem;
+    }
+    .metric-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #566e95;
+    }
+    .altair-chart {
+        border: 1px solid #d3d3d3;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 0 15px #a3bffa88;
+        background: #e0e9ff;
+        margin-bottom: 2rem;
+    }
+    [data-baseweb="accordion"] > div > div {
+        background: #f2f7ff !important;
+        border-radius: 14px !important;
+        color: #355e9e !important;
+        font-weight: 500;
+        transition: background 0.3s ease;
+    }
+    [data-baseweb="accordion"] > div > div:hover {
+        background: #a3bffa55 !important;
+    }
+    .streamlit-expanderContent > div {
+        color: #2c3e50;
+        font-weight: 400;
+    }
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #2c3e50;
+    }
+    th, td {
+        border: 1px solid #a3bffa;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background: #a3bffa22;
+    }
+    tr:nth-child(even) {
+        background: #cbdcff55;
+    }
+    footer {
+        margin-top: 40px;
+        padding: 10px 0;
+        background-color: transparent;
+        text-align: center;
+        font-size: 1rem;
+        color: #064820;
+        font-style: italic;
+        font-weight: 500;
+        border-top: 1px solid #a3bffa66;
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 -2px 8px #a3bffa33;
+        user-select: none;
+    }
+    footer span {
+        color: #355e9e;
+        font-weight: 700;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- Container topo ---
+def render_topbar_with_logo(dias_restantes):
+    hoje_texto = datetime.now().strftime('%d de %B de %Y')
+    st.markdown(f"""
+    <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        height: 250px;
+        background-color: #f5f5f5;
+        padding: 0 40px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+    ">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
+             style="height: 150px; margin-right: 40px;">
+        <div style="
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2c3e50;
+            white-space: nowrap;
+            line-height: 1.2;
+        ">
+            ⏰ Faltam {dias_restantes} dias para o concurso de TAE
+        </div>
+        <div style="
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            user-select: none;
+        ">
+            Goiânia, {hoje_texto}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- Rodapé ---
+def rodape_motivacional():
+    st.markdown("""
+        <footer>
+            "O sucesso é a soma de pequenos esforços repetidos dia após dia."
+            <br><span>Mantenha o foco, você está no caminho certo!</span>
+        </footer>
+    """, unsafe_allow_html=True)
 
 # --- Main ---
 def main():
@@ -448,7 +614,7 @@ def main():
                             if sucesso:
                                 st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                                 load_data_with_row_indices.clear()
-                                st.rerun()
+                                st.experimental_rerun()
                             else:
                                 st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                     except Exception as e:
@@ -456,9 +622,11 @@ def main():
 
     st.markdown('---')
 
-    # Apenas aqui aparece o título e os dois gráficos lado a lado
+    # <-- Mantemos o título somente aqui, retirado da função display_questoes_e_peso() -->
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
+
+    rodape_motivacional()
 
 if __name__ == "__main__":
     main()
