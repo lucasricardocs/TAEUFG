@@ -138,7 +138,7 @@ def read_sales_data():
         np.random.seed(42)
         for disciplina in ED_DATA['Disciplinas']:
             for i in range(np.random.randint(5, 15)): # Conteúdo aleatório para cada disciplina
-                status = 'Feito' if np.random.rand() < 0.5 else 'Pendente'
+                status = 'true' if np.random.rand() < 0.5 else 'false'
                 sample_data.append({'Disciplinas': disciplina, 'Conteúdos': f'Tópico {i+1}', 'Status': status})
         
         return pd.DataFrame(sample_data)
@@ -212,8 +212,8 @@ def read_sales_data():
         st.write(f"📊 **Valores únicos em 'Status' (depois da limpeza):** {df['Status'].unique().tolist()}")
         
         # Filtrar apenas status válidos (case insensitive)
-        df_filtrado_status = df[df['Status'].str.lower().isin(['feito', 'pendente'])]
-        st.write(f"📊 **Registros com status válido (Feito/Pendente):** {len(df_filtrado_status)}")
+        df_filtrado_status = df[df['Status'].str.lower().isin(['true', 'false'])]
+        st.write(f"📊 **Registros com status válido (true/false):** {len(df_filtrado_status)}")
         
         # Remover linhas completamente vazias
         df_final = df_filtrado_status[
@@ -255,25 +255,25 @@ def calculate_weighted_metrics(df_dados):
 
     df_dados = df_dados.copy()
     df_dados['Status'] = df_dados['Status'].astype(str).str.strip()
-    df_dados['Feito'] = (df_dados['Status'].str.lower() == 'feito').astype(int)
-    df_dados['Pendente'] = (df_dados['Status'].str.lower() == 'pendente').astype(int)
+    df_dados['true'] = (df_dados['Status'].str.lower() == 'true').astype(int)
+    df_dados['false'] = (df_dados['Status'].str.lower() == 'false').astype(int)
     
     df_progresso_summary = df_dados.groupby('Disciplinas', observed=False).agg(
-        Conteudos_Feitos=('Feito', 'sum'),
-        Conteudos_Pendentes=('Pendente', 'sum')
+        Conteudos_trues=('true', 'sum'),
+        Conteudos_falses=('false', 'sum')
     ).reset_index()
     
     df_final = pd.merge(df_edital, df_progresso_summary, on='Disciplinas', how='left').fillna(0)
     
-    df_final['Total_Conteudos_Real'] = df_final['Conteudos_Feitos'] + df_final['Conteudos_Pendentes']
+    df_final['Total_Conteudos_Real'] = df_final['Conteudos_trues'] + df_final['Conteudos_falses']
     df_final['Pontos_por_Conteudo'] = np.where(
         df_final['Total_Conteudos'] > 0,
         df_final['Peso'] / df_final['Total_Conteudos'],
         0
     )
-    df_final['Pontos_Concluidos'] = df_final['Conteudos_Feitos'] * df_final['Pontos_por_Conteudo']
+    df_final['Pontos_Concluidos'] = df_final['Conteudos_trues'] * df_final['Pontos_por_Conteudo']
     df_final['Pontos_Totais'] = df_final['Total_Conteudos'] * df_final['Pontos_por_Conteudo']
-    df_final['Pontos_Pendentes'] = df_final['Pontos_Totais'] - df_final['Pontos_Concluidos']
+    df_final['Pontos_falses'] = df_final['Pontos_Totais'] - df_final['Pontos_Concluidos']
     
     df_final['Progresso_Ponderado'] = np.where(
         df_final['Peso'] > 0,
@@ -338,14 +338,14 @@ def apply_light_theme_css():
 def create_altair_donut_chart(data_row):
     """Cria um gráfico de rosca para o progresso ponderado."""
     df_chart = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Pontos': [data_row['Pontos_Concluidos'], data_row['Pontos_Pendentes']]
+        'Status': ['Concluído', 'false'],
+        'Pontos': [data_row['Pontos_Concluidos'], data_row['Pontos_falses']]
     })
     
     base = alt.Chart(df_chart).encode(theta=alt.Theta("Pontos:Q", stack=True))
     
     pie = base.mark_arc(outerRadius=85, innerRadius=55, stroke="white", strokeWidth=3).encode(
-        color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#667eea', '#e74c3c']), legend=None),
+        color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluído', 'false'], range=['#667eea', '#e74c3c']), legend=None),
         tooltip=["Status:N", alt.Tooltip("Pontos:Q", format=".2f")]
     )
     
@@ -366,19 +366,19 @@ def create_altair_bar_chart(df_summary):
     """Cria gráfico de barras horizontal do progresso por disciplina."""
     df_melted = df_summary.melt(
         id_vars=['Disciplinas'],
-        value_vars=['Conteudos_Feitos', 'Conteudos_Pendentes'],
+        value_vars=['Conteudos_trues', 'Conteudos_falses'],
         var_name='Status',
         value_name='Conteudos'
     )
     
-    df_melted['Status_Display'] = df_melted['Status'].map({'Conteudos_Feitos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
+    df_melted['Status_Display'] = df_melted['Status'].map({'Conteudos_trues': 'Concluído', 'Conteudos_falses': 'false'})
     
     chart = alt.Chart(df_melted).mark_bar(
         stroke='white', strokeWidth=1
     ).encode(
         x=alt.X('Conteudos:Q', title='Número de Conteúdos'),
         y=alt.Y('Disciplinas:N', sort='-x', title=''),
-        color=alt.Color('Status_Display:N', scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#667eea', '#e74c3c']), legend=alt.Legend(title="Status", orient="top")),
+        color=alt.Color('Status_Display:N', scale=alt.Scale(domain=['Concluído', 'false'], range=['#667eea', '#e74c3c']), legend=alt.Legend(title="Status", orient="top")),
         tooltip=['Disciplinas:N', 'Status_Display:N', 'Conteudos:Q']
     ).properties(title="Progresso por Disciplina", height=300)
     
@@ -467,18 +467,18 @@ if not df_dados.empty:
     st.markdown('<div class="section-header">📈 Resumo Geral</div>', unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     
-    total_conteudos_feito = df_dados[df_dados['Status'].str.lower() == 'feito'].shape[0]
-    total_conteudos_pendente = df_dados[df_dados['Status'].str.lower() == 'pendente'].shape[0]
-    total_conteudos = total_conteudos_feito + total_conteudos_pendente
+    total_conteudos_true = df_dados[df_dados['Status'].str.lower() == 'true'].shape[0]
+    total_conteudos_false = df_dados[df_dados['Status'].str.lower() == 'false'].shape[0]
+    total_conteudos = total_conteudos_true + total_conteudos_false
     
     with col1:
         st.metric(label="🎯 Progresso Geral", value=f"{progresso_ponderado_geral:.1f}%")
     with col2:
-        st.metric(label="✅ Conteúdos Feitos", value=f"{total_conteudos_feito}")
+        st.metric(label="✅ Conteúdos trues", value=f"{total_conteudos_true}")
     with col3:
-        st.metric(label="⏳ Conteúdos Pendentes", value=f"{total_conteudos_pendente}")
+        st.metric(label="⏳ Conteúdos falses", value=f"{total_conteudos_false}")
     with col4:
-        taxa_conclusao = (total_conteudos_feito / total_conteudos * 100) if total_conteudos > 0 else 0
+        taxa_conclusao = (total_conteudos_true / total_conteudos * 100) if total_conteudos > 0 else 0
         st.metric(label="📊 Taxa de Conclusão", value=f"{taxa_conclusao:.1f}%")
     
     st.markdown("---")
@@ -514,9 +514,9 @@ if not df_dados.empty:
         
         with st.expander("📋 Dados Detalhados", expanded=False):
             st.markdown("**Resumo por Disciplina:**")
-            display_columns = ['Disciplinas', 'Conteudos_Feitos', 'Conteudos_Pendentes', 'Progresso_Ponderado', 'Peso']
+            display_columns = ['Disciplinas', 'Conteudos_trues', 'Conteudos_falses', 'Progresso_Ponderado', 'Peso']
             df_display = df_final_filtered[display_columns].copy()
-            df_display.columns = ['Disciplina', 'Feitos', 'Pendentes', 'Progresso (%)', 'Peso']
+            df_display.columns = ['Disciplina', 'trues', 'falses', 'Progresso (%)', 'Peso']
             st.dataframe(df_display, use_container_width=True, hide_index=True)
             
             st.markdown("**Todos os Conteúdos:**")
