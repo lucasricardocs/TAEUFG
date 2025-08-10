@@ -172,7 +172,24 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Gráficos Altair com bordas cinza claras, strokeWidth 3 nas roscas e rótulo interno ---
+# --- Função para destacar títulos com container estilizado ---
+def titulo_com_destaque(texto):
+    st.markdown(f'''
+        <div style="
+            background-color: #e0e9ff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px #a3bffa88;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #2c3e50;
+        ">
+            {texto}
+        </div>
+    ''', unsafe_allow_html=True)
+
+# --- Gráficos Altair com bordas cinza claras, strokeWidth 3 nas roscas e rótulo interno só do True ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -186,19 +203,24 @@ def create_altair_donut(row):
         'Valor': [concluido, pendente],
         'Percentual': [concluido_pct, pendente_pct]
     })
+    # Dataframe só com o valor 'Concluído' para o label central
+    source_label = pd.DataFrame({
+        'Percentual': [concluido_pct]
+    })
+
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     base_chart = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format="d"), alt.Tooltip('Percentual', format='.1f')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#fff', strokeWidth=3)  # strokeWidth aumentado para 3
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#fff', strokeWidth=3)  # borda branca nas fatias aumentada
     
-    # Texto centralizado dentro do "furo" da rosca
-    text = base_chart.mark_text(radius=0, size=20, fontWeight='bold', color='black').encode(
+    # Texto centralizado, só com o percentual True
+    text = alt.Chart(source_label).mark_text(size=20, fontWeight='bold', color='black').encode(
         text=alt.Text('Percentual:Q', format='.1f')
-    )
-    
+    ).properties(width=350, height=350)
+
     chart = (donut + text).properties(
         title=alt.TitleParams(
             text=str(row['Disciplinas']),
@@ -228,8 +250,9 @@ def create_stacked_bar(df):
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1).clip(upper=100)
-    df_pivot['False_Pct'] = 100 - df_pivot['True_Pct']
+    # Mantém fração 0 a 1 (não multiplica por 100)
+    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total']).round(3).clip(upper=1)
+    df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
 
     df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'],
                             var_name='Status', value_name='Percentual')
@@ -243,9 +266,9 @@ def create_stacked_bar(df):
         .encode(
             y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
             x=alt.X('Percentual:Q', title='Percentual (%)',
-                    axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 100])),
+                    axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1])),
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
-            tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
+            tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
         )
         .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600)
         .configure_view(
@@ -442,18 +465,17 @@ def main():
 
     st.markdown('---')
 
-    st.markdown('### 📖📚 Progresso por Disciplina')
-    st.markdown('---')
+    titulo_com_destaque("Progresso por Disciplina")
     display_responsive_donuts(df_summary)
 
     st.markdown('---')
 
-    st.markdown('### Percentual de Conteúdos Concluídos e Pendentes por Disciplina')
+    titulo_com_destaque("Percentual de Conteúdos Concluídos e Pendentes por Disciplina")
     create_stacked_bar(df)
 
     st.markdown('---')
 
-    st.markdown('### 📚 Conteúdos por Disciplina')
+    titulo_com_destaque("📚 Conteúdos por Disciplina")
 
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
