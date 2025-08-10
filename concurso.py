@@ -442,7 +442,8 @@ def main():
 
     st.markdown('---')
 
-    st.markdown('### Progresso por Disciplina')
+    st.markdown('### 📖📚 Progresso por Disciplina')
+    st.markdown('---')
     display_responsive_donuts(df_summary)
 
     st.markdown('---')
