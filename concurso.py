@@ -23,7 +23,9 @@ WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
 ED_DATA = {
-    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
+    'Disciplinas': [
+        'LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'
+    ],
     'Total_Conteudos': [20, 15, 10, 15, 30],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
@@ -161,365 +163,122 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Título lateral destacado ---
-def titulo_com_destaque(texto, cor_lateral="#3498db"):
+def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f'''
-        <div style="
-            display: flex;
-            align-items: center;
-            border-left: 6px solid {cor_lateral};
-            padding-left: 16px;
-            background-color: #f5f5f5;
-            padding-top: 12px;
-            padding-bottom: 12px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px #a3bffa88;
-            margin-bottom: 40px;
-            font-weight: 700;
-            font-size: 1.6rem;
-            color: #2c3e50;
-        ">
-            {texto}
-        </div>
-        ''', unsafe_allow_html=True)
+    <div style="
+        display: flex;
+        align-items: center;
+        border-left: 6px solid {cor_lateral};
+        padding-left: 16px;
+        background-color: #f5f5f5;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px #a3bffa88;
+        margin-bottom: 40px;
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: #2c3e50;
+    ">
+        {texto}
+    </div>
+    ''', unsafe_allow_html=True)
 
 # --- Topo com logo e data ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
-        <div style="
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            height: 250px;
-            background-color: #f5f5f5;
-            padding: 0 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 20px;
-            font-family: 'Inter', sans-serif;
-        ">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
-                 style="height: 150px; margin-right: 40px;">
-            <div style="
-                font-size: 3rem;
-                font-weight: 700;
-                color: #2c3e50;
-                white-space: nowrap;
-                line-height: 1.2;
-            ">
-                ⏰ Faltam {dias_restantes} dias para o concurso de TAE
-            </div>
-            <div style="
-                position: absolute;
-                top: 8px;
-                right: 16px;
-                font-size: 15px;
-                font-weight: 600;
-                color: #2c3e50;
-                user-select: none;
-            ">
-                Goiânia, {hoje_texto}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-# --- Gráficos Altair ---
-
-# Gráfico horizontal quantidade de questões
-def chart_questoes_horizontal(df_ordenado, height):
-    bars = alt.Chart(df_ordenado).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
-        y=alt.Y('Disciplinas:N',
-                sort=alt.EncodingSortField(field='Questões', order='ascending'),
-                title=None,
-                axis=alt.Axis(labels=True, ticks=True)
-            ),
-        x=alt.X('Questões:Q',
-                title=None,
-                axis=alt.Axis(labels=False, ticks=False, domain=False)
-            ),
-        color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Questões', title='Quantidade de Questões')]
-    )
-    texts = alt.Chart(df_ordenado).mark_text(
-        align='left', baseline='middle', dx=3, fontSize=12, color='#064820'
-    ).encode(
-        y=alt.Y('Disciplinas:N',
-                sort=alt.EncodingSortField(field='Questões', order='ascending')),
-        x='Questões:Q',
-        text='Questões:Q'
-    )
-    return (bars + texts).properties(
-        width=350,
-        height=height,
-        title="Quantidade de Questões por Disciplina"
-    ).configure_axis(grid=False, domain=False)
-
-# Gráfico colunas (vertical) peso × questões
-def bar_chart_ponderado(height):
-    df = pd.DataFrame(ED_DATA)
-    df['Questoes_Ponderadas'] = df['Questões'] * df['Peso']
-
-    chart = alt.Chart(df).mark_bar(cornerRadius=5, stroke='#d3d3d3', strokeWidth=3).encode(
-        x=alt.X('Disciplinas:N', sort='-y', title=None,
-                axis=alt.Axis(labelAngle=0, labels=False, ticks=False, domain=False)),
-        y=alt.Y('Questoes_Ponderadas:Q', title=None,
-                axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)),
-        color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'), alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
-    ).properties(
-        width=600,
-        height=height,
-        title="Peso × Questões por Disciplina"
-    )
-
-    text_labels = alt.Chart(df).mark_text(
-        dy=-10,
-        fontWeight='bold',
-        fontSize=12,
-        color='black'
-    ).encode(
-        x=alt.X('Disciplinas:N', sort='-y'),
-        y='Questoes_Ponderadas:Q',
-        text=alt.Text('Questoes_Ponderadas:Q')
-    )
-
-    text_disciplinas = alt.Chart(df).mark_text(
-        align='center',
-        dy=12,
-        fontWeight='bold',
-        fontSize=12,
-        color='black'
-    ).encode(
-        x=alt.X('Disciplinas:N', sort='-y'),
-        y=alt.value(height - 15),
-        text='Disciplinas:N'
-    )
-
-    return (chart + text_labels + text_disciplinas).configure_view(strokeWidth=0)
-
-# Gráfico donut para progresso geral
-def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
-                               colors=('#2ecc71', '#e74c3c'),
-                               inner_radius=70, font_size=32,
-                               text_color='#064820', show_tooltip=True):
-    concluido = max(0, min(progresso_percentual, 100))
-    pendente = 100 - concluido
-    df = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente]
-    })
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
-    base = alt.Chart(df).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    )
-    if show_tooltip:
-        base = base.encode(tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')])
-    donut = base.mark_arc(innerRadius=inner_radius, stroke='#d3d3d3', strokeWidth=3).properties(width=width, height=height)
-    text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
-        fontSize=font_size, fontWeight='bold', color=text_color, dy=0
-    ).encode(text='text:N').properties(width=width, height=height)
-    return (donut + text).configure_view(strokeWidth=0)
-
-# Donuts por disciplina
-def create_altair_donut(row):
-    concluido = int(row['Conteudos_Concluidos'])
-    pendente = int(row['Conteudos_Pendentes'])
-    total = max(concluido + pendente, 1)
-    concluido_pct = round((concluido / total) * 100, 1)
-    pendente_pct = round((pendente / total) * 100, 1)
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente],
-        'Percentual': [concluido_pct, pendente_pct]
-    })
-    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base_chart = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
-    )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
-    text = alt.Chart(source_label).mark_text(
-        size=24, fontWeight='bold', color='#064820'
-    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
-
-# Exibe donuts responsivos com título
-def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1
-    rows = (total_charts + max_cols - 1) // max_cols
-    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
-    chart_index = 0
-    for _ in range(rows):
-        cols = st.columns(max_cols, gap="medium")
-        for c in range(max_cols):
-            if chart_index >= total_charts:
-                break
-            with cols[c]:
-                if chart_index < len(df_summary):
-                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
-                else:
-                    nome = "Progresso Geral"
-                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
-                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
-            chart_index += 1
-
-# Gráfico empilhado percentual concluídos/pendentes
-def create_stacked_bar(df):
-    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
-        st.info("Sem dados suficientes para gráfico de barras empilhadas.")
-        return
-    df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
-    if df_group.empty:
-        st.info("Nenhum dado válido para gráfico de barras empilhadas.")
-        return
-    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
-    df_pivot['Total'] = df_pivot.sum(axis=1)
-    if 'True' not in df_pivot.columns:
-        df_pivot['True'] = 0
-    df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
-    df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
-    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total']).round(3).clip(upper=1)
-    df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
-    df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'],
-                            var_name='Status', value_name='Percentual')
-    df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    chart = alt.Chart(df_melt).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
-        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
-                title=None, axis=alt.Axis(labels=True, ticks=True)),
-        x=alt.X('Percentual:Q', title=None,
-                axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
-    ).properties(
-        title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
-        height=600
-    ).configure_view(stroke='#d3d3d3', strokeWidth=3)
-    st.altair_chart(chart, use_container_width=True)
-
-# CSS
-def inject_css():
-    st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    body, html, [class*="css"] {
-        font-family: 'Inter', sans-serif !important;
-        margin: 0; padding: 0;
-        height: 100%;
-        background: #ffffff;
-        overflow-x: hidden;
-        color: #222831;
+    <div style="
         position: relative;
-    }
-    .reportview-container, .main, .block-container {
-        background-color: #ffffff !important;
-        color: #222831;
-    }
-    h1, h2, h3 {
-        color: #2c3e50;
-        font-weight: 600;
-    }
-    .metric-container {
-        background: #f0f5ff;
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.2rem;
-        box-shadow: 0 4px 15px #a3bffa90;
-        color: #2c3e50;
-        transition: box-shadow 0.3s ease;
-        text-align: center;
-    }
-    .metric-container:hover {
-        box-shadow: 0 0 30px #6a8edecc;
-    }
-    .metric-value {
-        font-size: 3rem;
-        font-weight: 700;
-        color: #355e9e;
-        margin-bottom: 0.2rem;
-    }
-    .metric-label {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #566e95;
-    }
-    .altair-chart {
-        border: 1px solid #d3d3d3 !important;
-        border-radius: 16px;
-        padding: 1rem;
-        box-shadow: 0 0 15px #a3bffa88;
-        background: #e0e9ff;
-        margin-bottom: 2rem;
-    }
-    [data-baseweb="accordion"] > div > div {
-        background: #f2f7ff !important;
-        border-radius: 14px !important;
-        color: #355e9e !important;
-        font-weight: 500;
-        transition: background 0.3s ease;
-    }
-    [data-baseweb="accordion"] > div > div:hover {
-        background: #a3bffa55 !important;
-    }
-    .streamlit-expanderContent > div {
-        color: #2c3e50;
-        font-weight: 400;
-    }
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        color: #2c3e50;
-    }
-    th, td {
-        border: 1px solid #a3bffa;
-        padding: 8px;
-        text-align: left;
-    }
-    th {
-        background: #a3bffa22;
-    }
-    tr:nth-child(even) {
-        background: #cbdcff55;
-    }
-    footer {
-        font-style: italic !important;
-        font-size: 12px !important;
-        color: #064820 !important;
-        opacity: 0.75 !important;
-        margin-top: 10px !important;
-        text-align: center !important;
-        user-select: none !important;
-        font-family: 'Inter', sans-serif !important;
-    }
-    footer span {
-        font-weight: 500 !important;
-        color: #355e9e !important;
-    }
-    </style>
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        height: 250px;
+        background-color: #f5f5f5;
+        padding: 0 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+    ">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
+             style="height: 150px; margin-right: 40px;">
+        <div style="
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2c3e50;
+            white-space: nowrap;
+            line-height: 1.2;
+        ">
+            ⏰ Faltam {dias_restantes} dias para o concurso de TAE
+        </div>
+        <div style="
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            user-select: none;
+        ">
+            Goiânia, {hoje_texto}
+        </div>
+    </div>
     """, unsafe_allow_html=True)
 
-# Rodapé motivacional
-def rodape_motivacional():
-    st.markdown("""
-    <footer>
-        🚀📚 "O sucesso é a soma de pequenos esforços repetidos dia após dia." 📅✨
-        <br><span>Mantenha o foco, você está no caminho certo! 💪😊</span>
-    </footer>
-    """, unsafe_allow_html=True)
+# --- Gráfico pizza (donut) peso × questões ---
+def pie_chart_peso_vezes_questoes(width, height):
+    df = pd.DataFrame(ED_DATA)
+    df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
+    df['Percentual'] = df['Peso_vezes_Questoes'] / df['Peso_vezes_Questoes'].sum()
 
-# Lista expansível de conteúdos
+    chart = alt.Chart(df).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3).encode(
+        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+        color=alt.Color('Disciplinas:N', legend=None),
+        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'),
+                 alt.Tooltip('Peso_vezes_Questoes', title='Peso × Questões'),
+                 alt.Tooltip('Percentual', format='.1%')]
+    ).properties(width=width, height=height)
+
+    # Labels centralizados com percentual
+    text = alt.Chart(df).mark_text(radius=100, size=14, fontWeight='bold', color='black').encode(
+        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+        text=alt.Text('Percentual:Q', format='.0%'),
+        color=alt.value('black')
+    )
+
+    return (chart + text).configure_view(strokeWidth=0).configure_axis(labelColor="black")
+
+# --- Exibe gráfico pizza junto com lista de número de questões (substituindo histograma) ---
+def display_questoes_e_peso_lista(df_summary):
+    if df_summary.empty:
+        st.info("Nenhum dado para mostrar.")
+        return
+
+    titulo_com_destaque("📝 Número de Questões e Peso × Questões por Disciplina", cor_lateral="#8e44ad")
+
+    altura = 400
+    df_ed = pd.DataFrame(ED_DATA)
+    chart_pizza = pie_chart_peso_vezes_questoes(altura, altura)
+
+    col1, col2 = st.columns([2, 3])  # Proporção para melhor espaço do donut
+
+    with col1:
+        # Mostrar lista simples
+        st.markdown("### Número de Questões por Disciplina")
+        for _, row in df_ed.iterrows():
+            st.markdown(f"- **{row['Disciplinas'].title()}**: {row['Questões']} questões")
+
+    with col2:
+        st.altair_chart(chart_pizza, use_container_width=True)
+
+# --- Lista expansível de conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#3498db")
+    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
@@ -541,20 +300,99 @@ def display_conteudos_com_checkboxes(df):
                 except Exception as e:
                     st.error(f"Erro inesperado ao atualizar: {e}")
 
-# Main
+# --- CSS ---
+def inject_css():
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body, html, [class*="css"] {
+        font-family: 'Inter', sans-serif !important;
+        margin: 0; padding: 0;
+        height: 100%;
+        background: #ffffff;
+        color: #222831;
+        overflow-x: hidden;
+        position: relative;
+    }
+    .metric-container {
+        background: #f0f5ff;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 4px 15px #a3bffa90;
+        color: #2c3e50;
+        transition: box-shadow 0.3s ease;
+        text-align: center;
+        font-weight: 700;
+    }
+    .metric-container:hover {
+        box-shadow: 0 0 30px #6a8edecc;
+    }
+    .metric-value {
+        font-size: 3rem;
+        color: #355e9e;
+        margin-bottom: 0.2rem;
+    }
+    .metric-label {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #566e95;
+    }
+    .altair-chart {
+        border: 1px solid #d3d3d3 !important;
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 0 15px #a3bffa88;
+        background: #e0e9ff;
+        margin-bottom: 2rem;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    .streamlit-expanderContent > div {
+        color: #2c3e50;
+        font-weight: 400;
+    }
+    footer {
+        font-style: italic !important;
+        font-size: 12px !important;
+        color: #064820 !important;
+        opacity: 0.75 !important;
+        margin-top: 10px !important;
+        text-align: center !important;
+        user-select: none !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+    footer span {
+        font-weight: 500 !important;
+        color: #355e9e !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- Rodapé motivacional ---
+def rodape_motivacional():
+    st.markdown("""
+    <footer>
+        🚀📚 "O sucesso é a soma de pequenos esforços repetidos dia após dia." 📅✨<br>
+        <span>Mantenha o foco, você está no caminho certo! 💪😊</span>
+    </footer>
+    """, unsafe_allow_html=True)
+
+# --- Main ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025",
                        page_icon="📚", layout="wide")
     inject_css()
-    dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
+    dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Indicadores topo
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -589,13 +427,7 @@ def main():
 
     st.markdown("---")
 
-    titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
-    display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
-
-    st.markdown("---")
-
-    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    create_stacked_bar(df)
+    # Aqui pode incluir outras seções de gráficos, etc.
 
     st.markdown("---")
 
@@ -603,11 +435,13 @@ def main():
 
     st.markdown("---")
 
-    display_questoes_e_peso(df_summary)
+    # Aqui exibimos o gráfico pizza e a lista, lado a lado (sem histograma)
+    display_questoes_e_peso_lista(df_summary)
 
     st.markdown("---")
 
     rodape_motivacional()
+
 
 if __name__ == "__main__":
     main()
