@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=Fa
 
 # O ID e o nome da aba agora são fixos no código, como no primeiro exemplo.
 # Mantenha os valores corretos para o seu projeto.
-SPREADSHEET_ID = '1EyllfZ69b5H-n47iB-_Zau6nf3rcBEoG8qYNbYv5uGs'
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 
 CONCURSO_DATE = datetime(2025, 9, 28) # Data do concurso
@@ -145,36 +145,97 @@ def read_sales_data():
 
     try:
         with st.spinner("📊 Carregando dados da planilha..."):
+            # Pega todos os dados da planilha
             data = worksheet.get_all_values()
             
+        # Debug: mostrar estrutura bruta dos dados
+        st.write("🔍 **Debug - Dados brutos da planilha:**")
+        st.write(f"Total de linhas: {len(data) if data else 0}")
+        
+        if data and len(data) > 0:
+            st.write(f"Primeira linha (cabeçalho): {data[0]}")
+            if len(data) > 1:
+                st.write(f"Segunda linha (exemplo): {data[1]}")
+            if len(data) > 2:
+                st.write(f"Terceira linha (exemplo): {data[2]}")
+        
         if not data:
             st.warning("⚠️ Planilha está vazia. Verifique se há dados na aba especificada.")
+            return pd.DataFrame()
+            
+        if len(data) < 2:
+            st.warning("⚠️ Planilha só tem cabeçalho, sem dados. Adicione pelo menos uma linha de dados.")
             return pd.DataFrame()
             
         headers = data[0]
         records = data[1:]
         
+        st.write(f"📋 **Cabeçalhos encontrados:** {headers}")
+        st.write(f"📊 **Total de registros (sem cabeçalho):** {len(records)}")
+        
+        # Criar DataFrame
         df = pd.DataFrame(records, columns=headers)
         
-        # Colunas obrigatórias
+        # Mostrar primeiras linhas do DataFrame bruto
+        st.write("📝 **Primeiras linhas do DataFrame bruto:**")
+        st.dataframe(df.head(), use_container_width=True)
+        
+        # Verificar colunas obrigatórias
         required_columns = ['Disciplinas', 'Conteúdos', 'Status']
-        missing_columns = [col for col in required_columns if col not in df.columns]
+        available_columns = list(df.columns)
+        missing_columns = [col for col in required_columns if col not in available_columns]
+        
+        st.write(f"✅ **Colunas disponíveis:** {available_columns}")
         
         if missing_columns:
             st.error(f"❌ Colunas obrigatórias não encontradas: {missing_columns}")
-            st.info("Verifique se o cabeçalho da planilha contém: Disciplinas, Conteúdos, Status")
-            return pd.DataFrame()
+            st.info(f"Colunas necessárias: {required_columns}")
+            st.info("Verifique se o cabeçalho da planilha está correto (maiúsculas/minúsculas importam)")
             
+            # Sugestão de colunas similares
+            for missing in missing_columns:
+                similar = [col for col in available_columns if missing.lower() in col.lower() or col.lower() in missing.lower()]
+                if similar:
+                    st.info(f"💡 Talvez você queira dizer: {similar} (para {missing})")
+            
+            return pd.DataFrame()
+        
+        # Mostrar valores únicos da coluna Status antes da limpeza
+        st.write(f"📊 **Valores únicos em 'Status' (antes da limpeza):** {df['Status'].unique().tolist()}")
+        
         # Limpar e filtrar dados
         df['Status'] = df['Status'].astype(str).str.strip()
-        df = df[df['Status'].isin(['Feito', 'Pendente'])]
+        df['Disciplinas'] = df['Disciplinas'].astype(str).str.strip()
+        df['Conteúdos'] = df['Conteúdos'].astype(str).str.strip()
         
-        # Remover linhas vazias
-        df = df[df['Disciplinas'].str.strip() != '']
+        # Mostrar valores únicos da coluna Status depois da limpeza
+        st.write(f"📊 **Valores únicos em 'Status' (depois da limpeza):** {df['Status'].unique().tolist()}")
         
-        st.success(f"✅ Carregados {len(df)} registros da planilha")
+        # Filtrar apenas status válidos (case insensitive)
+        df_filtrado_status = df[df['Status'].str.lower().isin(['feito', 'pendente'])]
+        st.write(f"📊 **Registros com status válido (Feito/Pendente):** {len(df_filtrado_status)}")
         
-        return df
+        # Remover linhas completamente vazias
+        df_final = df_filtrado_status[
+            (df_filtrado_status['Disciplinas'] != '') & 
+            (df_filtrado_status['Disciplinas'] != 'nan') &
+            (df_filtrado_status['Disciplinas'].notna())
+        ].copy()
+        
+        st.write(f"📊 **Registros finais (após remover vazios):** {len(df_final)}")
+        
+        # Padronizar o Status para primeira letra maiúscula
+        df_final['Status'] = df_final['Status'].str.lower().str.title()
+        
+        # Mostrar resultado final
+        if not df_final.empty:
+            st.write("✅ **DataFrame final:**")
+            st.dataframe(df_final, use_container_width=True)
+            st.success(f"✅ Carregados {len(df_final)} registros válidos da planilha")
+        else:
+            st.warning("⚠️ Nenhum registro válido encontrado após a filtragem.")
+            
+        return df_final
         
     except Exception as e:
         st.error(f"❌ Erro ao ler dados da planilha: {e}")
