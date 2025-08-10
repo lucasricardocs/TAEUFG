@@ -509,7 +509,7 @@ def render_topbar_with_logo(dias_restantes):
             position: absolute;
             top: 8px;
             right: 16px;
-            font-size: 10px;
+            font-size: 15px;
             font-weight: 600;
             color: #2c3e50;
             user-select: none;
