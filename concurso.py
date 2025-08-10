@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -77,7 +76,60 @@ def load_data_with_row_indices():
         return pd.DataFrame()
     try:
         data = worksheet.get_all_values()
-        if len(data)  0 else 0, axis=1)
+        if len(data) < 2:
+            st.warning("⚠️ Planilha está vazia ou com poucos dados.")
+            return pd.DataFrame()
+        df = pd.DataFrame(data[1:], columns=data[0])
+        required_cols = ['Disciplinas', 'Conteúdos', 'Status']
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            st.error(f"❌ Colunas obrigatórias faltando: {missing}")
+            return pd.DataFrame()
+        df = df[required_cols].copy()
+        df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
+        df['Conteúdos'] = df['Conteúdos'].str.strip()
+        df['Status'] = df['Status'].str.strip().str.lower()
+        df = df[df['Status'].isin(['true', 'false'])].copy()
+        df['Status'] = df['Status'].str.title()
+        df.reset_index(inplace=True)
+        df['sheet_row'] = df['index'] + 2
+        df.drop('index', axis=1, inplace=True)
+        return df.reset_index(drop=True)
+    except Exception as e:
+        st.error(f"❌ Falha ao carregar dados: {e}")
+        return pd.DataFrame()
+
+# --- Atualizar status na planilha ---
+def update_status_in_sheet(sheet, row_number, new_status):
+    try:
+        header = sheet.row_values(1)
+        if 'Status' not in header:
+            st.error("❌ Coluna 'Status' não encontrada na planilha.")
+            return False
+        status_col_index = header.index('Status') + 1
+        sheet.update_cell(row_number, status_col_index, new_status)
+        return True
+    except APIError as e:
+        st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
+        return False
+    except Exception as e:
+        st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
+        return False
+
+# --- Cálculo progresso ---
+def calculate_progress(df):
+    df_edital = pd.DataFrame(ED_DATA)
+    if df.empty:
+        df_edital['Conteudos_Concluidos'] = 0
+        df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
+        df_edital['Progresso_Ponderado'] = 0.0
+        return df_edital, 0.0
+    df['Concluido'] = (df['Status'] == 'True').astype(int)
+    resumo = df.groupby('Disciplinas', observed=True)['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
+    df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
+    df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
+    df_merged['Ponto_por_Conteudo'] = df_merged.apply(
+        lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
     df_merged['Pontos_Concluidos'] = df_merged['Conteudos_Concluidos'] * df_merged['Ponto_por_Conteudo']
     df_merged['Progresso_Ponderado'] = np.where(
         df_merged['Peso'] > 0,
@@ -116,9 +168,23 @@ def calculate_stats(df, df_summary):
 # --- Destaque lateral títulos ---
 def titulo_com_destaque(texto, cor_lateral="#3498db"):
     st.markdown(f'''
-        
+        <div style="
+            display: flex;
+            align-items: center;
+            border-left: 6px solid {cor_lateral};
+            padding-left: 16px;
+            background-color: #f5f5f5;
+            padding-top: 12px;
+            padding-bottom: 12px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px #a3bffa88;
+            margin-bottom: 40px;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #2c3e50;
+        ">
             {texto}
-        
+        </div>
     ''', unsafe_allow_html=True)
 
 # --- Gráfico empilhado sem erros e sem legendas ---
@@ -293,7 +359,7 @@ def donut_chart_radial_personalizado(concluido_percentual):
 # --- CSS ---
 def inject_css():
     st.markdown("""
-    
+    <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     body, html, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
@@ -388,31 +454,58 @@ def inject_css():
         font-weight: 600 !important;
         color: #355e9e !important;
     }
-    
+    </style>
     """, unsafe_allow_html=True)
 
 # --- Container topo com sombra ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
-    
-        
-        
+    <div style="
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        height: 250px;
+        background-color: #f5f5f5;
+        padding: 0 40px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        margin-bottom: 20px;
+        font-family: 'Inter', sans-serif;
+    ">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
+             style="height: 150px; margin-right: 40px;">
+        <div style="
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2c3e50;
+            white-space: nowrap;
+            line-height: 1.2;
+        ">
             ⏰ Faltam {dias_restantes} dias para o concurso de TAE
-        
-        
+        </div>
+        <div style="
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            user-select: none;
+        ">
             Goiânia, {hoje_texto}
-        
-    
+        </div>
+    </div>
     """, unsafe_allow_html=True)
 
 # --- Rodapé com emoticons e tamanho 12 (toda largura) ---
 def rodape_motivacional():
     st.markdown("""
-        
+        <footer>
             🚀 "O sucesso é a soma de pequenos esforços repetidos dia após dia." 🎯
-            Mantenha o foco, você está no caminho certo! 💪📚
-        
+            <br><span>Mantenha o foco, você está no caminho certo! 💪📚</span>
+        </footer>
     """, unsafe_allow_html=True)
 
 # --- Mostrar os dois gráficos lado a lado com mesma altura do gráfico empilhado ---
@@ -445,7 +538,11 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
             if chart_index >= total_charts:
                 break
             with cols[c]:
-                if chart_index {nome}', unsafe_allow_html=True)
+                if chart_index < len(df_summary):
+                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
+                else:
+                    nome = "Progresso Geral"
+                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
                 st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
             chart_index += 1
 
@@ -494,34 +591,34 @@ def main():
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
-            
-                {progresso_geral:.1f}%
-                Progresso Geral
-            ''', unsafe_allow_html=True)
+            <div class="metric-container">
+                <div class="metric-value">{progresso_geral:.1f}%</div>
+                <div class="metric-label">Progresso Geral</div>
+            </div>''', unsafe_allow_html=True)
     with cols[1]:
         st.markdown(f'''
-            
-                {stats['concluidos']}
-                Conteúdos Concluídos
-            ''', unsafe_allow_html=True)
+            <div class="metric-container">
+                <div class="metric-value">{stats['concluidos']}</div>
+                <div class="metric-label">Conteúdos Concluídos</div>
+            </div>''', unsafe_allow_html=True)
     with cols[2]:
         st.markdown(f'''
-            
-                {stats['pendentes']}
-                Conteúdos Pendentes
-            ''', unsafe_allow_html=True)
+            <div class="metric-container">
+                <div class="metric-value">{stats['pendentes']}</div>
+                <div class="metric-label">Conteúdos Pendentes</div>
+            </div>''', unsafe_allow_html=True)
     with cols[3]:
         st.markdown(f'''
-            
-                {stats['topicos_por_dia']}
-                Tópicos/Dia Necessários
-            ''', unsafe_allow_html=True)
+            <div class="metric-container">
+                <div class="metric-value">{stats['topicos_por_dia']}</div>
+                <div class="metric-label">Tópicos/Dia Necessários</div>
+            </div>''', unsafe_allow_html=True)
     with cols[4]:
         st.markdown(f'''
-            
-                {stats['maior_prioridade']}
-                Disciplina Prioritária
-            ''', unsafe_allow_html=True)
+            <div class="metric-container" style="font-size:1rem;">
+                <div class="metric-value" style="font-size:1.5rem;">{stats['maior_prioridade']}</div>
+                <div class="metric-label">Disciplina Prioritária</div>
+            </div>''', unsafe_allow_html=True)
 
     st.markdown("---")
 
