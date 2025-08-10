@@ -376,7 +376,7 @@ def render_topbar_with_logo(dias_restantes):
 
 # --- Função dinâmica para mostrar gráficos de rosca responsivos ---
 def display_responsive_donuts(df_summary):
-    max_cols = 4
+    max_cols = 5
 
     num_charts = len(df_summary)
     rows = (num_charts + max_cols - 1) // max_cols
