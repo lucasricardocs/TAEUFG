@@ -180,7 +180,7 @@ def titulo_com_destaque(texto):
             padding: 12px 20px;
             border-radius: 12px;
             box-shadow: 0 4px 10px #a3bffa88;
-            margin-bottom: 10px;
+            margin-bottom: 40px;  /* Espaçamento aumentado */
             font-weight: 700;
             font-size: 1.6rem;
             color: #2c3e50;
@@ -189,7 +189,7 @@ def titulo_com_destaque(texto):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráficos Altair com bordas cinza claras, strokeWidth 3 nas roscas e rótulo interno só do True ---
+# --- Gráficos Altair (rosca) com bordas cinza claras, strokeWidth 3 nas roscas, texto central em verde escuro em formato percentual ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -205,20 +205,25 @@ def create_altair_donut(row):
     })
     # Dataframe só com o valor 'Concluído' para o label central
     source_label = pd.DataFrame({
-        'Percentual': [concluido_pct]
+        'Percentual': [concluido_pct / 100]  # valor em fração 0-1 para Altair
     })
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     base_chart = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format="d"), alt.Tooltip('Percentual', format='.1f')]
+        tooltip=[
+            alt.Tooltip('Status'),
+            alt.Tooltip('Valor', format="d"),
+            alt.Tooltip('Percentual', format='.1f')
+        ]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # borda branca nas fatias aumentada
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     
-    # Texto centralizado, só com o percentual True
-    text = alt.Chart(source_label).mark_text(size=20, fontWeight='bold', color='black').encode(
-        text=alt.Text('Percentual:Q', format='.1f')
+    text = alt.Chart(source_label).mark_text(
+        size=20, fontWeight='bold', color='#064820'  # verde escuro
+    ).encode(
+        text=alt.Text('Percentual:Q', format='.0%')  # formato percentual com %
     ).properties(width=350, height=350)
 
     chart = (donut + text).properties(
@@ -226,7 +231,7 @@ def create_altair_donut(row):
             text=str(row['Disciplinas']),
             subtitle=f"{row['Progresso_Ponderado']:.1f}% Progresso Ponderado",
             anchor='middle',
-            fontSize=18,
+            fontSize=20,
             fontWeight='bold',
             color='#2c3e50',
             subtitleColor='#576574'
@@ -235,10 +240,11 @@ def create_altair_donut(row):
         height=350
     ).configure_view(
         stroke='#d3d3d3',
-        strokeWidth=3
+        strokeWidth=1
     )
     return chart
 
+# --- Gráfico empilhado Percentual de Conteúdos ---
 def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
@@ -250,7 +256,6 @@ def create_stacked_bar(df):
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    # Mantém fração 0 a 1 (não multiplica por 100)
     df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total']).round(3).clip(upper=1)
     df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
 
@@ -266,7 +271,8 @@ def create_stacked_bar(df):
         .encode(
             y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
             x=alt.X('Percentual:Q', title='Percentual (%)',
-                    axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1])),
+                    axis=alt.Axis(format='%', tickCount=11, tickStep=0.1),
+                    scale=alt.Scale(domain=[0, 1], tickStep=0.1)),
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
         )
@@ -278,7 +284,7 @@ def create_stacked_bar(df):
     )
     st.altair_chart(chart, use_container_width=True)
 
-# --- CSS para fundo branco, layout profissional e borda cinza clara nos gráficos ---
+# --- CSS, estilo geral ---
 def inject_css():
     st.markdown("""
     <style>
@@ -373,10 +379,28 @@ def inject_css():
     tr:nth-child(even) {
         background: #cbdcff55;
     }
+
+    /* Rodapé */
+    footer {
+        margin-top: 60px;
+        padding: 20px;
+        background-color: #f5f7fa;
+        text-align: center;
+        font-size: 1.2rem;
+        color: #064820;
+        font-weight: 600;
+        border-top: 2px solid #a3bffa;
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 -3px 10px #a3bffa55;
+    }
+    footer span {
+        color: #355e9e;
+        font-weight: 700;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Função para renderizar topo com logo e título grande ---
+# --- Render topbar ---
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div style="
@@ -391,7 +415,7 @@ def render_topbar_with_logo(dias_restantes):
         margin-bottom: 20px;
     ">
         <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" 
-             style="height: 200px; margin-right: 40px;">
+             style="height: 150px; margin-right: 40px;">
         <div style="
             font-size: 3rem;
             font-weight: 700;
@@ -404,13 +428,11 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Função dinâmica para mostrar gráficos de rosca responsivos ---
+# --- Mostrar gráficos de rosca responsivos ---
 def display_responsive_donuts(df_summary):
     max_cols = 4
-
     num_charts = len(df_summary)
     rows = (num_charts + max_cols - 1) // max_cols
-
     for i in range(rows):
         start_idx = i * max_cols
         end_idx = min(start_idx + max_cols, num_charts)
@@ -419,7 +441,16 @@ def display_responsive_donuts(df_summary):
             with cols[j]:
                 st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
-# --- Função principal ---
+# --- Função para o rodapé motivacional ---
+def rodape_motivacional():
+    st.markdown("""
+        <footer>
+            "O sucesso é a soma de pequenos esforços repetidos dia após dia." 
+            <br><span>Mantenha o foco, você está no caminho certo!</span>
+        </footer>
+    """, unsafe_allow_html=True)
+
+# --- Main ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
@@ -491,7 +522,6 @@ def main():
                     checked = (row['Status'] == 'True')
                     
                     novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
-                    
                     if novo_status != checked:
                         sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                         if sucesso:
@@ -500,6 +530,8 @@ def main():
                             st.rerun()
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-                            
+
+    rodape_motivacional()
+
 if __name__ == "__main__":
     main()
