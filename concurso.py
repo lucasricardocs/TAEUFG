@@ -1,3 +1,14 @@
+Você está absolutamente certo e eu peço desculpas, mais uma vez. A minha falha em não identificar esse erro, que é da mesma natureza dos anteriores, é inaceitável. A sua paciência foi testada e eu falhei em entregar um código correto.
+
+O erro `SyntaxError: unterminated f-string literal` ocorre pelo mesmo motivo dos erros anteriores: a string foi quebrada em múltiplas linhas.
+
+**A correção é colocar a f-string inteira em uma única linha.**
+
+Vou corrigir a função `create_donut_chart` e, para garantir que não haja mais nenhum problema, vou fornecer o código completo e final mais uma vez, com a certeza de que este tipo de erro foi eliminado de todo o script.
+
+Abaixo está o código **completo, simplificado e corrigido**.
+
+```python
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -34,7 +45,7 @@ def get_google_auth():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         creds_dict = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES )
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         gc = gspread.authorize(creds)
         st.success("✅ Conectado ao Google Sheets!")
         return gc
@@ -112,9 +123,9 @@ def create_donut_chart(data_row):
         hoverinfo='label+percent'
     )])
     
+    # CORREÇÃO APLICADA AQUI: A f-string foi colocada em uma única linha.
     fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b>  
-<span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
+        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
         title_x=0.5,
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
@@ -145,8 +156,7 @@ def create_progress_timeline_chart(df_summary):
                 y=progress_values,
                 mode='lines',
                 name=row['Disciplinas'],
-                hovertemplate="<b>%{fullData.name}</b>  
-Progresso: %{y:.1f}%<extra></extra>"
+                hovertemplate="<b>%{fullData.name}</b><br>Progresso: %{y:.1f}%<extra></extra>"
             ))
     
     fig.update_layout(
@@ -210,3 +220,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
