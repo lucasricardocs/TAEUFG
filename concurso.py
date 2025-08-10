@@ -33,6 +33,7 @@ def get_google_auth():
     """Autoriza o acesso ao Google Sheets e retorna o cliente gspread."""
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
+        # Tenta obter as credenciais dos segredos do Streamlit
         creds_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES )
         gc = gspread.authorize(creds)
@@ -72,27 +73,26 @@ def read_data(_gc):
 
 # --- Funções de Processamento de Dados ---
 def calculate_metrics(df_dados):
-    """Calcula as métricas de progresso."""
+    """Calcula as métricas de progresso de forma robusta."""
     df_edital = pd.DataFrame(ED_DATA)
     
     if df_dados.empty:
         df_summary = df_edital.copy()
         df_summary['Conteudos_Concluidos'] = 0
-        df_summary['Conteudos_Pendentes'] = df_summary['Total_Conteudos']
-        df_summary['Progresso_Ponderado'] = 0.0
     else:
         df_concluidos = df_dados[df_dados['Status'] == 'true'].groupby('Disciplinas').size().reset_index(name='Conteudos_Concluidos')
         df_summary = pd.merge(df_edital, df_concluidos, on='Disciplinas', how='left').fillna(0)
-        df_summary['Conteudos_Pendentes'] = df_summary['Total_Conteudos'] - df_summary['Conteudos_Concluidos']
-        
-        # Evitar divisão por zero se Total_Conteudos for 0
-        pontos_por_conteudo = (df_summary['Peso'] / df_summary['Total_Conteudos']).replace([np.inf, -np.inf], 0)
-        pontos_concluidos = df_summary['Conteudos_Concluidos'] * pontos_por_conteudo
-        df_summary['Progresso_Ponderado'] = ((pontos_concluidos / df_summary['Peso']).replace([np.inf, -np.inf], 0)) * 100
 
-    total_pontos_possiveis = (df_summary['Peso']).sum()
-    total_pontos_feitos = ((df_summary['Peso'] / df_summary['Total_Conteudos']).fillna(0) * df_summary['Conteudos_Concluidos']).sum()
+    df_summary['Conteudos_Pendentes'] = df_summary['Total_Conteudos'] - df_summary['Conteudos_Concluidos']
     
+    # Cálculo robusto do progresso ponderado para evitar divisão por zero
+    pontos_por_conteudo = (df_summary['Peso'] / df_summary['Total_Conteudos']).replace([np.inf, -np.inf], 0)
+    pontos_concluidos = df_summary['Conteudos_Concluidos'] * pontos_por_conteudo
+    df_summary['Progresso_Ponderado'] = ((pontos_concluidos / df_summary['Peso']).replace([np.inf, -np.inf], 0)).fillna(0) * 100
+
+    # Cálculo robusto do progresso geral
+    total_pontos_possiveis = df_summary['Peso'].sum()
+    total_pontos_feitos = (pontos_por_conteudo * df_summary['Conteudos_Concluidos']).sum()
     progresso_geral = (total_pontos_feitos / total_pontos_possiveis) * 100 if total_pontos_possiveis > 0 else 0
     
     return df_summary, progresso_geral
@@ -102,7 +102,7 @@ def create_donut_chart(data_row):
     """Cria um gráfico de rosca (donut) com Plotly para progresso."""
     labels = ['Concluído', 'Pendente']
     values = [data_row['Conteudos_Concluidos'], data_row['Conteudos_Pendentes']]
-    colors = ['#2ecc71', '#e74c3c'] # Verde e Vermelho
+    colors = ['#2ecc71', '#e74c3c']
 
     fig = go.Figure(data=[go.Pie(
         labels=labels, 
@@ -136,7 +136,6 @@ def create_progress_timeline_chart(df_summary):
     
     for _, row in df_summary.iterrows():
         if row['Progresso_Ponderado'] > 0:
-            # Simula um progresso crescente para fins de visualização
             progress_values = np.linspace(0, row['Progresso_Ponderado'], len(dates))
             noise = np.random.normal(0, 2, len(dates))
             progress_values = np.clip(progress_values + noise, 0, 100)
@@ -166,7 +165,6 @@ def main():
     """Função principal do dashboard."""
     st.set_page_config(page_title="Dashboard de Estudos", layout="wide")
 
-    # --- CSS para Estilo ---
     st.markdown("""
         <style>
             .main-header { text-align: center; padding: 2rem; }
@@ -175,40 +173,36 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    # --- Header ---
     st.markdown("<div class='main-header'><h1>📚 Dashboard de Estudos</h1><p>Acompanhe seu progresso para o Concurso 2025</p></div>", unsafe_allow_html=True)
 
-    # --- Carregamento de Dados ---
     gc = get_google_auth()
     df_dados = read_data(gc)
     
     if df_dados.empty and gc:
         st.warning("A planilha parece estar vazia. Adicione dados para visualizar o dashboard.")
     
-    # --- Cálculos e Métricas ---
     df_summary, progresso_geral = calculate_metrics(df_dados)
     
-    # --- Exibição das Métricas Principais ---
     dias_restantes = (CONCURSO_DATE - datetime.now()).days
     col1, col2, col3 = st.columns(3)
     col1.metric("🎯 Progresso Geral Ponderado", f"{progresso_geral:.1f}%")
     col2.metric("🗓️ Dias Restantes", f"{dias_restantes if dias_restantes > 0 else 0}")
     col3.metric("📚 Conteúdos Concluídos", f"{int(df_summary['Conteudos_Concluidos'].sum())}")
 
-    # --- Seção de Gráficos de Rosca ---
     st.markdown("<div class='section-header'>🎯 Progresso por Disciplina</div>", unsafe_allow_html=True)
     
+    # Lógica robusta para criar colunas e evitar IndexError
     if not df_summary.empty:
         num_disciplinas = len(df_summary)
         cols = st.columns(num_disciplinas)
         for i, (_, row) in enumerate(df_summary.iterrows()):
+            # Acessa a coluna de forma segura
             with cols[i]:
                 with st.container(border=True):
                     st.plotly_chart(create_donut_chart(row), use_container_width=True)
     else:
         st.info("Aguardando dados das disciplinas para mostrar os gráficos de progresso.")
 
-    # --- Seção de Gráfico de Evolução ---
     st.markdown("<div class='section-header'>📈 Análise de Evolução</div>", unsafe_allow_html=True)
     with st.container(border=True):
         st.plotly_chart(create_progress_timeline_chart(df_summary), use_container_width=True)
