@@ -416,8 +416,8 @@ def main():
     colunas = st.columns(num_cols)
     for idx, row in df_summary.iterrows():
         with colunas[idx % num_cols]:
-            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-            st.altair_chart(create_altair_donut(row), use_container_width=True)
+            st.markdown('<div class="chart-container">', unsafe_allow_html=False)
+            st.altair_chart(create_altair_donut(row), use_container_width=False)
             st.markdown('</div>', unsafe_allow_html=True)
 
     # Análises avançadas
