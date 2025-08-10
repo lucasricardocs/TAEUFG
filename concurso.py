@@ -302,64 +302,74 @@ def chart_questoes_horizontal(df_ordenado):
     )
     return (bars + texts).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-# --- Mosaic chart com stroke e strokeWidth ---
+# --- Novo gráfico mosaico inspirado no seu exemplo, com ED_DATA ---
 def mosaic_chart_peso_importancia():
     df = pd.DataFrame(ED_DATA)
     df['Peso_Ponderado'] = df['Total_Conteudos'] * df['Peso']
     df = df.sort_values('Peso_Ponderado', ascending=False).reset_index(drop=True)
-    total_pp = df['Peso_Ponderado'].sum()
+
+    total_peso = df['Peso_Ponderado'].sum()
     df['start'] = df['Peso_Ponderado'].cumsum() - df['Peso_Ponderado']
-    df['start_norm'] = df['start'] / total_pp
-    df['end_norm'] = (df['start'] + df['Peso_Ponderado']) / total_pp
+    df['end'] = df['Peso_Ponderado'].cumsum()
+    df['start_norm'] = df['start'] / total_peso
+    df['end_norm'] = df['end'] / total_peso
+
     base = alt.Chart(df).encode(
-        x=alt.X('start_norm:Q', title=None, axis=None),
+        x=alt.X('start_norm:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
         x2='end_norm',
-        y=alt.Y('Disciplinas:N', axis=alt.Axis(labels=True, ticks=False), title=None)
+        y=alt.Y('Disciplinas:N', title=None, axis=alt.Axis(labels=True, ticks=False)),
     )
-    bars = base.mark_rect(cornerRadiusTopLeft=5, cornerRadiusTopRight=5, stroke='#f1f1f1', strokeWidth=3).encode(
+
+    bars = base.mark_rect(
+        cornerRadiusTopLeft=5,
+        cornerRadiusTopRight=5,
+        stroke='#f1f1f1',
+        strokeWidth=3
+    ).encode(
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'),
-                 alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado')]
+        tooltip=[
+            alt.Tooltip('Disciplinas:N', title='Disciplina'),
+            alt.Tooltip('Peso_Ponderado:Q', title='Peso Ponderado'),
+            alt.Tooltip('Total_Conteudos:Q', title='Total de Conteúdos'),
+            alt.Tooltip('Peso:Q', title='Peso')
+        ]
     )
+
     text_disciplina = base.mark_text(
         align='center',
-        baseline='middle',
-        dy=-10,
+        baseline='bottom',
+        dy=-5,
         fontWeight='bold',
         color='black'
     ).encode(
         text='Disciplinas:N',
         x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
     )
-    text_valor = base.mark_text(
+
+    text_peso = base.mark_text(
         align='center',
-        baseline='middle',
-        dy=12,
+        baseline='top',
+        dy=5,
         color='black'
     ).encode(
-        text=alt.Text('Peso_Ponderado:Q', format='.0f')
+        text=alt.Text('Peso_Ponderado:Q', format='.0f'),
+        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0,1]))
     )
-    chart = (bars + text_disciplina + text_valor).properties(
-        width=600,
-        height=150,
-        title='Peso Ponderado por Disciplina'
-    ).configure_view(strokeWidth=0).configure_axis(labels=True, grid=False, domain=False)
-    return chart
 
-# --- Gráfico barras verticais para Peso por Disciplina ---
-def bar_chart_peso_por_disciplina():
-    df = pd.DataFrame(ED_DATA)
-    chart = alt.Chart(df).mark_bar(stroke='#f1f1f1', strokeWidth=3, cornerRadius=5).encode(
-        x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
-                axis=alt.Axis(labelAngle=-45, labelFontSize=12)),
-        y=alt.Y('Peso:Q', title='Peso'),
-        color=alt.Color('Disciplinas:N', legend=None)
-    ).properties(
+    mosaic_chart = (bars + text_disciplina + text_peso).properties(
         width=600,
-        height=350,
-        title='Peso por Disciplina'
-    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
-    return chart
+        height=200,
+        title='Peso Ponderado por Disciplina (Mosaic Chart)'
+    ).configure_view(
+        strokeWidth=0
+    ).configure_axis(
+        domain=False,
+        ticks=False,
+        labels=False,
+        grid=False
+    )
+
+    return mosaic_chart
 
 # --- Mostrar os dois gráficos lado a lado (questões e mosaico) ---
 def display_questoes_e_peso(df_summary):
@@ -605,11 +615,17 @@ def main():
                 <div class="metric-label">Disciplina Prioritária</div>
             </div>''', unsafe_allow_html=True)
 
+    st.markdown("---")
+
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
+    st.markdown("---")
+
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
     create_stacked_bar(df)
+
+    st.markdown("---")
 
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     worksheet = get_worksheet()
@@ -636,11 +652,12 @@ def main():
                     except Exception as e:
                         st.error(f"Erro inesperado ao atualizar: {e}")
 
+    st.markdown("---")
+
     titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_questoes_e_peso(df_summary)
 
-    # Exemplo: exibir gráfico adicional do peso por disciplina logo abaixo
-    st.altair_chart(bar_chart_peso_por_disciplina(), use_container_width=True)
+    st.markdown("---")
 
     rodape_motivacional()
 
