@@ -108,10 +108,18 @@ def create_donut_chart(data_row):
         hoverinfo='label+percent'
     )])
     
-    fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b>  
+    # O título foi separado em um dicionário para evitar erros de f-string.
+    titulo_grafico = {
+        'text': f"<b>{data_row['Disciplinas']}</b>  
 <span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
-        title_x=0.5,
+        'y':0.9,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    }
+    
+    fig.update_layout(
+        title=titulo_grafico,
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
