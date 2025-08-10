@@ -22,7 +22,7 @@ ED_DATA = {
         'RLM',
         'INFORMÁTICA',
         'LEGISLAÇÃO',
-        'CONHECIMENTOS ESPECÍFICOS - ASSISTENTE EM ADMINISTRAÇÃO'
+        'CONHECIMENTOS ESPECÍFICOS'
     ],
     'Total_Conteudos': [20, 15, 10, 15, 30],
     'Peso': [2, 1, 1, 1, 3]
