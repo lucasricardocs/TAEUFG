@@ -488,34 +488,28 @@ def create_altair_radial_chart(data_row):
     concluido = int(data_row['Conteudos_trues'])
     pendente = int(data_row['Conteudos_falses'])
 
-    # Evita divisão por zero se não houver conteúdos
     if concluido == 0 and pendente == 0:
-        pendente = 1 # Adiciona um valor para exibir um gráfico completo de "Pendente"
+        pendente = 1
 
-    # Prepara o DataFrame para o Altair
     source = pd.DataFrame({
         "status": ["Concluído", "Pendente"],
         "values": [concluido, pendente]
     })
 
-    # Define o esquema de cores
     color_scheme = alt.Scale(
         domain=["Concluído", "Pendente"],
-        range=["#2ecc71", "#e74c3c"] # Verde para concluído, Vermelho para pendente
+        range=["#2ecc71", "#e74c3c"]
     )
 
-    # Cria o gráfico base conforme solicitado
     base = alt.Chart(source).encode(
         alt.Theta("values:Q").stack(True),
         alt.Radius("values").scale(type="sqrt", zero=True, rangeMin=20),
-        color=alt.Color("status:N", scale=color_scheme, legend=None), # Legenda removida do gráfico
+        color=alt.Color("status:N", scale=color_scheme, legend=None),
         tooltip=['status', 'values']
     )
 
-    # Camada do arco (donut chart)
     c1 = base.mark_arc(innerRadius=50, stroke="#fff", strokeWidth=2)
 
-    # Camada de texto com os valores (só mostra se o valor for maior que 0)
     text_data = source[source['values'] > 0]
     c2 = alt.Chart(text_data).mark_text(radiusOffset=25, fill="#fff", fontSize=14, fontWeight='bold').encode(
         alt.Theta("values:Q").stack(True),
@@ -523,7 +517,6 @@ def create_altair_radial_chart(data_row):
         text="values:Q"
     )
     
-    # Combina as camadas
     chart = (c1 + c2).properties(
         title=alt.TitleParams(
             text=f"{data_row['Disciplinas']}",
@@ -533,72 +526,10 @@ def create_altair_radial_chart(data_row):
             subtitleColor='#576574'
         )
     ).configure_view(
-        strokeWidth=0 # Remove a borda ao redor do gráfico
+        strokeWidth=0
     )
     
     return chart
-
-def create_performance_radar_chart(df_summary):
-    """Cria um gráfico radar mostrando o desempenho por disciplina."""
-    if df_summary.empty:
-        return go.Figure()
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatterpolar(
-        r=df_summary['Progresso_Ponderado'].tolist(),
-        theta=df_summary['Disciplinas'].tolist(),
-        fill='toself',
-        name='Progresso Ponderado',
-        line=dict(color='#2575fc', width=3),
-        fillcolor='rgba(37, 117, 252, 0.2)',
-        hovertemplate="<b>%{theta}</b>  
-Progresso: %{r:.1f}%<extra></extra>"
-    ))
-    
-    fig.add_trace(go.Scatterpolar(
-        r=df_summary['Percentual_Concluido'].tolist(),
-        theta=df_summary['Disciplinas'].tolist(),
-        fill='toself',
-        name='Percentual Simples',
-        line=dict(color='#6a11cb', width=2),
-        fillcolor='rgba(106, 17, 203, 0.1)',
-        hovertemplate="<b>%{theta}</b>  
-Percentual: %{r:.1f}%<extra></extra>"
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100],
-                tickfont=dict(color='#576574'),
-                gridcolor='rgba(0,0,0,0.1)'
-            ),
-            angularaxis=dict(
-                tickfont=dict(color='#2c3e50'),
-                gridcolor='rgba(0,0,0,0.1)'
-            ),
-            bgcolor='rgba(0,0,0,0)'
-        ),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#2c3e50'),
-        title=dict(
-            text="<b>Radar de Desempenho por Disciplina</b>",
-            x=0.5,
-            font=dict(size=18, color='#6a11cb')
-        ),
-        legend=dict(
-            font=dict(color='#2c3e50'),
-            bgcolor='#ffffff',
-            bordercolor='#e0e0e0',
-            borderwidth=1
-        ),
-        height=500
-    )
-    
-    return fig
 
 def create_progress_timeline_chart(df_summary):
     """Cria um gráfico de linha temporal do progresso."""
@@ -613,12 +544,10 @@ def create_progress_timeline_chart(df_summary):
     
     fig = go.Figure()
     
-    # Simular dados de progresso ao longo do tempo (para demonstração)
     dates = pd.date_range(start='2024-01-01', end=datetime.now(), freq='W')
     
     for idx, row in df_summary.iterrows():
         if row['Progresso_Ponderado'] > 0:
-            # Simular progresso crescente ao longo do tempo
             progress_values = np.cumsum(np.random.exponential(2, len(dates)))
             progress_values = (progress_values / progress_values[-1]) * row['Progresso_Ponderado']
             
@@ -638,27 +567,10 @@ Progresso: %{y:.1f}%<extra></extra>"
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color='#2c3e50'),
-        title=dict(
-            text="<b>Evolução do Progresso ao Longo do Tempo</b>",
-            x=0.5,
-            font=dict(size=18, color='#6a11cb')
-        ),
-        xaxis=dict(
-            gridcolor='rgba(0,0,0,0.1)',
-            tickfont=dict(color='#576574'),
-            title=dict(text='Data', font=dict(color='#2c3e50'))
-        ),
-        yaxis=dict(
-            gridcolor='rgba(0,0,0,0.1)',
-            tickfont=dict(color='#576574'),
-            title=dict(text='Progresso (%)', font=dict(color='#2c3e50'))
-        ),
-        legend=dict(
-            font=dict(color='#2c3e50'),
-            bgcolor='#ffffff',
-            bordercolor='#e0e0e0',
-            borderwidth=1
-        ),
+        title=dict(text="<b>Evolução do Progresso ao Longo do Tempo</b>", x=0.5, font=dict(size=18, color='#6a11cb')),
+        xaxis=dict(gridcolor='rgba(0,0,0,0.1)', tickfont=dict(color='#576574'), title=dict(text='Data', font=dict(color='#2c3e50'))),
+        yaxis=dict(gridcolor='rgba(0,0,0,0.1)', tickfont=dict(color='#576574'), title=dict(text='Progresso (%)', font=dict(color='#2c3e50'))),
+        legend=dict(font=dict(color='#2c3e50'), bgcolor='#ffffff', bordercolor='#e0e0e0', borderwidth=1),
         height=400
     )
     
@@ -671,7 +583,6 @@ def create_priority_matrix_chart(df_summary):
     
     fig = go.Figure()
     
-    # Calcular tamanho dos pontos baseado na prioridade
     df_summary['Prioridade'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
     max_prioridade = df_summary['Prioridade'].max()
     sizes = (df_summary['Prioridade'] / max_prioridade * 50) + 10 if max_prioridade > 0 else 10
@@ -685,10 +596,7 @@ def create_priority_matrix_chart(df_summary):
             color=df_summary['Progresso_Ponderado'],
             colorscale='RdYlGn',
             showscale=True,
-            colorbar=dict(
-                title='Progresso (%)',
-                tickfont=dict(color='#2c3e50')
-            ),
+            colorbar=dict(title='Progresso (%)', tickfont=dict(color='#2c3e50')),
             line=dict(color='#2c3e50', width=2)
         ),
         text=[disc[:10] + '...' if len(disc) > 10 else disc for disc in df_summary['Disciplinas']],
@@ -701,5 +609,276 @@ Prioridade: %{customdata:.1f}<extra></extra>",
         customdata=df_summary['Prioridade']
     ))
     
-    fig.update_layout
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#2c3e50'),
+        title=dict(text="<b>Matriz de Prioridades (Peso vs Progresso)</b>", x=0.5, font=dict(size=18, color='#6a11cb')),
+        xaxis=dict(gridcolor='rgba(0,0,0,0.1)', tickfont=dict(color='#576574'), title=dict(text='Peso da Disciplina', font=dict(color='#2c3e50'))),
+        yaxis=dict(gridcolor='rgba(0,0,0,0.1)', tickfont=dict(color='#576574'), title=dict(text='Progresso (%)', font=dict(color='#2c3e50'))),
+        height=400
+    )
     
+    return fig
+
+def create_daily_study_plan_chart(df_plano):
+    """Cria um gráfico do plano de estudos diário."""
+    if df_plano.empty:
+        return go.Figure().update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            title=dict(text="<b>Plano de Estudos Diário (Aguardando Dados)</b>", x=0.5, font=dict(size=18, color='#6a11cb')),
+            xaxis=dict(showgrid=False, visible=False),
+            yaxis=dict(showgrid=False, visible=False)
+        )
+    
+    fig = make_subplots(
+        rows=2, cols=1,
+        subplot_titles=('Tópicos por Dia por Disciplina', 'Tempo Diário Estimado (minutos)'),
+        vertical_spacing=0.15,
+        specs=[[{"secondary_y": False}], [{"secondary_y": False}]]
+    )
+    
+    fig.add_trace(
+        go.Bar(
+            x=df_plano['Disciplina'],
+            y=df_plano['Topicos_Por_Dia'],
+            name='Tópicos/Dia',
+            marker=dict(
+                color=df_plano['Prioridade_Score'],
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title='Prioridade', tickfont=dict(color='#2c3e50'), y=0.75)
+            ),
+            text=df_plano['Topicos_Por_Dia'],
+            textposition='auto',
+            textfont=dict(color='#2c3e50'),
+            hovertemplate="<b>%{x}</b>  
+Tópicos/Dia: %{y}  
+Prioridade: %{customdata:.1f}<extra></extra>",
+            customdata=df_plano['Prioridade_Score']
+        ),
+        row=1, col=1
+    )
+    
+    fig.add_trace(
+        go.Bar(
+            x=df_plano['Disciplina'],
+            y=df_plano['Tempo_Diario_Min'],
+            name='Tempo (min)',
+            marker=dict(color='#2575fc', opacity=0.8),
+            text=df_plano['Tempo_Diario_Min'],
+            textposition='auto',
+            textfont=dict(color='#2c3e50'),
+            hovertemplate="<b>%{x}</b>  
+Tempo: %{y} min  
+Conteúdos Restantes: %{customdata}<extra></extra>",
+            customdata=df_plano['Conteudos_Restantes']
+        ),
+        row=2, col=1
+    )
+    
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#2c3e50'),
+        title=dict(text="<b>Plano de Estudos Diário</b>", x=0.5, font=dict(size=18, color='#6a11cb')),
+        showlegend=False,
+        height=600
+        )
+    
+    fig.update_xaxes(tickfont=dict(color='#576574'), gridcolor='rgba(0,0,0,0.1)', tickangle=45)
+    fig.update_yaxes(tickfont=dict(color='#576574'), gridcolor='rgba(0,0,0,0.1)')
+    
+    return fig
+
+# --- Função Principal ---
+def main():
+    """Função principal do dashboard."""
+    st.set_page_config(
+        page_title="📚 Dashboard de Estudos - Concurso 2025",
+        page_icon="📚",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
+    
+    # Aplicar tema celestial
+    apply_celestial_theme()
+    
+    # Header principal
+    st.markdown("""
+        <div class="main-header">
+            <h1>📚 Dashboard de Estudos</h1>
+            <p>Acompanhe seu progresso para o Concurso 2025</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Carregar dados
+    df_dados = read_sales_data()
+    
+    # Calcular métricas
+    df_summary, progresso_geral = calculate_weighted_metrics(df_dados)
+    stats = calculate_statistics(df_dados, df_summary)
+    df_plano = calculate_daily_study_plan(df_dados, df_summary)
+    
+    # Seção de estatísticas principais
+    st.markdown('<div class="section-header">📊 Estatísticas Gerais</div>', unsafe_allow_html=True)
+    
+    cols = st.columns(5)
+    
+    with cols[0]:
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-value">{progresso_geral:.1f}%</div>
+                <div class="metric-label">Progresso Geral</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with cols[1]:
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-value">{stats['dias_restantes']}</div>
+                <div class="metric-label">Dias Restantes</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with cols[2]:
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-value">{stats['total_concluidos']}</div>
+                <div class="metric-label">Conteúdos Concluídos</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with cols[3]:
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-value">{stats['total_conteudos']}</div>
+                <div class="metric-label">Total de Conteúdos</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with cols[4]:
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-value">{stats['topicos_por_dia']}</div>
+                <div class="metric-label">Tópicos/Dia Necessários</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    # Seção de gráficos radiais por disciplina
+    st.markdown('<div class="section-header">🎯 Progresso por Disciplina</div>', unsafe_allow_html=True)
+    
+    # Criar grid de gráficos radiais
+    cols = st.columns(len(ED_DATA) if len(ED_DATA) <= 5 else 5)
+    for idx, (_, row) in enumerate(df_summary.iterrows()):
+        with cols[idx % 5]:
+            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+            fig = create_altair_radial_chart(row)
+            st.altair_chart(fig, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Seção de gráficos adicionais
+    st.markdown('<div class="section-header">📈 Análises Avançadas</div>', unsafe_allow_html=True)
+    
+    # Gráfico de Matriz de Prioridades
+    with st.container():
+        priority_fig = create_priority_matrix_chart(df_summary)
+        st.plotly_chart(priority_fig, use_container_width=True)
+    
+    # Gráfico de evolução temporal
+    with st.container():
+        timeline_fig = create_progress_timeline_chart(df_summary)
+        st.plotly_chart(timeline_fig, use_container_width=True)
+    
+    # Seção do plano de estudos diário
+    st.markdown('<div class="section-header">📅 Plano de Estudos Diário</div>', unsafe_allow_html=True)
+    
+    if not df_plano.empty:
+        # Gráfico do plano de estudos
+        with st.container():
+            plano_fig = create_daily_study_plan_chart(df_plano)
+            st.plotly_chart(plano_fig, use_container_width=True)
+        
+        # Tabela detalhada do plano
+        with st.container():
+            st.markdown("### 📋 Detalhamento do Plano de Estudos")
+            
+            df_plano_display = df_plano.copy()
+            df_plano_display['Disciplina'] = df_plano_display['Disciplina'].str[:30]
+            df_plano_display['Tempo_Diario_Horas'] = (df_plano_display['Tempo_Diario_Min'] / 60).round(1)
+            
+            st.dataframe(
+                df_plano_display[['Disciplina', 'Conteudos_Restantes', 'Topicos_Por_Dia', 'Tempo_Diario_Horas', 'Prioridade_Score']].rename(columns={
+                    'Disciplina': 'Disciplina',
+                    'Conteudos_Restantes': 'Conteúdos Restantes',
+                    'Topicos_Por_Dia': 'Tópicos/Dia',
+                    'Tempo_Diario_Horas': 'Tempo Diário (h)',
+                    'Prioridade_Score': 'Score Prioridade'
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            tempo_total_diario = df_plano['Tempo_Diario_Min'].sum()
+            st.markdown(f"""
+                <div style="text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 10px; margin-top: 1rem; border: 1px solid #e0e0e0;">
+                    <h3 style="color: #6a11cb;">⏰ Tempo Total de Estudo Diário: {tempo_total_diario:.0f} minutos ({tempo_total_diario/60:.1f} horas)</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
+    else:
+        st.info("🎉 Parabéns! Todos os conteúdos foram concluídos ou não há tempo suficiente para calcular o plano.")
+    
+    # Seção de containers por disciplina
+    st.markdown('<div class="section-header">📚 Detalhes por Disciplina</div>', unsafe_allow_html=True)
+    
+    for _, row in df_summary.iterrows():
+        disciplina = row['Disciplinas']
+        
+        conteudos_disciplina = df_dados[df_dados['Disciplinas'] == disciplina] if not df_dados.empty else pd.DataFrame()
+        
+        st.markdown(f"""
+            <div class="disciplina-container">
+                <div class="disciplina-title">{disciplina}</div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Progresso Ponderado", f"{row['Progresso_Ponderado']:.1f}%")
+        
+        with col2:
+            st.metric("Conteúdos Concluídos", f"{int(row['Conteudos_trues'])}")
+        
+        with col3:
+            st.metric("Conteúdos Pendentes", f"{int(row['Conteudos_falses'])}")
+        
+        with col4:
+            st.metric("Peso", f"{int(row['Peso'])}")
+        
+        if not conteudos_disciplina.empty:
+            st.markdown("**Conteúdos Registrados:**")
+            for _, conteudo in conteudos_disciplina.iterrows():
+                status_icon = "✅" if conteudo['Status'] == 'True' else "❌"
+                status_color = "#2ecc71" if conteudo['Status'] == 'True' else "#e74c3c"
+                st.markdown(f"""
+                    <div style="padding: 0.5rem; margin: 0.25rem 0; background: #f8f9fa; border-radius: 8px; border-left: 4px solid {status_color};">
+                        {status_icon} {conteudo['Conteúdos']}
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info(f"Nenhum conteúdo registrado para {disciplina} ainda.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown("""
+        <div class="footer">
+            <p>Dashboard desenvolvido para acompanhamento de estudos • Concurso 2025</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
+
