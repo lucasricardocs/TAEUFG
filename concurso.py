@@ -188,7 +188,7 @@ def create_altair_donut(row):
         ),
         width=300,
         height=300
-    ).configure_view(strokeWidth=0)
+    ).configure_view(strokeWidth=1)
     return chart
 
 def create_stacked_bar(df):
