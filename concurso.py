@@ -133,9 +133,6 @@ def calculate_stats(df, df_summary):
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
 
-    maior_prog = df_summary.loc[df_summary['Progresso_Ponderado'].idxmax()]['Disciplinas'] if not df_summary.empty else ""
-    menor_prog = df_summary.loc[df_summary['Progresso_Ponderado'].idxmin()]['Disciplinas'] if not df_summary.empty else ""
-
     df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
     maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas'] if not df_summary.empty else ""
 
@@ -146,8 +143,6 @@ def calculate_stats(df, df_summary):
         'pendentes': int(pendentes),
         'percentual_geral': percentual_geral,
         'topicos_por_dia': topicos_por_dia,
-        'maior_progresso': maior_prog,
-        'menor_progresso': menor_prog,
         'maior_prioridade': maior_prioridade
     }
 
@@ -161,7 +156,7 @@ def create_altair_donut(row):
         pendente = 1
         total = 1
 
-    # Compute percentage labels
+    # Percentual para rótulos
     concluido_pct = round((concluido / total) * 100, 1)
     pendente_pct = round((pendente / total) * 100, 1)
 
@@ -200,33 +195,42 @@ def create_stacked_bar(df):
         st.info("Sem dados para gráfico de barras empilhadas.")
         return
 
-    # Agregar dados por disciplina e status
+    # Agrupar dados por disciplina e status
     df_group = df.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
-    # Pivot para formato apropriado para stacked bar
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
     df_pivot['Total'] = df_pivot.sum(axis=1)
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    # Preparar dados para Altair stacked bar
-    df_melt = df_pivot.melt(id_vars=['Disciplinas', 'Pct_True'], value_vars=['True', 'False'], var_name='Status', value_name='Qtd')
+    # Em percentual para gráfico de barras horizontais empilhadas
+    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1)
+    df_pivot['False_Pct'] = (df_pivot['False'] / df_pivot['Total'] * 100).round(1)
 
-    color_scale = alt.Scale(domain=['True', 'False'], range=['#2ecc71', '#e74c3c'])
+    # Preparar dados para Altair
+    df_melt = df_pivot.melt(id_vars=['Disciplinas', 'Pct_True'], value_vars=['True_Pct', 'False_Pct'], var_name='Status', value_name='Percentual')
+
+    # Mapeando nomes para legendas
+    df_melt['Status'] = df_melt['Status'].map({'True_Pct':'Concluído', 'False_Pct':'Pendente'})
+
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     chart = (
         alt.Chart(df_melt)
         .mark_bar()
         .encode(
-            x=alt.X('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
-            y=alt.Y('Qtd:Q', title='Quantidade de Conteúdos'),
+            y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
+            x=alt.X('Percentual:Q', title='Percentual (%)', axis=alt.Axis(format='%')),
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
-            tooltip=['Disciplinas', 'Status', 'Qtd']
+            tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
-        .properties(title='Conteúdos Concluídos (True) e Pendentes (False) por Disciplina', width=800, height=400)
+        .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', width=900, height=450)
     )
-    st.altair_chart(chart, use_container_width=True)
+    # Usar scroll horizontal para o container do gráfico
+    st.markdown('<div style="overflow-x: auto;">', unsafe_allow_html=True)
+    st.altair_chart(chart, use_container_width=False)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- CSS para tema bonito ---
+# --- CSS com background animado e estilos bons ---
 def inject_css():
     st.markdown("""
     <style>
@@ -234,12 +238,20 @@ def inject_css():
 
     body, html, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
-        background: #f4f6fb;
-        color: #222831;
+        background: #0e0e2c url('https://www.script-tutorials.com/demos/360/images/stars.png') repeat center top;
+        animation: moveBackground 200s linear infinite;
+        color: #F5F5F5;
+        overflow-x: hidden;
+    }
+
+    @keyframes moveBackground {
+        from {background-position: 0 0;}
+        to {background-position: -10000px 5000px;}
     }
 
     h1, h2, h3 {
-        color: #304FFE;
+        color: #8ab4f8;
+        font-weight: 600;
     }
 
     .days-remaining-box {
@@ -250,46 +262,90 @@ def inject_css():
         color: white;
         font-weight: 700;
         font-size: 2.5rem;
-        box-shadow: 0 6px 20px rgba(48, 79, 254, 0.4);
+        box-shadow: 0 6px 25px rgba(101, 116, 255, 0.7);
         margin-bottom: 2rem;
-    }
-
-    .study-tips-box {
-        background: #FFFFFF;
-        border: 3px solid #6574FF;
-        border-radius: 16px;
-        padding: 1.5rem 2rem;
-        color: #2E3A59;
-        box-shadow: 0 4px 15px rgba(101, 116, 255, 0.25);
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
-    }
-
-    .study-tips-box ul {
-        padding-left: 1.2rem;
-        margin: 0;
     }
 
     .metric-container {
-        background: white;
+        background: rgba(255, 255, 255, 0.15);
         border-radius: 12px;
         padding: 1.3rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 10px rgba(48, 79, 254, 0.15);
+        box-shadow: 0 4px 15px rgba(101, 116, 255, 0.7);
         text-align: center;
+        backdrop-filter: blur(10px);
+        color: #f5f5f5;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .metric-container:hover {
+        transform: translateY(-7px);
+        box-shadow: 0 8px 30px rgba(101, 116, 255, 0.9);
     }
 
     .metric-value {
-        font-size: 2.8rem;
+        font-size: 3rem;
         font-weight: 700;
-        color: #304FFE;
+        color: #a3bffa;
         margin-bottom: 0.2rem;
     }
 
     .metric-label {
         font-weight: 600;
-        color: #6B7280;
+        color: #d6d6f5;
         font-size: 1.1rem;
+    }
+
+    /* Scroll horizontal para containers de gráficos e listas */
+    .scroll-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Estilo para os gráficos Altair dentro dos containers */
+    .altair-chart {
+        display: inline-block !important;
+        vertical-align: top;
+        margin-right: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 4px 15px rgba(101, 116, 255, 0.5);
+    }
+
+    /* Expansive containers para conteúdos das disciplinas */
+    [data-baseweb="accordion"] > div > div {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 14px !important;
+        color: #e0e0ff !important;
+        font-weight: 500;
+        transition: background 0.3s ease;
+    }
+    [data-baseweb="accordion"] > div > div:hover {
+        background: rgba(101, 116, 255, 0.3) !important;
+    }
+
+    /* Conteúdo das linhas das tabelas dentro dos expansives */
+    .streamlit-expanderContent > div {
+        color: #e0e0ff;
+        font-weight: 400;
+    }
+
+    /* Table styles inside detail */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #cfcfff;
+    }
+    th, td {
+        border: 1px solid #444; padding: 8px; text-align: left;
+    }
+    th {
+        background: rgba(101, 116, 255, 0.3);
+    }
+    tr:nth-child(even) {
+        background: rgba(101, 116, 255, 0.15);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -302,7 +358,7 @@ def main():
     # Calcular dias restantes
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Cabeçalho
+    # Caixa principal de dias restantes
     st.markdown(f'<div class="days-remaining-box">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
 
     # Carregar dados e cálculos
@@ -310,7 +366,7 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Métricas principais
+    # Métricas principais em colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f'''
@@ -345,45 +401,43 @@ def main():
 
     st.markdown('---')
 
-    # Dicas de estudo baseadas na prioridade
-    st.markdown('<div class="study-tips-box">')
-    st.markdown('### 🎯 Dicas de Estudo Com Base nas Prioridades')
-    st.markdown('<ul>')
-    # Ordenar por prioridade (maior para menor)
-    df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
-    df_prioridades = df_summary.sort_values('Prioridade_Score', ascending=False)
-    for _, row in df_prioridades.iterrows():
-        st.markdown(f'<li><b>{row["Disciplinas"]}</b> (Peso {row["Peso"]}): focar nos conteúdos pendentes para avançar</li>', unsafe_allow_html=True)
-    st.markdown('</ul>')
-    st.markdown('</div>')
-
-    st.markdown('---')
-
-    # Mostrar os gráficos de donut maiores para cada disciplina, lado a lado, máximo 4 por linha
+    # Mostrar gráficos de donut com scroll horizontal
     st.markdown('### Progresso por Disciplina')
-    num_cols = min(len(df_summary), 4)
-    cols = st.columns(num_cols)
-    for idx, row in df_summary.iterrows():
-        with cols[idx % num_cols]:
+    with st.container():
+        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        num_cols = min(len(df_summary), 10)
+        for idx, row in df_summary.iterrows():
+            st.markdown(f'<div class="altair-chart" style="width:360px; display:inline-block;">', unsafe_allow_html=True)
             st.altair_chart(create_altair_donut(row), use_container_width=False)
+            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('---')
 
-    # Gráfico de barras empilhadas True/False ordenado por progresso
-    st.markdown('### Conteúdos Concluídos e Pendentes por Disciplina')
+    # Gráfico de barras empilhadas horizontal com scroll
+    st.markdown('### Percentual de Conteúdos Concluídos e Pendentes por Disciplina')
     create_stacked_bar(df)
 
     st.markdown('---')
 
-    # Tabela detalhada para os conteúdos (opcional)
-    st.markdown('### 📚 Detalhamento dos Conteúdos')
+    # Containers expansíveis para os conteúdos das disciplinas
+    st.markdown('### 📚 Conteúdos por Disciplina')
     if df.empty:
         st.info("Nenhum dado disponível para exibir conteúdos.")
     else:
-        df_display = df.copy()
-        df_display['Ícone'] = df_display['Status'].apply(lambda x: "✅" if x=='True' else "❌")
-        st.dataframe(df_display[['Disciplinas', 'Conteúdos', 'Status', 'Ícone']].sort_values(['Disciplinas', 'Status', 'Conteúdos']), use_container_width=True)
-
+        disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
+        for disc in disciplinas_ordenadas:
+            conteudos_disciplina = df[df['Disciplinas'] == disc]
+            with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
+                # Mostrar tabela estilizada com ícones
+                df_disp = conteudos_disciplina.copy()
+                df_disp['Ícone'] = df_disp['Status'].apply(lambda x: "✅" if x=='True' else "❌")
+                df_disp_display = df_disp[['Conteúdos', 'Status', 'Ícone']].rename(columns={
+                    'Conteúdos': 'Conteúdo',
+                    'Status': 'Status',
+                    'Ícone': 'Ícone'
+                })
+                st.dataframe(df_disp_display, use_container_width=True)
 
 if __name__ == "__main__":
     main()
