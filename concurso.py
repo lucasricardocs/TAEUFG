@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -18,7 +17,7 @@ warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=Fa
 
 # O ID e o nome da aba agora são fixos no código, como no primeiro exemplo.
 # Mantenha os valores corretos para o seu projeto.
-SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM' 
+SPREADSHEET_ID = '1EyllfZ69b5H-n47iB-_Zau6nf3rcBEoG8qYNbYv5uGs'
 WORKSHEET_NAME = 'Registro'
 
 CONCURSO_DATE = datetime(2025, 9, 28) # Data do concurso
@@ -40,10 +39,10 @@ ED_DATA = {
 @st.cache_resource
 def get_google_auth():
     """Autoriza o acesso ao Google Sheets e retorna o cliente gspread."""
+    # Usando apenas os escopos mínimos necessários
     SCOPES = [
         'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/spreadsheets.readonly',
-        'https://www.googleapis.com/auth/drive.readonly'
+        'https://www.googleapis.com/auth/spreadsheets.readonly'
     ]
     
     try:
@@ -75,23 +74,36 @@ def get_google_auth():
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
         gc = gspread.authorize(creds)
         
-        # Teste de conectividade
+        # Teste de conectividade simples (sem usar Drive API)
         try:
-            gc.list_permissions(SPREADSHEET_ID)
+            # Tenta acessar diretamente a planilha
+            spreadsheet = gc.open_by_key(SPREADSHEET_ID)
             st.success("✅ Conectado ao Google Sheets com sucesso!")
         except Exception as e:
-            st.warning(f"⚠️ Credenciais válidas, mas erro ao acessar planilha: {e}")
+            st.warning(f"⚠️ Credenciais válidas, mas possível erro de acesso: {e}")
             
         return gc
         
     except Exception as e:
         st.error(f"❌ Erro de autenticação com Google Cloud: {e}")
-        st.info("""
-        **Possíveis soluções:**
-        - Verifique se o arquivo secrets.toml está configurado corretamente
-        - Confirme se as credenciais do service account estão válidas
-        - Certifique-se de que a API do Google Sheets está habilitada no GCP
-        """)
+        
+        # Mensagens de erro mais específicas
+        if "drive.googleapis.com" in str(e):
+            st.info("""
+            **🔧 Google Drive API não habilitada:**
+            1. Acesse: https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=874950012982
+            2. Clique em "Habilitar" ou "Enable"
+            3. Aguarde alguns minutos para propagar
+            
+            **Ou use apenas Google Sheets API (versão simplificada)**
+            """)
+        else:
+            st.info("""
+            **Possíveis soluções:**
+            - Verifique se o arquivo secrets.toml está configurado corretamente
+            - Confirme se as credenciais do service account estão válidas
+            - Certifique-se de que a API do Google Sheets está habilitada no GCP
+            """)
         return None
 
 @st.cache_resource
