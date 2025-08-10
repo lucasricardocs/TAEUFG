@@ -105,7 +105,7 @@ def read_sales_data():
         np.random.seed(42)
         for disciplina in ED_DATA['Disciplinas']:
             for i in range(np.random.randint(5, 15)):
-                status = 'Feito' if np.random.rand() < 0.5 else 'Pendente'
+                status = 'true' if np.random.rand() < 0.5 else 'false'
                 sample_data.append({'Disciplinas': disciplina, 'Conteúdos': f'Tópico {i+1}', 'Status': status})
         
         return pd.DataFrame(sample_data)
@@ -135,7 +135,7 @@ def read_sales_data():
         df['Conteúdos'] = df['Conteúdos'].astype(str).str.strip()
         
         # Filtrar apenas status válidos
-        df_filtrado = df[df['Status'].str.lower().isin(['feito', 'pendente'])]
+        df_filtrado = df[df['Status'].str.lower().isin(['true', 'false'])]
         
         # Remover linhas vazias
         df_final = df_filtrado[
@@ -163,25 +163,25 @@ def calculate_weighted_metrics(df_dados):
 
     df_dados = df_dados.copy()
     df_dados['Status'] = df_dados['Status'].astype(str).str.strip()
-    df_dados['Feito'] = (df_dados['Status'].str.lower() == 'feito').astype(int)
-    df_dados['Pendente'] = (df_dados['Status'].str.lower() == 'pendente').astype(int)
+    df_dados['true'] = (df_dados['Status'].str.lower() == 'true').astype(int)
+    df_dados['false'] = (df_dados['Status'].str.lower() == 'false').astype(int)
     
     df_progresso_summary = df_dados.groupby('Disciplinas', observed=False).agg(
-        Conteudos_Feitos=('Feito', 'sum'),
-        Conteudos_Pendentes=('Pendente', 'sum')
+        Conteudos_trues=('true', 'sum'),
+        Conteudos_falses=('false', 'sum')
     ).reset_index()
     
     df_final = pd.merge(df_edital, df_progresso_summary, on='Disciplinas', how='left').fillna(0)
     
-    df_final['Total_Conteudos_Real'] = df_final['Conteudos_Feitos'] + df_final['Conteudos_Pendentes']
+    df_final['Total_Conteudos_Real'] = df_final['Conteudos_trues'] + df_final['Conteudos_falses']
     df_final['Pontos_por_Conteudo'] = np.where(
         df_final['Total_Conteudos'] > 0,
         df_final['Peso'] / df_final['Total_Conteudos'],
         0
     )
-    df_final['Pontos_Concluidos'] = df_final['Conteudos_Feitos'] * df_final['Pontos_por_Conteudo']
+    df_final['Pontos_Concluidos'] = df_final['Conteudos_trues'] * df_final['Pontos_por_Conteudo']
     df_final['Pontos_Totais'] = df_final['Total_Conteudos'] * df_final['Pontos_por_Conteudo']
-    df_final['Pontos_Pendentes'] = df_final['Pontos_Totais'] - df_final['Pontos_Concluidos']
+    df_final['Pontos_falses'] = df_final['Pontos_Totais'] - df_final['Pontos_Concluidos']
     
     df_final['Progresso_Ponderado'] = np.where(
         df_final['Peso'] > 0,
@@ -192,7 +192,7 @@ def calculate_weighted_metrics(df_dados):
     # Calcular percentuais adicionais
     df_final['Percentual_Concluido'] = np.where(
         df_final['Total_Conteudos_Real'] > 0,
-        np.round((df_final['Conteudos_Feitos'] / df_final['Total_Conteudos_Real']) * 100, 1),
+        np.round((df_final['Conteudos_trues'] / df_final['Total_Conteudos_Real']) * 100, 1),
         0
     )
     
@@ -216,8 +216,8 @@ def calculate_statistics(df_dados, df_summary):
     
     # Total de conteúdos
     stats['total_conteudos'] = len(df_dados) if not df_dados.empty else 0
-    stats['total_concluidos'] = len(df_dados[df_dados['Status'] == 'Feito']) if not df_dados.empty else 0
-    stats['total_pendentes'] = len(df_dados[df_dados['Status'] == 'Pendente']) if not df_dados.empty else 0
+    stats['total_concluidos'] = len(df_dados[df_dados['Status'] == 'true']) if not df_dados.empty else 0
+    stats['total_falses'] = len(df_dados[df_dados['Status'] == 'false']) if not df_dados.empty else 0
     
     # Percentual geral de conclusão
     if stats['total_conteudos'] > 0:
@@ -366,11 +366,11 @@ def create_enhanced_donut_chart(data_row):
     """Cria um gráfico de rosca aprimorado e animado."""
     # Preparar dados para o gráfico
     concluido = data_row['Pontos_Concluidos']
-    pendente = data_row['Pontos_Pendentes']
+    false = data_row['Pontos_falses']
     
     df_chart = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Pontos': [concluido, pendente],
+        'Status': ['Concluído', 'false'],
+        'Pontos': [concluido, false],
         'Percentual': [data_row['Progresso_Ponderado'], 100 - data_row['Progresso_Ponderado']],
         'order': [1, 2]  # Para controlar a ordem de animação
     })
@@ -391,7 +391,7 @@ def create_enhanced_donut_chart(data_row):
         color=alt.Color(
             'Status:N',
             scale=alt.Scale(
-                domain=['Concluído', 'Pendente'],
+                domain=['Concluído', 'false'],
                 range=['#667eea', '#e74c3c']
             ),
             legend=None
@@ -776,8 +776,8 @@ def main():
             
             st.markdown(f"""
                 <div class="stat-card">
-                    <div class="stat-number">{stats['total_pendentes']}</div>
-                    <div class="stat-label">Conteúdos Pendentes</div>
+                    <div class="stat-number">{stats['total_falses']}</div>
+                    <div class="stat-label">Conteúdos falses</div>
                 </div>
             """, unsafe_allow_html=True)
         
@@ -861,9 +861,9 @@ def main():
     
     # Preparar dados para exibição
     df_display = df_summary[['Disciplinas', 'Progresso_Ponderado', 'Percentual_Concluido', 
-                           'Conteudos_Feitos', 'Conteudos_Pendentes', 'Peso']].copy()
+                           'Conteudos_trues', 'Conteudos_falses', 'Peso']].copy()
     df_display.columns = ['Disciplina', 'Progresso Ponderado (%)', 'Progresso Real (%)', 
-                         'Concluídos', 'Pendentes', 'Peso']
+                         'Concluídos', 'falses', 'Peso']
     
     st.dataframe(
         df_display,
