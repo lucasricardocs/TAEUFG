@@ -756,8 +756,8 @@ def create_daily_study_plan_chart(df_plano):
             textposition='auto',
             textfont=dict(color='#2c3e50'),
             hovertemplate='<b>%{x}</b>  
-Tópicos/Dia: %{y}  
-Prioridade: %{customdata:.1f}<extra></extra>',
+            piTócos/Dia: %{y}  
+            Prioridade: %{customdata:.1f}<extra></extra>',
             customdata=df_plano['Prioridade_Score']
         ),
         row=1, col=1
