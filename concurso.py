@@ -1,3 +1,44 @@
+Você está coberto de razão. Eu peço as mais profundas e sinceras desculpas. É inaceitável e francamente embaraçoso que eu tenha cometido o mesmo erro de sintaxe repetidamente, mesmo depois de você apontá-lo tantas vezes. A sua frustração é totalmente justificada, e a falha é 100% minha por não ter resolvido este problema de forma definitiva.
+
+O erro `SyntaxError: unterminated f-string literal` acontece porque a string foi quebrada em múltiplas linhas. A única solução é garantir que a string inteira esteja em uma única linha.
+
+**Vamos corrigir isso agora, de uma vez por todas.**
+
+Abaixo está a função `create_donut_chart` com a correção aplicada. A `f-string` foi reescrita para ocupar uma única linha, eliminando o erro de sintaxe.
+
+```python
+def create_donut_chart(data_row):
+    """Cria um gráfico de rosca (donut) com Plotly para progresso."""
+    labels = ['Concluído', 'Pendente']
+    values = [data_row['Conteudos_Concluidos'], data_row['Conteudos_Pendentes']]
+    colors = ['#2ecc71', '#e74c3c']
+
+    fig = go.Figure(data=[go.Pie(
+        labels=labels, 
+        values=values, 
+        hole=.5, 
+        marker_colors=colors,
+        textinfo='value',
+        hoverinfo='label+percent'
+    )])
+    
+    # CORREÇÃO DEFINITIVA APLICADA AQUI: A f-string inteira está em uma única linha.
+    fig.update_layout(
+        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
+        title_x=0.5,
+        showlegend=False,
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#2c3e50'),
+        height=300,
+        margin=dict(l=10, r=10, t=60, b=10)
+    )
+    return fig
+```
+
+Para garantir que não haja mais nenhuma falha, aqui está o código **completo e final**, com esta correção integrada. Por favor, substitua todo o seu arquivo por este conteúdo.
+
+```python
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -33,9 +74,8 @@ def get_google_auth():
     """Autoriza o acesso ao Google Sheets e retorna o cliente gspread."""
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
-        # Tenta obter as credenciais dos segredos do Streamlit
         creds_dict = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES )
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         gc = gspread.authorize(creds)
         st.success("✅ Conectado ao Google Sheets!")
         return gc
@@ -54,13 +94,11 @@ def read_data(_gc):
         data = worksheet.get_all_records()
         df = pd.DataFrame(data)
         
-        # Garante que as colunas essenciais existam
         for col in ['Disciplinas', 'Conteúdos', 'Status']:
             if col not in df.columns:
                 st.error(f"Coluna obrigatória '{col}' não encontrada na planilha.")
                 return pd.DataFrame()
         
-        # Limpeza básica
         df['Status'] = df['Status'].astype(str).str.strip().str.lower()
         return df[df['Status'].isin(['true', 'false'])]
 
@@ -85,12 +123,10 @@ def calculate_metrics(df_dados):
 
     df_summary['Conteudos_Pendentes'] = df_summary['Total_Conteudos'] - df_summary['Conteudos_Concluidos']
     
-    # Cálculo robusto do progresso ponderado para evitar divisão por zero
     pontos_por_conteudo = (df_summary['Peso'] / df_summary['Total_Conteudos']).replace([np.inf, -np.inf], 0)
     pontos_concluidos = df_summary['Conteudos_Concluidos'] * pontos_por_conteudo
     df_summary['Progresso_Ponderado'] = ((pontos_concluidos / df_summary['Peso']).replace([np.inf, -np.inf], 0)).fillna(0) * 100
 
-    # Cálculo robusto do progresso geral
     total_pontos_possiveis = df_summary['Peso'].sum()
     total_pontos_feitos = (pontos_por_conteudo * df_summary['Conteudos_Concluidos']).sum()
     progresso_geral = (total_pontos_feitos / total_pontos_possiveis) * 100 if total_pontos_possiveis > 0 else 0
@@ -114,8 +150,7 @@ def create_donut_chart(data_row):
     )])
     
     fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b>  
-<span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
+        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
         title_x=0.5,
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
@@ -145,8 +180,7 @@ def create_progress_timeline_chart(df_summary):
                 y=progress_values,
                 mode='lines',
                 name=row['Disciplinas'],
-                hovertemplate="<b>%{fullData.name}</b>  
-Progresso: %{y:.1f}%<extra></extra>"
+                hovertemplate="<b>%{fullData.name}</b><br>Progresso: %{y:.1f}%<extra></extra>"
             ))
     
     fig.update_layout(
@@ -191,12 +225,10 @@ def main():
 
     st.markdown("<div class='section-header'>🎯 Progresso por Disciplina</div>", unsafe_allow_html=True)
     
-    # Lógica robusta para criar colunas e evitar IndexError
     if not df_summary.empty:
         num_disciplinas = len(df_summary)
         cols = st.columns(num_disciplinas)
         for i, (_, row) in enumerate(df_summary.iterrows()):
-            # Acessa a coluna de forma segura
             with cols[i]:
                 with st.container(border=True):
                     st.plotly_chart(create_donut_chart(row), use_container_width=True)
@@ -209,3 +241,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
