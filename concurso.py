@@ -133,8 +133,11 @@ def calculate_stats(df, df_summary):
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
 
-    df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso'] if not df_summary.empty else 0
-    maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas'] if not df_summary.empty else ""
+    if not df_summary.empty:
+        df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
+        maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
+    else:
+        maior_prioridade = ""
 
     return {
         'dias_restantes': dias_restantes,
@@ -147,7 +150,6 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Criação dos gráficos ---
-
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
