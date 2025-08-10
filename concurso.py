@@ -552,8 +552,8 @@ def create_performance_radar_chart(df_summary):
         name='Progresso Ponderado',
         line=dict(color='#2575fc', width=3),
         fillcolor='rgba(37, 117, 252, 0.2)',
-        hovertemplate='<b>%{theta}</b>  
-Progresso: %{r:.1f}%<extra></extra>'
+        hovertemplate="<b>%{theta}</b>  
+Progresso: %{r:.1f}%<extra></extra>"
     ))
     
     fig.add_trace(go.Scatterpolar(
@@ -563,8 +563,8 @@ Progresso: %{r:.1f}%<extra></extra>'
         name='Percentual Simples',
         line=dict(color='#6a11cb', width=2),
         fillcolor='rgba(106, 17, 203, 0.1)',
-        hovertemplate='<b>%{theta}</b>  
-Percentual: %{r:.1f}%<extra></extra>'
+        hovertemplate="<b>%{theta}</b>  
+Percentual: %{r:.1f}%<extra></extra>"
     ))
     
     fig.update_layout(
@@ -629,9 +629,9 @@ def create_progress_timeline_chart(df_summary):
                 name=row['Disciplinas'][:15],
                 line=dict(width=3),
                 marker=dict(size=6),
-                hovertemplate='<b>%{fullData.name}</b>  
+                hovertemplate="<b>%{fullData.name}</b>  
 Data: %{x}  
-Progresso: %{y:.1f}%<extra></extra>'
+Progresso: %{y:.1f}%<extra></extra>"
             ))
     
     fig.update_layout(
@@ -694,10 +694,10 @@ def create_priority_matrix_chart(df_summary):
         text=[disc[:10] + '...' if len(disc) > 10 else disc for disc in df_summary['Disciplinas']],
         textposition='middle center',
         textfont=dict(color='#2c3e50', size=10),
-        hovertemplate='<b>%{text}</b>  
+        hovertemplate="<b>%{text}</b>  
 Peso: %{x}  
 Progresso: %{y:.1f}%  
-Prioridade: %{customdata:.1f}<extra></extra>',
+Prioridade: %{customdata:.1f}<extra></extra>",
         customdata=df_summary['Prioridade']
     ))
     
@@ -707,7 +707,7 @@ Prioridade: %{customdata:.1f}<extra></extra>',
         font=dict(color='#2c3e50'),
         title=dict(
             text="<b>Matriz de Prioridades (Peso vs Progresso)</b>",
-            x=0.
+            x=0.5,
                         font=dict(size=18, color='#6a11cb')
         ),
         xaxis=dict(
@@ -762,9 +762,9 @@ def create_daily_study_plan_chart(df_plano):
             text=df_plano['Topicos_Por_Dia'],
             textposition='auto',
             textfont=dict(color='#2c3e50'),
-            hovertemplate='<b>%{x}</b>  
+            hovertemplate="<b>%{x}</b>  
 Tópicos/Dia: %{y}  
-Prioridade: %{customdata:.1f}<extra></extra>',
+Prioridade: %{customdata:.1f}<extra></extra>",
             customdata=df_plano['Prioridade_Score']
         ),
         row=1, col=1
@@ -783,9 +783,9 @@ Prioridade: %{customdata:.1f}<extra></extra>',
             text=df_plano['Tempo_Diario_Min'],
             textposition='auto',
             textfont=dict(color='#2c3e50'),
-            hovertemplate='<b>%{x}</b>  
+            hovertemplate="<b>%{x}</b>  
 Tempo: %{y} min  
-Conteúdos Restantes: %{customdata}<extra></extra>',
+Conteúdos Restantes: %{customdata}<extra></extra>",
             customdata=df_plano['Conteudos_Restantes']
         ),
         row=2, col=1
@@ -1019,4 +1019,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
