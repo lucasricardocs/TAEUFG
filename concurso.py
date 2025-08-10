@@ -1,8 +1,3 @@
-Sim, peço desculpas pelo corte na resposta anterior. O limite de caracteres foi atingido.
-
-Aqui está o código completo e finalizado, com a implementação dos gráficos radiais em Altair e todas as outras solicitações que você fez.
-
-```python
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -50,7 +45,7 @@ def get_google_auth():
     
     try:
         if "gcp_service_account" not in st.secrets:
-            st.error("❌ Credenciais do Google Cloud ('gcp_service_account') não encontradas. Configure o arquivo .streamlit/secrets.toml")
+            st.error("❌ Credenciais do Google Cloud ('gcp_service_account' ) não encontradas. Configure o arquivo .streamlit/secrets.toml")
             st.info("""
             **Como configurar:**
             1. Crie o arquivo `.streamlit/secrets.toml` na raiz do projeto
@@ -301,7 +296,7 @@ def apply_celestial_theme():
     """Aplica CSS com tema celestial de fundo branco e melhorias de UX/UI."""
     st.markdown("""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' );
         
         /* Animação de fundo celestial */
         @keyframes move-twink-back {
@@ -325,7 +320,7 @@ def apply_celestial_theme():
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: -2;
-            background: #fff url(https://www.script-tutorials.com/demos/360/images/stars.png) repeat top center;
+            background: #fff url(https://www.script-tutorials.com/demos/360/images/stars.png ) repeat top center;
             animation: move-twink-back 200s linear infinite;
         }
 
@@ -557,7 +552,8 @@ def create_performance_radar_chart(df_summary):
         name='Progresso Ponderado',
         line=dict(color='#2575fc', width=3),
         fillcolor='rgba(37, 117, 252, 0.2)',
-        hovertemplate='<b>%{theta}</b><br>Progresso: %{r:.1f}%<extra></extra>'
+        hovertemplate='<b>%{theta}</b>  
+Progresso: %{r:.1f}%<extra></extra>'
     ))
     
     fig.add_trace(go.Scatterpolar(
@@ -567,7 +563,8 @@ def create_performance_radar_chart(df_summary):
         name='Percentual Simples',
         line=dict(color='#6a11cb', width=2),
         fillcolor='rgba(106, 17, 203, 0.1)',
-        hovertemplate='<b>%{theta}</b><br>Percentual: %{r:.1f}%<extra></extra>'
+        hovertemplate='<b>%{theta}</b>  
+Percentual: %{r:.1f}%<extra></extra>'
     ))
     
     fig.update_layout(
@@ -632,7 +629,9 @@ def create_progress_timeline_chart(df_summary):
                 name=row['Disciplinas'][:15],
                 line=dict(width=3),
                 marker=dict(size=6),
-                hovertemplate='<b>%{fullData.name}</b><br>Data: %{x}<br>Progresso: %{y:.1f}%<extra></extra>'
+                hovertemplate='<b>%{fullData.name}</b>  
+Data: %{x}  
+Progresso: %{y:.1f}%<extra></extra>'
             ))
     
     fig.update_layout(
@@ -695,7 +694,10 @@ def create_priority_matrix_chart(df_summary):
         text=[disc[:10] + '...' if len(disc) > 10 else disc for disc in df_summary['Disciplinas']],
         textposition='middle center',
         textfont=dict(color='#2c3e50', size=10),
-        hovertemplate='<b>%{text}</b><br>Peso: %{x}<br>Progresso: %{y:.1f}%<br>Prioridade: %{customdata:.1f}<extra></extra>',
+        hovertemplate='<b>%{text}</b>  
+Peso: %{x}  
+Progresso: %{y:.1f}%  
+Prioridade: %{customdata:.1f}<extra></extra>',
         customdata=df_summary['Prioridade']
     ))
     
@@ -705,9 +707,14 @@ def create_priority_matrix_chart(df_summary):
         font=dict(color='#2c3e50'),
         title=dict(
             text="<b>Matriz de Prioridades (Peso vs Progresso)</b>",
-            x=0.5,
-            font=dict(size=18, color='#6a11cb')
-                ),
+            x=0.
+                        font=dict(size=18, color='#6a11cb')
+        ),
+        xaxis=dict(
+            gridcolor='rgba(0,0,0,0.1)',
+            tickfont=dict(color='#576574'),
+            title=dict(text='Peso da Disciplina', font=dict(color='#2c3e50'))
+        ),
         yaxis=dict(
             gridcolor='rgba(0,0,0,0.1)',
             tickfont=dict(color='#576574'),
@@ -756,8 +763,8 @@ def create_daily_study_plan_chart(df_plano):
             textposition='auto',
             textfont=dict(color='#2c3e50'),
             hovertemplate='<b>%{x}</b>  
-            piTócos/Dia: %{y}  
-            Prioridade: %{customdata:.1f}<extra></extra>',
+Tópicos/Dia: %{y}  
+Prioridade: %{customdata:.1f}<extra></extra>',
             customdata=df_plano['Prioridade_Score']
         ),
         row=1, col=1
@@ -1012,3 +1019,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
