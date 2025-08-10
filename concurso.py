@@ -165,6 +165,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
+
 # --- Destaque lateral títulos ---
 def titulo_com_destaque(texto, cor_lateral="#3498db"):
     st.markdown(f'''
@@ -187,96 +188,10 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráfico radial geral sem legenda ---
-def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
-                               colors=('#2ecc71', '#e74c3c'),
-                               inner_radius=70, font_size=32,
-                               text_color='#064820', show_tooltip=True):
-    concluido = max(0, min(progresso_percentual, 100))
-    pendente = 100 - concluido
-    df = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente]
-    })
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
-    base = alt.Chart(df).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)  # legenda desativada
-    )
-    if show_tooltip:
-        base = base.encode(
-            tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')]
-        )
-    donut = base.mark_arc(innerRadius=inner_radius, stroke='#f1f1f1', strokeWidth=3).properties(
-        width=width,
-        height=height
-    )
-    text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
-        fontSize=font_size,
-        fontWeight='bold',
-        color=text_color,
-        dy=0
-    ).encode(
-        text='text:N'
-    ).properties(width=width, height=height)
-    chart = (donut + text).configure_view(strokeWidth=0)
-    return chart
 
-# --- Gráfico donut por disciplina sem legenda ---
-def create_altair_donut(row):
-    concluido = int(row['Conteudos_Concluidos'])
-    pendente = int(row['Conteudos_Pendentes'])
-    total = max(concluido + pendente, 1)
-    concluido_pct = round((concluido / total) * 100, 1)
-    pendente_pct = round((pendente / total) * 100, 1)
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente],
-        'Percentual': [concluido_pct, pendente_pct]
-    })
-    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base_chart = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
-    )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
-    text = alt.Chart(source_label).mark_text(
-        size=24, fontWeight='bold', color='#064820'
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%')
-    ).properties(width=280, height=280)
-    chart = (donut + text).properties(
-        width=280,
-        height=280
-    ).configure_view(stroke='#f1f1f1', strokeWidth=3)
-    return chart
-
-# --- Exibir gráficos responsivos com nomes centralizados ---
-def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1
-    rows = (total_charts + max_cols - 1) // max_cols
-    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
-    chart_index = 0
-    for r in range(rows):
-        cols = st.columns(max_cols, gap="medium")
-        for c in range(max_cols):
-            if chart_index >= total_charts:
-                break
-            with cols[c]:
-                if chart_index < len(df_summary):
-                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
-                else:
-                    nome = "Progresso Geral"
-                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
-                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
-            chart_index += 1
-
-# --- Gráfico barras horizontal com rótulos à direita ---
+# --- Gráfico de barras horizontal colorido por disciplina ---
 def chart_questoes_horizontal(df_ordenado):
-    bars = alt.Chart(df_ordenado).mark_bar(color='#3498db', stroke='#f1f1f1', strokeWidth=3).encode(
+    bars = alt.Chart(df_ordenado).mark_bar(stroke='#f1f1f1', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N',
                 sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
                 title=None,
@@ -286,6 +201,7 @@ def chart_questoes_horizontal(df_ordenado):
                 title=None,
                 axis=alt.Axis(labels=False, ticks=False)
                ),
+        color=alt.Color('Disciplinas:N', legend=None),  # colorido por disciplina
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Quantidade de Questões')]
     )
     texts = alt.Chart(df_ordenado).mark_text(
@@ -302,84 +218,43 @@ def chart_questoes_horizontal(df_ordenado):
     )
     return (bars + texts).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-# --- Gráfico mosaico ponderando apenas pelo peso da disciplina ---
-def mosaic_chart_peso_por_disciplina():
+
+# --- Gráfico de colunas vertical percentual para Peso por Disciplina ---
+def bar_chart_peso_percentual():
     df = pd.DataFrame(ED_DATA)
     total_peso = df['Peso'].sum()
-    df = df.sort_values('Peso', ascending=False).reset_index(drop=True)
-    df['start'] = df['Peso'].cumsum() - df['Peso']
-    df['end'] = df['Peso'].cumsum()
-    df['start_norm'] = df['start'] / total_peso
-    df['end_norm'] = df['end'] / total_peso
-
-    base = alt.Chart(df).encode(
-        x=alt.X('start_norm:Q', title=None, axis=alt.Axis(labels=False, ticks=False)),
-        x2='end_norm',
-        y=alt.Y('Disciplinas:N', title=None, axis=alt.Axis(labels=True, ticks=False)),
-    )
-
-    bars = base.mark_rect(
-        cornerRadiusTopLeft=5,
-        cornerRadiusTopRight=5,
+    df['Percentual'] = (df['Peso'] / total_peso) * 100
+    chart = alt.Chart(df).mark_bar(cornerRadius=5, stroke='#f1f1f1', strokeWidth=3).encode(
+        x=alt.X('Disciplinas:N', sort='-y', title='Disciplina',
+                axis=alt.Axis(labelAngle=-45, labelFontSize=12)),
+        y=alt.Y('Percentual:Q', title='Percentual (%)'),
+        color=alt.Color('Disciplinas:N', legend=None),  # colorido por disciplina
+        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Percentual', format='.1f', title='Percentual')]
+    ).properties(
+        width=600,
+        height=350,
+        title='Peso Percentual por Disciplina'
+    ).configure_view(
         stroke='#f1f1f1',
         strokeWidth=3
-    ).encode(
-        color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N', title='Disciplina'),
-            alt.Tooltip('Peso:Q', title='Peso')
-        ]
     )
+    return chart
 
-    text_disciplina = base.mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-5,
-        fontWeight='bold',
-        color='black'
-    ).encode(
-        text='Disciplinas:N',
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0, 1]))
-    )
 
-    text_peso = base.mark_text(
-        align='center',
-        baseline='top',
-        dy=5,
-        color='black'
-    ).encode(
-        text=alt.Text('Peso:Q', format='.0f'),
-        x=alt.X('start_norm:Q', scale=alt.Scale(domain=[0, 1]))
-    )
-
-    mosaic_chart = (bars + text_disciplina + text_peso).properties(
-        width=600,
-        height=200,
-        title='Peso por Disciplina (Mosaic Chart)'
-    ).configure_view(
-        strokeWidth=0
-    ).configure_axis(
-        domain=False,
-        ticks=False,
-        labels=False,
-        grid=False
-    )
-
-    return mosaic_chart
-
-# --- Mostrar os dois gráficos lado a lado (questões e peso da disciplina) ---
+# --- Mostrar gráficos lado a lado ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
     chart_q = chart_questoes_horizontal(df_ordenado)
-    chart_p = mosaic_chart_peso_por_disciplina()
+    chart_p = bar_chart_peso_percentual()
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_q, use_container_width=True)
     with col2:
         st.altair_chart(chart_p, use_container_width=True)
+
 
 # --- Gráfico empilhado sem erros e sem legendas ---
 def create_stacked_bar(df):
@@ -415,6 +290,7 @@ def create_stacked_bar(df):
         height=600
     ).configure_view(stroke='#f1f1f1', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
+
 
 # --- CSS ---
 def inject_css():
@@ -502,9 +378,9 @@ def inject_css():
     }
     footer {
         font-style: italic !important;
-        font-size: 7px !important;
+        font-size: 12px !important;
         color: #064820 !important;
-        opacity: 0.6 !important;
+        opacity: 0.75 !important;
         margin-top: 40px !important;
         text-align: center !important;
         user-select: none !important;
@@ -516,6 +392,7 @@ def inject_css():
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 # --- Container topo com sombra ---
 def render_topbar_with_logo(dias_restantes):
@@ -559,14 +436,16 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Rodapé discreto ---
+
+# --- Rodapé com emoticons e fonte tamanho 12 ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
-            "O sucesso é a soma de pequenos esforços repetidos dia após dia."
-            <br><span>Mantenha o foco, você está no caminho certo!</span>
+            🚀📚 "O sucesso é a soma de pequenos esforços repetidos dia após dia." 📅✨
+            <br><span>Mantenha o foco, você está no caminho certo! 💪😊</span>
         </footer>
     """, unsafe_allow_html=True)
+
 
 # --- Main ---
 def main():
@@ -656,6 +535,7 @@ def main():
     st.markdown("---")
 
     rodape_motivacional()
+
 
 if __name__ == "__main__":
     main()
