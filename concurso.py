@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -35,7 +34,7 @@ def get_google_auth():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         creds_dict = st.secrets["gcp_service_account"]
-        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES )
         gc = gspread.authorize(creds)
         st.success("✅ Conectado ao Google Sheets!")
         return gc
@@ -86,9 +85,10 @@ def calculate_metrics(df_dados):
         df_summary = pd.merge(df_edital, df_concluidos, on='Disciplinas', how='left').fillna(0)
         df_summary['Conteudos_Pendentes'] = df_summary['Total_Conteudos'] - df_summary['Conteudos_Concluidos']
         
-        pontos_por_conteudo = df_summary['Peso'] / df_summary['Total_Conteudos']
+        # Evitar divisão por zero se Total_Conteudos for 0
+        pontos_por_conteudo = (df_summary['Peso'] / df_summary['Total_Conteudos']).replace([np.inf, -np.inf], 0)
         pontos_concluidos = df_summary['Conteudos_Concluidos'] * pontos_por_conteudo
-        df_summary['Progresso_Ponderado'] = (pontos_concluidos / df_summary['Peso']) * 100
+        df_summary['Progresso_Ponderado'] = ((pontos_concluidos / df_summary['Peso']).replace([np.inf, -np.inf], 0)) * 100
 
     total_pontos_possiveis = (df_summary['Peso']).sum()
     total_pontos_feitos = ((df_summary['Peso'] / df_summary['Total_Conteudos']).fillna(0) * df_summary['Conteudos_Concluidos']).sum()
@@ -113,9 +113,9 @@ def create_donut_chart(data_row):
         hoverinfo='label+percent'
     )])
     
-    # CORREÇÃO APLICADA AQUI: A f-string foi colocada em uma única linha.
     fig.update_layout(
-        title_text=f"<b>{data_row['Disciplinas']}</b><br><span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
+        title_text=f"<b>{data_row['Disciplinas']}</b>  
+<span style='font-size:12px;'>{data_row['Progresso_Ponderado']:.1f}% Ponderado</span>",
         title_x=0.5,
         showlegend=False,
         paper_bgcolor='rgba(0,0,0,0)',
@@ -146,7 +146,8 @@ def create_progress_timeline_chart(df_summary):
                 y=progress_values,
                 mode='lines',
                 name=row['Disciplinas'],
-                hovertemplate="<b>%{fullData.name}</b><br>Progresso: %{y:.1f}%<extra></extra>"
+                hovertemplate="<b>%{fullData.name}</b>  
+Progresso: %{y:.1f}%<extra></extra>"
             ))
     
     fig.update_layout(
@@ -171,7 +172,6 @@ def main():
             .main-header { text-align: center; padding: 2rem; }
             .main-header h1 { color: #6a11cb; }
             .section-header { font-size: 1.8rem; font-weight: 600; color: #6a11cb; margin: 2rem 0 1rem 0; border-bottom: 3px solid #6a11cb; padding-bottom: 0.5rem; display: inline-block; }
-            .chart-container { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 15px; padding: 1rem; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05); margin-bottom: 1.5rem; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -197,11 +197,16 @@ def main():
 
     # --- Seção de Gráficos de Rosca ---
     st.markdown("<div class='section-header'>🎯 Progresso por Disciplina</div>", unsafe_allow_html=True)
-    cols = st.columns(len(ED_DATA))
-    for i, (_, row) in enumerate(df_summary.iterrows()):
-        with cols[i]:
-            with st.container(border=True):
-                st.plotly_chart(create_donut_chart(row), use_container_width=True)
+    
+    if not df_summary.empty:
+        num_disciplinas = len(df_summary)
+        cols = st.columns(num_disciplinas)
+        for i, (_, row) in enumerate(df_summary.iterrows()):
+            with cols[i]:
+                with st.container(border=True):
+                    st.plotly_chart(create_donut_chart(row), use_container_width=True)
+    else:
+        st.info("Aguardando dados das disciplinas para mostrar os gráficos de progresso.")
 
     # --- Seção de Gráfico de Evolução ---
     st.markdown("<div class='section-header'>📈 Análise de Evolução</div>", unsafe_allow_html=True)
