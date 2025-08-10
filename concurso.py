@@ -486,7 +486,7 @@ def render_topbar_with_logo(dias_restantes):
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        height: 300px;
+        height: 250px;
         background-color: #f5f5f5;
         padding: 0 40px;
         border-radius: 12px;
