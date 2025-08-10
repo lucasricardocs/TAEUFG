@@ -172,7 +172,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Função para destacar títulos com container estilizado (cor igual ao topo #f5f5f5) ---
+# --- Container título com cor do topo ---
 def titulo_com_destaque(texto):
     st.markdown(f'''
         <div style="
@@ -189,7 +189,7 @@ def titulo_com_destaque(texto):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráfico rosca (SEM alteração, mantém títulos e eixos originais) ---
+# --- Gráfico rosca (mantido igual - com títulos e legendas padrão Altair) ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -215,7 +215,7 @@ def create_altair_donut(row):
             alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')
         ]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(size=20, fontWeight='bold', color='#064820').encode(
         text=alt.Text('Percentual:Q', format='.0%')
     ).properties(width=350, height=350)
@@ -232,11 +232,11 @@ def create_altair_donut(row):
         ),
         width=350,
         height=350
-    ).configure_view(stroke='#f1f1f1', strokeWidth=1)
+    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
 
     return chart
 
-# --- Gráfico empilhado percentual de conteúdos (sem título nos eixos) ---
+# --- Gráfico empilhado percentual (remove títulos eixo) ---
 def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
@@ -262,30 +262,91 @@ def create_stacked_bar(df):
         color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
         tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
     ).properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600).configure_view(
-        stroke='#f1f1f1', strokeWidth=1)
+        stroke='#d3d3d3', strokeWidth=1)
 
     st.altair_chart(chart, use_container_width=True)
 
-# --- Gráfico de peso interativo (sem título nos eixos) ---
-def chart_peso_interativo(df_ordenado):
-    select = alt.selection_point(name='select', on='click')
-    highlight = alt.selection_point(name='highlight', on='pointerover', empty=False)
+# --- Mosaic Chart para peso ---
+def mosaic_chart_peso(df_ordenado):
+    source = df_ordenado.rename(columns={'Disciplinas': 'Origin', 'Peso': 'Cylinders'})
 
-    stroke_width = alt.when(select, alt.value(2)).else_(alt.when(highlight, alt.value(1)).else_(alt.value(0)))
-    fill_color = '#9b59b6'
-    stroke_color = 'black'
+    base = (
+        alt.Chart(source)
+        .transform_aggregate(count_='count()', groupby=['Origin', 'Cylinders'])
+        .transform_stack(
+            stack='count_',
+            as_=['stack_count_Origin1', 'stack_count_Origin2'],
+            offset='normalize',
+            sort=[alt.SortField('Origin', 'ascending')],
+            groupby=[],
+        )
+        .transform_window(
+            x='min(stack_count_Origin1)',
+            x2='max(stack_count_Origin2)',
+            rank_Cylinders='dense_rank()',
+            distinct_Cylinders='distinct(Cylinders)',
+            groupby=['Origin'],
+            frame=[None, None],
+            sort=[alt.SortField('Cylinders', 'ascending')],
+        )
+        .transform_window(
+            rank_Origin='dense_rank()',
+            frame=[None, None],
+            sort=[alt.SortField('Origin', 'ascending')],
+        )
+        .transform_stack(
+            stack='count_',
+            groupby=['Origin'],
+            as_=['y', 'y2'],
+            offset='normalize',
+            sort=[alt.SortField('Cylinders', 'ascending')],
+        )
+        .transform_calculate(
+            ny='datum.y + (datum.rank_Cylinders - 1) * datum.distinct_Cylinders * 0.01 / 3',
+            ny2='datum.y2 + (datum.rank_Cylinders - 1) * datum.distinct_Cylinders * 0.01 / 3',
+            nx='datum.x + (datum.rank_Origin - 1) * 0.01',
+            nx2='datum.x2 + (datum.rank_Origin - 1) * 0.01',
+            xc='(datum.nx+datum.nx2)/2',
+            yc='(datum.ny+datum.ny2)/2',
+        )
+    )
 
-    chart = alt.Chart(df_ordenado, height=350, width=350).mark_bar(fill=fill_color, stroke=stroke_color, cursor='pointer').encode(
-        x=alt.X('Peso:Q', title=None),
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'), title=None),
-        fillOpacity=alt.condition(select, alt.value(1), alt.value(0.3)),
-        strokeWidth=stroke_width,
-        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Peso', title='Peso')]
-    ).add_params(select, highlight).configure_scale(bandPaddingInner=0.2)
+    rect = base.mark_rect().encode(
+        x=alt.X('nx:Q', axis=None),
+        x2='nx2',
+        y='ny:Q',
+        y2='ny2',
+        color=alt.Color('Origin:N', legend=None),
+        opacity=alt.Opacity('Cylinders:Q', legend=None),
+        tooltip=[alt.Tooltip('Origin:N', title='Disciplina'), alt.Tooltip('Cylinders:Q', title='Peso')]
+    )
+
+    text = base.mark_text(baseline='middle').encode(
+        x=alt.X('xc:Q', axis=None),
+        y=alt.Y('yc:Q', title=None),
+        text=alt.Text('Cylinders:N')
+    )
+
+    mosaic = rect + text
+
+    origin_labels = base.mark_text(baseline='middle', align='center').encode(
+        x=alt.X('min(xc):Q', title=None, axis=alt.Axis(orient='top')),
+        color=alt.Color('Origin', legend=None),
+        text='Origin',
+    )
+
+    chart = (
+        (origin_labels & mosaic)
+        .resolve_scale(x='shared')
+        .configure_view(stroke='')
+        .configure_concat(spacing=10)
+        .configure_axis(domain=False, ticks=False, labels=False, grid=False)
+        .properties(width=350, height=350, title='Peso por Disciplina (Mosaic Chart)')
+    )
 
     return chart
 
-# --- Gráfico barras horizontais para quantidade de questões (sem título nos eixos) ---
+# --- Seção de gráficos lado a lado: quantidade de questões e mosaic peso ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
@@ -295,11 +356,13 @@ def display_questoes_e_peso(df_summary):
 
     chart_questoes = alt.Chart(df_ordenado).mark_bar(color='#3498db').encode(
         x=alt.X('Total_Conteudos:Q', title=None),
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'), title=None),
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field='Total_Conteudos', order='ascending'),
+                title=None),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Qtd Questões')]
     ).properties(width=350, height=350, title='Quantidade de Questões por Disciplina')
 
-    chart_peso = chart_peso_interativo(df_ordenado)
+    chart_peso = mosaic_chart_peso(df_ordenado)
 
     st.markdown('<div style="margin-bottom: 40px;"></div>', unsafe_allow_html=True)
     st.markdown(f'''
@@ -323,7 +386,7 @@ def display_questoes_e_peso(df_summary):
     with col2:
         st.altair_chart(chart_peso, use_container_width=True)
 
-# --- CSS, estilo geral ---
+# --- CSS geral ---
 def inject_css():
     st.markdown("""
     <style>
@@ -376,7 +439,7 @@ def inject_css():
     }
 
     .altair-chart {
-        border: 1px solid #f1f1f1;
+        border: 1px solid #d3d3d3;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
@@ -417,7 +480,7 @@ def inject_css():
         background: #cbdcff55;
     }
 
-    /* Rodapé compacto, bonito e em itálico */
+    /* Rodapé compacto, bonito e itálico */
     footer {
         margin-top: 40px;
         padding: 10px 0;
@@ -439,7 +502,7 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
-# --- Render topbar ---
+# --- Topbar ---
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div style="
@@ -467,7 +530,7 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Mostrar gráficos de rosca responsivos ---
+# --- Mostrar gráficos de rosca ---
 def display_responsive_donuts(df_summary):
     max_cols = 4
     num_charts = len(df_summary)
@@ -480,7 +543,7 @@ def display_responsive_donuts(df_summary):
             with cols[j]:
                 st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
-# --- Rodapé compacto e bonito ---
+# --- Rodapé ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
@@ -546,20 +609,17 @@ def main():
     st.markdown('---')
 
     titulo_com_destaque("📚 Conteúdos por Disciplina")
-
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
     else:
         disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-
         for disc in disciplinas_ordenadas:
             conteudos_disciplina = df[df['Disciplinas'] == disc]
             with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
                     checked = (row['Status'] == 'True')
-
                     novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
                     if novo_status != checked:
                         sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
