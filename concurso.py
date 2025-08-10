@@ -147,7 +147,6 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Gráficos e Visualização ---
-
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -156,7 +155,6 @@ def create_altair_donut(row):
         pendente = 1
         total = 1
 
-    # Percentual para rótulos
     concluido_pct = round((concluido / total) * 100, 1)
     pendente_pct = round((pendente / total) * 100, 1)
 
@@ -195,21 +193,16 @@ def create_stacked_bar(df):
         st.info("Sem dados para gráfico de barras empilhadas.")
         return
 
-    # Agrupar dados por disciplina e status
     df_group = df.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
     df_pivot['Total'] = df_pivot.sum(axis=1)
     df_pivot['Pct_True'] = df_pivot.get('True', 0) / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    # Em percentual para gráfico de barras horizontais empilhadas
     df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total'] * 100).round(1)
     df_pivot['False_Pct'] = (df_pivot['False'] / df_pivot['Total'] * 100).round(1)
 
-    # Preparar dados para Altair
     df_melt = df_pivot.melt(id_vars=['Disciplinas', 'Pct_True'], value_vars=['True_Pct', 'False_Pct'], var_name='Status', value_name='Percentual')
-
-    # Mapeando nomes para legendas
     df_melt['Status'] = df_melt['Status'].map({'True_Pct':'Concluído', 'False_Pct':'Pendente'})
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
@@ -229,7 +222,7 @@ def create_stacked_bar(df):
     st.altair_chart(chart, use_container_width=False)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- CSS com background animado e estilos bons com partículas em tom lilás suave ---
+# --- CSS claro e animado ---
 def inject_css():
     st.markdown("""
     <style>
@@ -240,13 +233,13 @@ def inject_css():
         font-family: 'Inter', sans-serif !important;
         margin: 0; padding: 0;
         height: 100%;
-        background: #0c0c2f;
+        background: #e6f0ff;
         overflow-x: hidden;
-        color: #f0f4ff;
+        color: #222831;
         position: relative;
     }
 
-    /* Contêiner que cobre toda a viewport para as partículas */
+    /* Contêiner para partículas animadas */
     #animated-background {
         pointer-events: none;
         position: fixed;
@@ -254,15 +247,15 @@ def inject_css():
         width: 100vw;
         height: 100vh;
         z-index: -1;
-        background: radial-gradient(ellipse at center, #1a1a4d 0%, #0c0c2f 70%);
+        background: radial-gradient(circle at center, #ffffff 0%, #d0e2ff 80%);
         overflow: hidden;
     }
 
-    /* Criando estrelas com animação usando box-shadow */
+    /* Partículas com tom escuro para contraste */
     .stars {
-        width: 2px;
-        height: 2px;
-        background: #b39ddb;  /* lilás suave */
+        width: 3px;
+        height: 3px;
+        background: #334960;
         border-radius: 50%;
         position: absolute;
         animation: twinkle 3s infinite ease-in-out alternate;
@@ -271,68 +264,68 @@ def inject_css():
     .stars::before {
         content: "";
         position: absolute;
-        width: 2px; height: 2px;
-        background: #b39ddb;  /* lilás suave */
+        width: 3px; height: 3px;
+        background: #334960;
         border-radius: 50%;
         box-shadow:
-            20vw 20vh #b39ddb,
-            40vw 80vh #b39ddb,
-            70vw 30vh #b39ddb,
-            90vw 90vh #b39ddb,
-            10vw 70vh #b39ddb,
-            60vw 50vh #b39ddb,
-            80vw 20vh #b39ddb,
-            30vw 10vh #b39ddb,
-            50vw 40vh #b39ddb,
-            15vw 90vh #b39ddb;
+            15vw 15vh #334960,
+            40vw 75vh #334960,
+            70vw 25vh #334960,
+            85vw 85vh #334960,
+            20vw 65vh #334960,
+            60vw 55vh #334960,
+            80vw 15vh #334960,
+            35vw 12vh #334960,
+            55vw 37vh #334960,
+            12vw 90vh #334960;
         animation: twinkle 3s infinite ease-in-out alternate 1.5s;
     }
 
-    /* Animação suave de opacidade pulsante */
     @keyframes twinkle {
         0% {opacity: 0.3;}
         50% {opacity: 1;}
         100% {opacity: 0.3;}
     }
 
-    /* Container do Streamlit com semi-transparência para deixar o background visível */
+    /* Container do Streamlit com fundo branco translúcido */
     .reportview-container, 
     .main, 
     .block-container {
-        background-color: rgba(12, 12, 47, 0.80) !important;
-        backdrop-filter: blur(8px);
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px);
+        color: #222831;
     }
 
-    /* Cabeçalhos e textos */
+    /* Cabeçalhos e textos escuros */
     h1, h2, h3 {
-        color: #aab6ff;
+        color: #2c3e50;
         font-weight: 600;
     }
 
-    /* Estilo dos cards (caixas métricas) */
+    /* Estilo dos cards */
     .metric-container {
-        background: rgba(26, 26, 77, 0.6);
+        background: #f0f5ff;
         border-radius: 16px;
         padding: 1.5rem;
         margin-bottom: 1.2rem;
-        box-shadow: 0 0 15px #677effaa;
-        color: #dde5ff;
+        box-shadow: 0 4px 15px #a3bffa90;
+        color: #2c3e50;
         transition: box-shadow 0.3s ease;
     }
     .metric-container:hover {
-        box-shadow: 0 0 30px #99aaffcc;
+        box-shadow: 0 0 30px #6a8edecc;
     }
 
     /* Títulos e valores */
     .metric-value {
         font-size: 3rem;
         font-weight: 700;
-        color: #d6dbff;
+        color: #355e9e;
     }
     .metric-label {
         font-weight: 600;
         font-size: 1.1rem;
-        color: #b2bbff;
+        color: #566e95;
     }
 
     /* Scroll horizontal para gráficos e conteúdos */
@@ -343,32 +336,32 @@ def inject_css():
         margin-bottom: 2rem;
     }
 
-    /* Gráficos inline com sombra e fundo translucido */
+    /* Gráficos inline com sombra e fundo translúcido */
     .altair-chart {
         display: inline-block !important;
         vertical-align: top;
         margin-right: 2rem;
-        background: rgba(26, 26, 77, 0.5);
+        background: #e0e9ff;
         border-radius: 16px;
         padding: 1rem;
-        box-shadow: 0 0 15px #677effbb;
+        box-shadow: 0 0 15px #a3bffa88;
     }
 
     /* Expansores de disciplinas */
     [data-baseweb="accordion"] > div > div {
-        background: rgba(26, 26, 77, 0.5) !important;
+        background: #f2f7ff !important;
         border-radius: 14px !important;
-        color: #bbc9ff !important;
+        color: #355e9e !important;
         font-weight: 500;
         transition: background 0.3s ease;
     }
     [data-baseweb="accordion"] > div > div:hover {
-        background: rgba(103, 126, 255, 0.3) !important;
+        background: #a3bffa55 !important;
     }
 
     /* Conteúdo dentro dos expansores */
     .streamlit-expanderContent > div {
-        color: #d1d9ff;
+        color: #2c3e50;
         font-weight: 400;
     }
 
@@ -376,23 +369,23 @@ def inject_css():
     table {
         width: 100% !important;
         border-collapse: collapse !important;
-        color: #cfd9ff;
+        color: #2c3e50;
     }
     th, td {
-        border: 1px solid #444d8f; 
+        border: 1px solid #a3bffa;
         padding: 8px; 
         text-align: left;
     }
     th {
-        background: rgba(103, 126, 255, 0.5);
+        background: #a3bffa22;
     }
     tr:nth-child(even) {
-        background: rgba(103, 126, 255, 0.15);
+        background: #cbdcff55;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Injeta o background animado no DOM ---
+# --- Injeta o background animado ---
 def inject_animated_background():
     st.markdown("""
         <div id="animated-background">
@@ -409,10 +402,10 @@ def main():
     # Calcular dias restantes
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Caixa principal de dias restantes
+    # Caixa principal de dias restantes (destacada com gradiente)
     st.markdown(f'<div class="metric-container" style="background: linear-gradient(135deg, #6574FF, #304FFE); font-size:2.7rem; font-weight:700; text-align:center; margin-bottom: 2rem;">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
 
-    # Carregar dados e cálculos
+    # Carregar dados e calcular métricas
     df = load_data()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
@@ -452,7 +445,7 @@ def main():
 
     st.markdown('---')
 
-    # Gráficos de rosca lado a lado, usando st.columns
+    # Gráficos de rosca lado a lado com st.columns
     st.markdown('### Progresso por Disciplina')
     num_graficos = len(df_summary)
     max_por_linha = 4
@@ -467,13 +460,13 @@ def main():
 
     st.markdown('---')
 
-    # Gráfico de barras empilhadas horizontal com scroll
+    # Gráfico empilhado horizontal maior com scroll
     st.markdown('### Percentual de Conteúdos Concluídos e Pendentes por Disciplina')
     create_stacked_bar(df)
 
     st.markdown('---')
 
-    # Containers expansíveis para os conteúdos das disciplinas
+    # Containers expansíveis para os conteúdos por disciplina
     st.markdown('### 📚 Conteúdos por Disciplina')
     if df.empty:
         st.info("Nenhum dado disponível para exibir conteúdos.")
@@ -482,15 +475,15 @@ def main():
         for disc in disciplinas_ordenadas:
             conteudos_disciplina = df[df['Disciplinas'] == disc]
             with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
-                # Mostrar tabela estilizada com ícones
                 df_disp = conteudos_disciplina.copy()
-                df_disp['Ícone'] = df_disp['Status'].apply(lambda x: "✅" if x=='True' else "❌")
+                df_disp['Ícone'] = df_disp['Status'].apply(lambda x: "✅" if x == 'True' else "❌")
                 df_disp_display = df_disp[['Conteúdos', 'Status', 'Ícone']].rename(columns={
                     'Conteúdos': 'Conteúdo',
                     'Status': 'Status',
                     'Ícone': 'Ícone'
                 })
                 st.dataframe(df_disp_display, use_container_width=True)
+
 
 if __name__ == "__main__":
     main()
