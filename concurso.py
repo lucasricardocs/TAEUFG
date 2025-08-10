@@ -180,7 +180,7 @@ def titulo_com_destaque(texto):
             padding: 12px 20px;
             border-radius: 12px;
             box-shadow: 0 4px 10px #a3bffa88;
-            margin-bottom: 40px;  /* Espaçamento aumentado */
+            margin-bottom: 40px;
             font-weight: 700;
             font-size: 1.6rem;
             color: #2c3e50;
@@ -189,7 +189,7 @@ def titulo_com_destaque(texto):
         </div>
     ''', unsafe_allow_html=True)
 
-# --- Gráficos Altair (rosca) com bordas cinza claras, strokeWidth 3 nas roscas, texto central em verde escuro em formato percentual ---
+# --- Gráfico rosca: NÃO alterado (mantém títulos e estilos) ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -203,9 +203,8 @@ def create_altair_donut(row):
         'Valor': [concluido, pendente],
         'Percentual': [concluido_pct, pendente_pct]
     })
-    # Dataframe só com o valor 'Concluído' para o label central
     source_label = pd.DataFrame({
-        'Percentual': [concluido_pct / 100]  # valor em fração 0-1 para Altair
+        'Percentual': [concluido_pct / 100]
     })
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
@@ -218,12 +217,12 @@ def create_altair_donut(row):
             alt.Tooltip('Percentual', format='.1f')
         ]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#f1f1f1', strokeWidth=3)
-    
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+
     text = alt.Chart(source_label).mark_text(
-        size=20, fontWeight='bold', color='#064820'  # verde escuro
+        size=20, fontWeight='bold', color='#064820'
     ).encode(
-        text=alt.Text('Percentual:Q', format='.0%')  # formato percentual com %
+        text=alt.Text('Percentual:Q', format='.0%')
     ).properties(width=350, height=350)
 
     chart = (donut + text).properties(
@@ -239,12 +238,12 @@ def create_altair_donut(row):
         width=350,
         height=350
     ).configure_view(
-        stroke='#f1f1f1',
+        stroke='#d3d3d3',
         strokeWidth=1
     )
     return chart
 
-# --- Gráfico empilhado Percentual de Conteúdos ---
+# --- Gráfico empilhado Percentual de Conteúdos (remove títulos dos eixos) ---
 def create_stacked_bar(df):
     if df.empty:
         st.info("Sem dados para gráfico de barras empilhadas.")
@@ -260,9 +259,9 @@ def create_stacked_bar(df):
     df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
 
     df_melt = df_pivot.melt(
-        id_vars=['Disciplinas'], 
-        value_vars=['True_Pct', 'False_Pct'], 
-        var_name='Status', 
+        id_vars=['Disciplinas'],
+        value_vars=['True_Pct', 'False_Pct'],
+        var_name='Status',
         value_name='Percentual'
     )
     df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
@@ -273,10 +272,10 @@ def create_stacked_bar(df):
         alt.Chart(df_melt)
         .mark_bar()
         .encode(
-            y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title='Disciplina'),
+            y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
             x=alt.X(
-                'Percentual:Q', 
-                title='Percentual (%)',
+                'Percentual:Q',
+                title=None,
                 axis=alt.Axis(format='%', tickCount=11),
                 scale=alt.Scale(domain=[0, 1])
             ),
@@ -285,46 +284,65 @@ def create_stacked_bar(df):
         )
         .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600)
         .configure_view(
-            stroke='#f1f1f1',
+            stroke='#d3d3d3',
             strokeWidth=1
         )
     )
     st.altair_chart(chart, use_container_width=True)
 
-# --- Função para criar gráficos lado a lado: quantidade de questões e peso ---
+# --- Gráfico interativo de peso por disciplina (remove títulos dos eixos) ---
+def chart_peso_interativo(df_ordenado):
+    select = alt.selection_point(name="select", on="click")
+    highlight = alt.selection_point(name="highlight", on="pointerover", empty=False)
+
+    stroke_width = (
+        alt.condition(select, alt.value(2),
+                      alt.condition(highlight, alt.value(1), alt.value(0)))
+    )
+    fill_color = "#9b59b6"
+    stroke_color = "black"
+
+    chart = (
+        alt.Chart(df_ordenado, height=350, width=350)
+        .mark_bar(fill=fill_color, stroke=stroke_color, cursor="pointer")
+        .encode(
+            x=alt.X('Peso:Q', title=None),
+            y=alt.Y('Disciplinas:N',
+                    sort=alt.EncodingSortField(field="Total_Conteudos", order="ascending"),
+                    title=None),
+            fillOpacity=alt.condition(select, alt.value(1), alt.value(0.3)),
+            strokeWidth=stroke_width,
+            tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Peso', title='Peso')]
+        )
+        .add_params(select, highlight)
+        .configure_scale(bandPaddingInner=0.2)
+    )
+    return chart
+
+# --- Gráfico barras horizontais para quantidade questões (remove títulos dos eixos) ---
 def display_questoes_e_peso(df_summary):
     if df_summary.empty:
         st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
-    
-    # Ordena por quantidade de conteúdos para visualização correta
+
     df_ordenado = df_summary.sort_values('Total_Conteudos', ascending=True)
 
-    # Gráfico barras horizontais - Quantidade de Questões
     chart_questoes = alt.Chart(df_ordenado).mark_bar(color="#3498db").encode(
-        x=alt.X('Total_Conteudos:Q', title="Quantidade de Questões"),
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field="Total_Conteudos", order="ascending"), title="Disciplina"),
+        x=alt.X('Total_Conteudos:Q', title=None),
+        y=alt.Y('Disciplinas:N',
+                sort=alt.EncodingSortField(field="Total_Conteudos", order="ascending"),
+                title=None),
         tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Total_Conteudos', title='Qtd Questões')]
     ).properties(
         width=350,
         height=350,
         title="Quantidade de Questões por Disciplina"
     )
-    
-    # Gráfico barras horizontais - Peso da Disciplina
-    chart_peso = alt.Chart(df_ordenado).mark_bar(color="#9b59b6").encode(
-        x=alt.X('Peso:Q', title="Peso da Disciplina"),
-        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field="Total_Conteudos", order="ascending"), title=None),
-        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Peso', title='Peso')]
-    ).properties(
-        width=350,
-        height=350,
-        title="Peso por Disciplina"
-    )
-    
-    # Mostrar lado a lado com st.columns
-    st.markdown('''<div style="margin-bottom: 40px;"></div>''', unsafe_allow_html=True)  # espaçamento antes
-    
+
+    chart_peso = chart_peso_interativo(df_ordenado)
+
+    st.markdown('''<div style="margin-bottom: 40px;"></div>''', unsafe_allow_html=True)
+
     st.markdown(f'''
         <div style="
             background-color: #f5f5f5;
@@ -339,7 +357,7 @@ def display_questoes_e_peso(df_summary):
             📝⚖️ Quantidade de Questões e Peso por Disciplina
         </div>
     ''', unsafe_allow_html=True)
-    
+
     col1, col2 = st.columns(2)
     with col1:
         st.altair_chart(chart_questoes, use_container_width=True)
@@ -401,7 +419,7 @@ def inject_css():
     }
 
     .altair-chart {
-        border: 1px solid #f1f1f1;
+        border: 1px solid #d3d3d3;
         border-radius: 16px;
         padding: 1rem;
         box-shadow: 0 0 15px #a3bffa88;
@@ -442,18 +460,20 @@ def inject_css():
         background: #cbdcff55;
     }
 
-    /* Rodapé */
+    /* Rodapé mais compacto, em itálico e estilizado */
     footer {
-        margin-top: 60px;
-        padding: 20px;
-        background-color: #f5f7fa;
+        margin-top: 40px;
+        padding: 10px 0;
+        background-color: transparent;
         text-align: center;
-        font-size: 1.2rem;
+        font-size: 1rem;
         color: #064820;
-        font-weight: 600;
-        border-top: 2px solid #a3bffa;
+        font-style: italic;
+        font-weight: 500;
+        border-top: 1px solid #a3bffa66;
         font-family: 'Inter', sans-serif;
-        box-shadow: 0 -3px 10px #a3bffa55;
+        box-shadow: 0 -2px 8px #a3bffa33;
+        user-select: none;
     }
     footer span {
         color: #355e9e;
@@ -492,7 +512,7 @@ def render_topbar_with_logo(dias_restantes):
 
 # --- Mostrar gráficos de rosca responsivos ---
 def display_responsive_donuts(df_summary):
-    max_cols = 5
+    max_cols = 4
     num_charts = len(df_summary)
     rows = (num_charts + max_cols - 1) // max_cols
     for i in range(rows):
@@ -503,7 +523,7 @@ def display_responsive_donuts(df_summary):
             with cols[j]:
                 st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
 
-# --- Função para o rodapé motivacional ---
+# --- Função para o rodapé motivacional, compacto e bonito ---
 def rodape_motivacional():
     st.markdown("""
         <footer>
@@ -555,9 +575,6 @@ def main():
                 <div class="metric-value" style="font-size:1.5rem;">{stats['maior_prioridade']}</div>
                 <div class="metric-label">Disciplina Prioritária</div>
             </div>''', unsafe_allow_html=True)
-    
-    # Nova seção com gráficos de quantidade e peso
-    display_questoes_e_peso(df_summary)
 
     st.markdown('---')
 
@@ -595,6 +612,10 @@ def main():
                             st.experimental_rerun()
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
+
+    st.markdown('---')
+    titulo_com_destaque("📝⚖️ Quantidade de Questões e Peso por Disciplina")
+    display_questoes_e_peso(df_summary)
 
     rodape_motivacional()
 
