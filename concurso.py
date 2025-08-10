@@ -127,9 +127,9 @@ def calculate_progress(df):
 def calculate_stats(df, df_summary):
     now = datetime.now()
     dias_restantes = max((CONCURSO_DATE - now).days, 0)
-    total_conteudos = df_summary['Total_Conteudos'].sum()
-    concluidos = df_summary['Conteudos_Concluidos'].sum()
-    pendentes = df_summary['Conteudos_Pendentes'].sum()
+    total_conteudos = df_summary['Total_Conteudos'].sum() if not df_summary.empty else 0
+    concluidos = df_summary['Conteudos_Concluidos'].sum() if not df_summary.empty else 0
+    pendentes = df_summary['Conteudos_Pendentes'].sum() if not df_summary.empty else 0
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
 
@@ -219,7 +219,7 @@ def create_stacked_bar(df):
             color=alt.Color('Status:N', scale=color_scale, legend=alt.Legend(title="Status")),
             tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1f')]
         )
-        .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', width=None, height=600)
+        .properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600)
         .configure_view(strokeWidth=0)
     )
     st.altair_chart(chart, use_container_width=True)
@@ -321,14 +321,55 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
+# --- Função para renderizar topo com logo e texto ---
+def render_topbar_with_logo(dias_restantes):
+    st.markdown(f"""
+    <div style="
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        background-color: #f5f5f5;
+        padding: 10px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    ">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px; margin-right: 20px;">
+        <div style="
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            white-space: nowrap;
+        ">
+            ⏰ Faltam {dias_restantes} dias para o Concurso 2025
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- Função dinâmica para exibir gráficos de rosca responsivamente ---
+def display_responsive_donuts(df_summary):
+    # Número máximo de colunas por linha: adaptável para telas wide, laptop, tablet e mobile
+    # Você pode ajustar essa variável para testar layout
+    max_cols = 4
+
+    num_charts = len(df_summary)
+    rows = (num_charts + max_cols - 1) // max_cols
+
+    for i in range(rows):
+        start_idx = i * max_cols
+        end_idx = min(start_idx + max_cols, num_charts)
+        cols = st.columns(end_idx - start_idx)
+        for j, idx in enumerate(range(start_idx, end_idx)):
+            with cols[j]:
+                st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
+
 # --- Função principal ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-
-    st.markdown(f'<div class="metric-container" style="background: linear-gradient(135deg, #6574FF, #304FFE); font-size:2.7rem; font-weight:700;">⏰ Faltam {dias_restantes} dias para o Concurso 2025</div>', unsafe_allow_html=True)
+    render_topbar_with_logo(dias_restantes)
 
     df = load_data()
     df_summary, progresso_geral = calculate_progress(df)
@@ -369,16 +410,7 @@ def main():
     st.markdown('---')
 
     st.markdown('### Progresso por Disciplina')
-    num_graficos = len(df_summary)
-    max_por_linha = 4
-    linhas = (num_graficos + max_por_linha - 1) // max_por_linha
-    for i in range(linhas):
-        inicio = i * max_por_linha
-        fim = min(inicio + max_por_linha, num_graficos)
-        cols = st.columns(fim - inicio)
-        for j, idx in enumerate(range(inicio, fim)):
-            with cols[j]:
-                st.altair_chart(create_altair_donut(df_summary.iloc[idx]), use_container_width=True)
+    display_responsive_donuts(df_summary)
 
     st.markdown('---')
 
