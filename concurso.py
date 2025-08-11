@@ -241,7 +241,7 @@ def display_lista_numero_questoes():
         st.markdown(f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>', unsafe_allow_html=True)
 
 # Substituição do gráfico pie chart segundo modelo solicitado
-def pie_chart_peso_vezes_questoes_com_labels(width=480, height=600):
+def pie_chart_peso_vezes_questoes_com_labels(width=600, height=600):
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
 
@@ -633,13 +633,13 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-    col1, col2 = st.columns([2, 3], gap='medium')
+    col1, col2 = st.columns([1, 3], gap='medium')
 
     with col1:
         display_lista_numero_questoes()
 
     with col2:
-        chart_pie = pie_chart_peso_vezes_questoes_com_labels(width=480, height=600)
+        chart_pie = pie_chart_peso_vezes_questoes_com_labels(width=600, height=600)
         st.altair_chart(chart_pie, use_container_width=True)
 
     st.markdown("---")
