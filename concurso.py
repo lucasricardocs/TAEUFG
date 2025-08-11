@@ -30,7 +30,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- Google Sheets Client ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -185,7 +184,7 @@ def render_topbar_with_logo(dias_restantes):
             padding: 0 3vw;
             min-height: 180px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 6px;
+            margin-bottom: 10px;  /* 10px distant to metric containers */
             font-family: 'Inter', sans-serif;
             flex-wrap: wrap;
             gap: 1rem;
@@ -281,7 +280,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
         pulls = [pull_val] * num_slices
         rotation = (i * 30) % 360
 
-        # Oculta textos nos frames intermediários, mostra só no último
+        # Mostrar texto apenas no último frame
         if i < len(pulls_expanded) - 1:
             texts = [""] * num_slices
         else:
@@ -332,7 +331,6 @@ def create_altair_donut(row):
     pendente = int(row['Conteudos_Pendentes'])
     total = max(concluido + pendente, 1)
     concluido_pct = round((concluido / total) * 100, 1)
-    pendente_pct = round((pendente / total) * 100, 1)
 
     source = pd.DataFrame({
         'Status': ['Concluído', 'Pendente'],
@@ -373,7 +371,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
 
     chart_idx = 0
     for _ in range(rows):
-        cols = st.columns(max_cols, gap="small")
+        cols = st.columns(max_cols, gap="medium")
         for c in range(max_cols):
             if chart_idx >= total_charts:
                 break
@@ -449,19 +447,31 @@ def create_stacked_bar_with_global_progress(df, progresso_geral=None):
         x=alt.X('Percentual:Q', stack="normalize", axis=alt.Axis(format='%')),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
     )
+
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2)
+
+    # Rótulos percentuais centralizados, coloridos conforme status
     text = base.mark_text(
         size=12,
-        color='white',
         fontWeight='bold',
         align='center',
-        baseline='middle'
+        baseline='middle',
+        # cor condicional por categoria
     ).encode(
         text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize')
+        x=alt.X('Percentual:Q', stack='normalize'),
+        color=alt.condition(
+            alt.datum.Status == 'Concluído',
+            alt.value('white'),
+            alt.value('white')
+        )
     )
+
+    # Para cor branca nos rótulos no gráfico com fundo verde/vermelho, mantido branco geralmente,
+    # pode ajustar se desejar cor diferente para maior contraste.
+
     final_chart = (bars + text).properties(
-        height=600,
+        height=400,
         width=700,
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
     )
@@ -483,7 +493,7 @@ def main():
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Container topo responsivo
+    # Container logo topo responsivo e com distância 10px para métricas
     with st.container():
         render_topbar_with_logo(dias_restantes)
 
@@ -491,28 +501,81 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
+    # Paleta de cores harmônica pastel para cards métricas
     cores_metricas = [
-        "#cbe7f0",  # azul claro
-        "#fdd8d6",  # vermelho claro
-        "#d1f2d8",  # verde claro
-        "#fdebd0",  # amarelo claro
-        "#d7c7f7",  # roxo claro
+        "#cbe7f0",
+        "#fdd8d6",
+        "#d1f2d8",
+        "#fdebd0",
+        "#d7c7f7",
     ]
 
+    # Injetar CSS para fontes responsivas, animação e interatividade cards métricas
     st.markdown(
         """
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+            .metric-container {
+                font-family: 'Inter', sans-serif !important;
+                background: var(--bg-color);
+                border-radius: 16px;
+                padding: 1rem 1.2rem;
+                box-shadow: 0 4px 15px #a3bffa90;
+                text-align: center;
+                font-weight: 700;
+                color: #2c3e50;
+                height: 160px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                font-size: clamp(1rem, 1.5vw, 2.5rem);
+                line-height: 1.1;
+                user-select: none;
+                cursor: pointer;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                margin-bottom: 10px;
+            }
+            .metric-container:hover {
+                box-shadow: 0 8px 30px #7186f3aa;
+                transform: scale(1.05);
+                z-index: 10;
+            }
+            .metric-value {
+                color: #355e9e;
+                font-size: clamp(2rem, 5vw, 3rem);
+                margin-bottom: 0.25rem;
+            }
+            .metric-label {
+                font-weight: 600;
+                font-size: clamp(1rem, 2vw, 1.5rem);
+                color: #566e95;
+            }
+            /* Ajuste gap entre topo e cards métricas */
+            .stContainer > div:nth-child(1) > div:nth-child(1) {
+                margin-bottom: 10px!important;
+            }
+            /* Responsivo empilhamento vertical em tela pequena */
+            @media(max-width: 768px) {
+                .metric-row {
+                    flex-direction: column !important;
+                    height: auto !important;
+                }
+                .metric-container {
+                    height: 130px !important;
+                    margin-bottom: 12px !important;
+                }
+            }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; margin-bottom:12px; height:18px;">', unsafe_allow_html=True)
+    st.markdown('<div style="display:flex; gap:1rem; justify-content:center;" class="metric-row">', unsafe_allow_html=True)
     cols = st.columns(5, gap="small")
     for idx, col in enumerate(cols):
         cor = cores_metricas[idx]
         with col:
+            label, valor = "", ""
             if idx == 0:
                 valor = f"{progresso_geral:.1f}%"
                 label = "Progresso Geral"
@@ -529,27 +592,20 @@ def main():
                 valor = stats['maior_prioridade']
                 label = "Disciplina Prioritária"
 
+            # Usar checkbox para dar interatividade (foco alternativo)
+            checked_key = f"metric_checkbox_{idx}"
+            checked = st.checkbox(label="", value=False, key=checked_key, help=f"Selecionar {label}", label_visibility="collapsed")
+            
+            container_style = f"background: {cor};"
+            # Se checkbox marcado, realce extra
+            if checked:
+                container_style += " box-shadow: 0 10px 35px #5275e1cc; transform: scale(1.07); z-index: 10;"
+
             st.markdown(
                 f"""
-                <div style="
-                    background: {cor};
-                    border-radius: 16px;
-                    padding: 1rem 1.2rem;
-                    box-shadow: 0 4px 15px #a3bffa90;
-                    text-align: center;
-                    font-weight: 700;
-                    color: #2c3e50;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    font-size: clamp(1rem, 2vw, 3rem);
-                    line-height: 1.1;
-                    user-select: none;
-                    font-family: 'Inter', sans-serif;
-                ">
-                    <div style="font-size: clamp(2.5rem, 5vw, 3rem); color:#355e9e; margin-bottom: 0.25rem;">{valor}</div>
-                    <div style="font-weight: 600; font-size: clamp(1rem, 1.25vw, 1.1rem); color: #566e95;">{label}</div>
+                <div class="metric-container" style="{container_style}">
+                    <div class="metric-value">{valor}</div>
+                    <div class="metric-label">{label}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -558,13 +614,14 @@ def main():
 
     st.markdown("---")
 
+    # Ordem corrigida de títulos
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    create_stacked_bar_with_global_progress(df)
+    create_stacked_bar_with_global_progress(df)  # mostra só disciplinas, rótulos centralizados e em branco
 
     st.markdown("---")
 
@@ -586,6 +643,13 @@ def main():
     st.markdown("---")
 
     rodape_motivacional()
+
+def rodape_motivacional():
+    st.markdown("""
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 5px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+        🚀 Feito com muito amor, coragem e motivação para você! ✨
+    </footer>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
