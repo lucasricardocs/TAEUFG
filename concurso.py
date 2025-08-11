@@ -537,30 +537,27 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
     )
     return fig
 
-def streamlit_plotly_autoplay_once(fig, height=600, width=700, frame_duration=80):
-    fig_dict = fig.to_dict()
-    data_json = json.dumps(fig_dict.get('data', []))
-    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items() if k != 'uirevision'})
-    frames_json = json.dumps(fig_dict.get('frames', []))
-
+def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=80):
+    fig_json = fig.to_json()
     html = f"""
     <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
-        const data = {data_json};
-        const layout = {layout_json};
-        const frames = {frames_json};
+        const figure = JSON.parse(`{fig_json}`);
+        let plot = null;
 
-        Plotly.newPlot('plotly-div', data, layout).then(function(plot) {{
-            Plotly.addFrames(plot, frames).then(function() {{
+        Plotly.newPlot('plotly-div', figure.data, figure.layout).then(function(p) {{
+            plot = p;
+            if (figure.frames && figure.frames.length > 0) {{
+                Plotly.addFrames(plot, figure.frames);
                 const animOpts = {{
                     frame: {{duration: {frame_duration}, redraw: true}},
                     transition: {{duration: 50}},
                     mode: 'immediate'
                 }};
-                Plotly.animate(plot, frames, animOpts);
-            }});
+                Plotly.animate(plot, figure.frames, animOpts);
+            }}
         }});
     }})();
     </script>
