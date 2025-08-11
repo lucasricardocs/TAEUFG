@@ -498,7 +498,7 @@ def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso 2025",
         page_icon="📚",
-        layout="centered"
+        layout="wide"
     )
 
     inject_css()
