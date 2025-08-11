@@ -118,7 +118,7 @@ def calculate_progress(df):
         df_edital['Progresso_Ponderado'] = 0.0
         return df_edital, 0.0
     df['Concluido'] = (df['Status'] == 'True').astype(int)
-    resumo = df.groupby('Disciplinas', observed=True)['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
+    resumo = df.groupby('Disciplinas')['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
     df_merged['Ponto_por_Conteudo'] = df_merged.apply(lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
@@ -138,8 +138,9 @@ def calculate_stats(df, df_summary):
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
     if not df_summary.empty:
-        df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
-        maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
+        df_summary_copy = df_summary.copy()
+        df_summary_copy['Prioridade_Score'] = (100 - df_summary_copy['Progresso_Ponderado']) * df_summary_copy['Peso']
+        maior_prioridade = df_summary_copy.loc[df_summary_copy['Prioridade_Score'].idxmax()]['Disciplinas']
     else:
         maior_prioridade = ""
     return {
@@ -185,7 +186,7 @@ def render_topbar_with_logo(dias_restantes):
             padding: 0 3vw;
             min-height: 180px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 10px;  /* distância exata 10px para containers métricas */
+            margin-bottom: 10px;
             font-family: 'Inter', sans-serif;
             flex-wrap: wrap;
             gap: 1rem;
@@ -400,8 +401,6 @@ def display_conteudos_com_checkboxes(df):
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
 
-    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
-
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
@@ -416,7 +415,7 @@ def display_conteudos_com_checkboxes(df):
                         if sucesso:
                             st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                             load_data_with_row_indices.clear()
-                            st.rerun()  # Corrigido para st.rerun
+                            st.rerun()
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                 except Exception as e:
@@ -428,7 +427,7 @@ def create_horizontal_bar_animated(df):
         return
 
     df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
+    df_group = df_filtered.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
 
     df_pivot['True'] = df_pivot.get('True', 0)
@@ -580,7 +579,6 @@ def main():
                 color: #566e95;
                 font-size: 16px !important;
             }
-            /* responsividade das métricas */
             @media(max-width: 768px) {
                 .metric-row {
                     flex-direction: column !important;
@@ -659,13 +657,6 @@ def main():
     st.markdown("---")
 
     rodape_motivacional()
-
-def rodape_motivacional():
-    st.markdown("""
-    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
-        🚀 Feito com muito amor, coragem e motivação para você! ✨
-    </footer>
-    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
