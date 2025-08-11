@@ -19,7 +19,7 @@ try:
 except:
     pass
 
-# Configurações
+# Configurações globais
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -31,7 +31,7 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# Funções para Google Sheets
+# --- Google Sheets client and data loading ----
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -111,7 +111,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar planilha: {e}")
         return False
 
-# Cálculos e métricas
+# --- Cálculo dos dados ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -154,7 +154,7 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# Estilo e layout
+# --- Estilo e containers ---
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="
@@ -188,7 +188,7 @@ def render_topbar_with_logo(dias_restantes):
             padding: 0 3vw;
             min-height: 180px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 10px;  /* distância exata 10px para métricas */
+            margin-bottom: 10px;
             font-family: 'Inter', sans-serif;
             flex-wrap: wrap;
             gap: 1rem;
@@ -290,7 +290,6 @@ def display_containers_metricas(stats, progresso_geral):
                 color: #566e95;
                 font-size: 16px !important;
             }
-            /* responsividade */
             @media(max-width: 768px) {
                 .metric-row {
                     flex-direction: column !important;
@@ -329,9 +328,10 @@ def display_containers_metricas(stats, progresso_geral):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
+# --- Funções dos gráficos ---
 def create_animated_histogram_horizontal(df):
     """
-    Histograma horizontal animado percentual 700x600
+    Histograma horizontal animado percentual 1000x600
     """
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
@@ -390,7 +390,7 @@ def create_animated_histogram_horizontal(df):
         yaxis_title='Disciplinas',
         xaxis_title='Percentual (%)',
         barmode='stack',
-        height=600, width=700,
+        height=600, width=1000,
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         font=dict(family="Inter, sans-serif"),
@@ -405,7 +405,7 @@ def create_animated_histogram_horizontal(df):
 def display_animated_histogram(fig):
     fig_json = fig.to_json()
     html = f"""
-    <div id="histogram-container" style="width:700px; height:600px; margin:0 auto;">
+    <div id="histogram-container" style="width:1000px; height:600px; margin:0 auto;">
         <div id="histogram-plot" style="width:100%; height:100%;"></div>
     </div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -446,7 +446,7 @@ def display_animated_histogram(fig):
     }})();
     </script>
     """
-    st.components.v1.html(html, height=650, width=750, scrolling=False)
+    st.components.v1.html(html, height=650, width=1000, scrolling=False)
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
@@ -623,6 +623,34 @@ def create_altair_donut(row):
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
     return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
 
+def display_lista_numero_questoes(ed_data):
+    df = pd.DataFrame(ed_data)
+    css = """
+    <style>
+    .questao-item {
+        margin: 5px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.3s, color 0.3s;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1.05rem;
+        user-select: none;
+        font-family: 'Inter', sans-serif;
+    }
+    .questao-item:hover {
+        background-color: #d0e4ff;
+        color: #064270;
+    }
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+    for _, row in df.iterrows():
+        st.markdown(
+            f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>',
+            unsafe_allow_html=True,
+        )
+
 def rodape_motivacional():
     st.markdown("""
     <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
@@ -670,7 +698,7 @@ def main():
     col1, col2 = st.columns([1, 3], gap='medium')
 
     with col1:
-        display_lista_numero_questoes()
+        display_lista_numero_questoes(ED_DATA)
 
     with col2:
         fig_pie = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
