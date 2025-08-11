@@ -323,8 +323,8 @@ def create_animated_histogram_horizontal(df_summary):
             'xanchor': 'center',
             'font': {'size': 20, 'color': '#2c3e50'}
         },
-        yaxis_title='Disciplinas',
-        xaxis_title='Número de Conteúdos',
+        yaxis_title=None,
+        xaxis_title=None,
         barmode='stack',
         height=600,
         width=700,
