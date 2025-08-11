@@ -1,144 +1,4 @@
-def create_horizontal_bar_animated(df):
-    """Gráfico de barras horizontais animado automaticamente"""
-    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
-        st.info("Sem dados suficientes para gráfico.")
-        return
-
-    df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    df_group = df_filtered.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
-    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
-
-    df_pivot['True'] = df_pivot.get('True', 0)
-    df_pivot['False'] = df_pivot.get('False', 0)
-    df_pivot['Total'] = df_pivot['True'] + df_pivot['False']
-    df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
-    df_pivot['Pct_False'] = df_pivot['False'] / df_pivot['Total']
-    df_pivot = df_pivot.sort_values('Pct_True', ascending=True).reset_index()
-
-    disciplinas = df_pivot['Disciplinas'].tolist()
-    pct_true = df_pivot['Pct_True'].tolist()
-    pct_false = df_pivot['Pct_False'].tolist()
-    
-    # Criar frames para animação
-    frames = []
-    n_frames = 45
-    
-    for frame in range(n_frames + 1):
-        progress = frame / n_frames
-        # Animação com efeito ease-out
-        eased_progress = 1 - (1 - progress) ** 2
-        
-        frame_pct_true = [p * eased_progress for p in pct_true]
-        frame_pct_false = [p * eased_progress for p in pct_false]
-        
-        frames.append(go.Frame(
-            data=[
-                go.Bar(
-                    y=disciplinas,
-                    x=frame_pct_true,
-                    orientation='h',
-                    name="Concluído",
-                    marker=dict(color='#2ecc71', opacity=0.8),
-                    text=[f"{p*100:.0f}%" if p > 0.05 else "" for p in frame_pct_true],
-                    textposition='inside',
-                    textfont=dict(color='white', size=12, family='Inter'),
-                    hovertemplate='<b>%{y}</b><br>Concluído: %{x:.1%}<extra></extra>'
-                ),
-                go.Bar(
-                    y=disciplinas,
-                    x=frame_pct_false,
-                    orientation='h',
-                    name="Pendente",
-                    marker=dict(color='#e74c3c', opacity=0.8),
-                    text=[f"{p*100:.0f}%" if p > 0.05 else "" for p in frame_pct_false],
-                    textposition='inside',
-                    textfont=dict(color='white', size=12, family='Inter'),
-                    hovertemplate='<b>%{y}</b><br>Pendente: %{x:.1%}<extra></extra>'
-                )
-            ],
-            name=str(frame)
-        ))
-
-    # Estado inicial
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                y=disciplinas,
-                x=[0] * len(disciplinas),
-                orientation='h',
-                name="Concluído",
-                marker=dict(color='#2ecc71', opacity=0.8),
-                text=[""] * len(disciplinas),
-                textposition='inside',
-                textfont=dict(color='white', size=12, family='Inter'),
-                hovertemplate='<b>%{y}</b><br>Concluído: %{x:.1%}<extra></extra>'
-            ),
-            go.Bar(
-                y=disciplinas,
-                x=[0] * len(disciplinas),
-                orientation='h',
-                name="Pendente",
-                marker=dict(color='#e74c3c', opacity=0.8),
-                text=[""] * len(disciplinas),
-                textposition='inside',
-                textfont=dict(color='white', size=12, family='Inter'),
-                hovertemplate='<b>%{y}</b><br>Pendente: %{x:.1%}<extra></extra>'
-            )
-        ],
-        frames=frames
-    )
-
-    fig.update_layout(
-        barmode='stack',
-        title=dict(
-            text="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
-            font=dict(size=18, color='#2c3e50', family='Inter'),
-            x=0.5
-        ),
-        xaxis=dict(
-            tickformat='.0%', 
-            range=[0, 1],
-            title="Percentual",
-            titlefont=dict(size=14, family='Inter'),
-            gridcolor='rgba(128, 128, 128, 0.2)'
-        ),
-        yaxis=dict(
-            title="Disciplinas",
-            titlefont=dict(size=14, family='Inter'),
-            tickfont=dict(size=12, family='Inter')
-        ),
-        height=500,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="center",
-            x=0.5,
-            font=dict(family='Inter')
-        ),
-        margin=dict(l=180, r=40, t=100, b=40),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family='Inter')
-    )
-
-    animated_plotly_chart(fig)
-
-def animated_plotly_chart(fig, use_container_width=True):
-    """Wrapper para exibir gráficos Plotly com animação automática"""
-    
-    # Adicionar JavaScript para animação automática
-    animation_js = """
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Aguardar um pouco para garantir que o gráfico foi renderizado
-        setTimeout(function() {
-            // Encontrar todos os gráficos Plotly na página
-            const plotlyDivs = document.querySelectorAll('[id^="plotly-div-"]');
-            
-            plotlyDivs.forEach(function(div, index) {
-                // Observer para detectar quando o grá# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import json
 import pandas as pd
 import numpy as np
@@ -150,7 +10,6 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import plotly.graph_objects as go
-import plotly.io as pio
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -226,7 +85,6 @@ def load_data_with_row_indices():
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
         df = df[df['Status'].isin(['true', 'false'])].copy()
-        df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
@@ -258,13 +116,19 @@ def calculate_progress(df):
         df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
         df_edital['Progresso_Ponderado'] = 0.0
         return df_edital, 0.0
-    df['Concluido'] = (df['Status'] == 'True').astype(int)
+    df['Concluido'] = (df['Status'] == 'true').astype(int)
     resumo = df.groupby('Disciplinas')['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    df_merged['Ponto_por_Conteudo'] = df_merged.apply(lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
+    df_merged['Ponto_por_Conteudo'] = df_merged.apply(
+        lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1
+    )
     df_merged['Pontos_Concluidos'] = df_merged['Conteudos_Concluidos'] * df_merged['Ponto_por_Conteudo']
-    df_merged['Progresso_Ponderado'] = np.where(df_merged['Peso'] > 0, (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100, 0).round(1)
+    df_merged['Progresso_Ponderado'] = np.where(
+        df_merged['Peso'] > 0, 
+        (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100, 
+        0
+    ).round(1)
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -278,6 +142,7 @@ def calculate_stats(df, df_summary):
     pendentes = df_summary['Conteudos_Pendentes'].sum() if not df_summary.empty else 0
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
+    
     if not df_summary.empty:
         df_summary_copy = df_summary.copy()
         df_summary_copy['Prioridade_Score'] = (100 - df_summary_copy['Progresso_Ponderado']) * df_summary_copy['Peso']
@@ -316,7 +181,15 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
-    hoje_texto = datetime.now().strftime('%d de %B de %Y')
+    try:
+        locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+        hoje_texto = datetime.now().strftime('%d de %B de %Y')
+    except:
+        meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+                "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
+        hoje = datetime.now()
+        hoje_texto = f"{hoje.day} de {meses[hoje.month-1]} de {hoje.year}"
+
     st.markdown(f"""
     <style>
         .topbar-container {{
@@ -410,211 +283,75 @@ def display_lista_numero_questoes():
         )
 
 def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
-    """Gráfico de pizza animado com entrada suave automática"""
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
     total = df['Peso_vezes_Questoes'].sum()
     df['Percentual'] = df['Peso_vezes_Questoes'] / total
 
-    # Cores vibrantes para cada disciplina
-    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8']
-    
-    # Criar frames para animação de entrada
+    num_frames = 36
+    max_pull = 0.15
+    labels_final = df.apply(lambda r: f"{r['Disciplinas']} ({r['Percentual']:.1%})", axis=1).tolist()
+
     frames = []
-    n_frames = 60
-    
-    for frame in range(n_frames + 1):
-        # Animação de entrada progressiva
-        progress = frame / n_frames
-        # Usar curva ease-out para animação mais suave
-        eased_progress = 1 - (1 - progress) ** 3
-        
-        frame_values = df['Peso_vezes_Questoes'] * eased_progress
-        
+    for i in range(num_frames):
+        rotation = i * (360 / num_frames)
+        pull_val = (i / (num_frames - 1)) * max_pull
+        texts = labels_final if i == (num_frames - 1) else [""] * len(df)
         frames.append(go.Frame(
             data=[go.Pie(
                 labels=df['Disciplinas'],
-                values=frame_values,
+                values=df['Peso_vezes_Questoes'],
                 hole=0.4,
-                textinfo='label+percent',
+                text=texts,
+                textinfo='text',
                 textposition='outside',
-                textfont=dict(size=14, color='black', family='Inter'),
-                pull=[0.05] * len(df),
-                marker=dict(
-                    colors=colors,
-                    line=dict(color='white', width=3)
-                ),
-                hovertemplate='<b>%{label}</b><br>Peso×Questões: %{value}<br>Percentual: %{percent}<extra></extra>',
-                sort=False
+                textfont=dict(size=16, color='black'),
+                pull=[pull_val] * len(df),
+                marker=dict(line=dict(color='#d3d3d3', width=3))  # Aplicando stroke com largura 3
             )],
-            name=str(frame)
+            name=str(i)
         ))
 
-    # Estado inicial (vazio)
-    initial_values = [0] * len(df)
-    
-    fig = go.Figure(
-        data=[go.Pie(
-            labels=df['Disciplinas'],
-            values=initial_values,
-            hole=0.4,
-            textinfo='label+percent',
-            textposition='outside',
-            textfont=dict(size=14, color='black', family='Inter'),
-            pull=[0.05] * len(df),
-            marker=dict(
-                colors=colors,
-                line=dict(color='white', width=3)
-            ),
-            hovertemplate='<b>%{label}</b><br>Peso×Questões: %{value}<br>Percentual: %{percent}<extra></extra>',
-            sort=False
-        )],
-        frames=frames
-    )
-
+    fig = go.Figure(data=frames[0].data, frames=frames)
     fig.update_layout(
-        title=dict(
-            text="Distribuição: Peso × Número de Questões",
-            font=dict(size=18, color='#2c3e50', family='Inter'),
-            x=0.5
-        ),
         showlegend=False,
         height=600,
-        width=600,
+        width=480,
         margin=dict(t=80, b=40, l=40, r=40),
-        font=dict(family='Inter'),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
+        updatemenus=[],
+        sliders=[],
     )
-
     return fig
 
-def create_horizontal_bar_animated(df):
-    """Gráfico de barras horizontais animado automaticamente"""
-    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
-        st.info("Sem dados suficientes para gráfico.")
-        return
+def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=60):
+    fig_dict = fig.to_dict()
+    data_json = json.dumps(fig_dict.get('data', []))
+    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items() if k != 'uirevision'})
+    frames_json = json.dumps(fig_dict.get('frames', []))
 
-    df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    df_group = df_filtered.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
-    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
+    html = f"""
+    <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+    (function() {{
+        const data = {data_json};
+        const layout = {layout_json};
+        const frames = {frames_json};
 
-    df_pivot['True'] = df_pivot.get('True', 0)
-    df_pivot['False'] = df_pivot.get('False', 0)
-    df_pivot['Total'] = df_pivot['True'] + df_pivot['False']
-    df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
-    df_pivot['Pct_False'] = df_pivot['False'] / df_pivot['Total']
-    df_pivot = df_pivot.sort_values('Pct_True', ascending=True).reset_index()
-
-    disciplinas = df_pivot['Disciplinas'].tolist()
-    pct_true = df_pivot['Pct_True'].tolist()
-    pct_false = df_pivot['Pct_False'].tolist()
-    
-    # Criar frames para animação
-    frames = []
-    n_frames = 45
-    
-    for frame in range(n_frames + 1):
-        progress = frame / n_frames
-        # Animação com efeito ease-out
-        eased_progress = 1 - (1 - progress) ** 2
-        
-        frame_pct_true = [p * eased_progress for p in pct_true]
-        frame_pct_false = [p * eased_progress for p in pct_false]
-        
-        frames.append(go.Frame(
-            data=[
-                go.Bar(
-                    y=disciplinas,
-                    x=frame_pct_true,
-                    orientation='h',
-                    name="Concluído",
-                    marker=dict(color='#2ecc71', opacity=0.8),
-                    text=[f"{p*100:.0f}%" if p > 0.05 else "" for p in frame_pct_true],
-                    textposition='inside',
-                    textfont=dict(color='white', size=12, family='Inter'),
-                    hovertemplate='<b>%{y}</b><br>Concluído: %{x:.1%}<extra></extra>'
-                ),
-                go.Bar(
-                    y=disciplinas,
-                    x=frame_pct_false,
-                    orientation='h',
-                    name="Pendente",
-                    marker=dict(color='#e74c3c', opacity=0.8),
-                    text=[f"{p*100:.0f}%" if p > 0.05 else "" for p in frame_pct_false],
-                    textposition='inside',
-                    textfont=dict(color='white', size=12, family='Inter'),
-                    hovertemplate='<b>%{y}</b><br>Pendente: %{x:.1%}<extra></extra>'
-                )
-            ],
-            name=str(frame)
-        ))
-
-    # Estado inicial
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                y=disciplinas,
-                x=[0] * len(disciplinas),
-                orientation='h',
-                name="Concluído",
-                marker=dict(color='#2ecc71', opacity=0.8),
-                text=[""] * len(disciplinas),
-                textposition='inside',
-                textfont=dict(color='white', size=12, family='Inter'),
-                hovertemplate='<b>%{y}</b><br>Concluído: %{x:.1%}<extra></extra>'
-            ),
-            go.Bar(
-                y=disciplinas,
-                x=[0] * len(disciplinas),
-                orientation='h',
-                name="Pendente",
-                marker=dict(color='#e74c3c', opacity=0.8),
-                text=[""] * len(disciplinas),
-                textposition='inside',
-                textfont=dict(color='white', size=12, family='Inter'),
-                hovertemplate='<b>%{y}</b><br>Pendente: %{x:.1%}<extra></extra>'
-            )
-        ],
-        frames=frames
-    )
-
-    fig.update_layout(
-        barmode='stack',
-        title=dict(
-            text="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
-            font=dict(size=18, color='#2c3e50', family='Inter'),
-            x=0.5
-        ),
-        xaxis=dict(
-            tickformat='.0%', 
-            range=[0, 1],
-            title="Percentual",
-            titlefont=dict(size=14, family='Inter'),
-            gridcolor='rgba(128, 128, 128, 0.2)'
-        ),
-        yaxis=dict(
-            title="Disciplinas",
-            titlefont=dict(size=14, family='Inter'),
-            tickfont=dict(size=12, family='Inter')
-        ),
-        height=500,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="center",
-            x=0.5,
-            font=dict(family='Inter')
-        ),
-        margin=dict(l=180, r=40, t=100, b=40),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family='Inter')
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+        Plotly.newPlot('plotly-div', data, layout).then(function(plot) {{
+            Plotly.addFrames(plot, frames).then(function() {{
+                const animOpts = {{
+                    frame: {{duration: {frame_duration}, redraw: true}},
+                    transition: {{duration: 0}},
+                    mode: 'immediate'
+                }};
+                Plotly.animate(plot, frames, animOpts);
+            }});
+        }});
+    }})();
+    </script>
+    """
+    st.components.v1.html(html, height=height, width=width, scrolling=False)
 
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
@@ -633,11 +370,11 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke com largura 3
     text = alt.Chart(source_label).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
+    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
@@ -652,7 +389,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
     base = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke com largura 3
     text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
@@ -683,19 +420,106 @@ def display_conteudos_com_checkboxes(df):
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
-                checked = (row['Status'] == 'True')
+                checked = (row['Status'] == 'true')
                 try:
                     novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
                     if novo_status != checked:
-                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
+                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "true" if novo_status else "false")
                         if sucesso:
                             st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                            load_data_with_row_indices.clear()
+                            st.cache_data.clear()
                             st.rerun()
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                 except Exception as e:
                     st.error(f"Erro inesperado ao atualizar: {e}")
+
+def create_horizontal_bar_animated(df):
+    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
+        st.info("Sem dados suficientes para gráfico.")
+        return
+
+    df_filtered = df[df['Status'].isin(['true', 'false'])].copy()
+    df_group = df_filtered.groupby(['Disciplinas', 'Status']).size().reset_index(name='Qtd')
+    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
+
+    df_pivot['true'] = df_pivot.get('true', 0)
+    df_pivot['false'] = df_pivot.get('false', 0)
+    df_pivot['Total'] = df_pivot['true'] + df_pivot['false']
+    df_pivot['Pct_True'] = df_pivot['true'] / df_pivot['Total']
+    df_pivot['Pct_False'] = df_pivot['false'] / df_pivot['Total']
+    df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
+
+    disciplinas = df_pivot['Disciplinas'].tolist()
+    pct_true = df_pivot['Pct_True'].tolist()
+    pct_false = df_pivot['Pct_False'].tolist()
+
+    num_frames = 30
+    frames = []
+    for i in range(num_frames + 1):
+        fator = i / num_frames
+        frame_data = [
+            go.Bar(
+                y=disciplinas,
+                x=[p * fator for p in pct_true],
+                orientation='h',
+                name="Concluído",
+                marker=dict(color='#2ecc71', line=dict(color='#d3d3d3', width=3)),  # Aplicando stroke com largura 3
+                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
+                textposition='inside',
+                textfont=dict(color='white', size=12)
+            ),
+            go.Bar(
+                y=disciplinas,
+                x=[p * fator for p in pct_false],
+                orientation='h',
+                name="Pendente",
+                marker=dict(color='#e74c3c', line=dict(color='#d3d3d3', width=3)),  # Aplicando stroke com largura 3
+                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
+                textposition='inside',
+                textfont=dict(color='white', size=12)
+            )
+        ]
+        frames.append(go.Frame(data=frame_data, name=str(i)))
+
+    fig = go.Figure(data=frames[0].data, frames=frames)
+    fig.update_layout(
+        barmode='stack',
+        xaxis=dict(tickformat='.0%', range=[0, 1]),
+        height=400,
+        showlegend=False,
+        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
+        margin=dict(l=120, r=40, t=60, b=40)
+    )
+
+    # Renderização com animação automática
+    fig_dict = fig.to_dict()
+    data_json = json.dumps(fig_dict.get('data', []))
+    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items()})
+    frames_json = json.dumps(fig_dict.get('frames', []))
+
+    html = f"""
+    <div id="plotly-bar" style="width:700px; height:400px;"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+    (function() {{
+        const data = {data_json};
+        const layout = {layout_json};
+        const frames = {frames_json};
+
+        Plotly.newPlot('plotly-bar', data, layout).then(function(plot) {{
+            Plotly.addFrames(plot, frames).then(function() {{
+                Plotly.animate(plot, frames, {{
+                    frame: {{duration: 50, redraw: true}},
+                    transition: {{duration: 0}},
+                    mode: 'immediate'
+                }});
+            }});
+        }});
+    }})();
+    </script>
+    """
+    st.components.v1.html(html, height=450, width=750, scrolling=False)
 
 def rodape_motivacional():
     st.markdown("""
@@ -840,7 +664,7 @@ def main():
 
     with col2:
         fig = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
-        animated_plotly_chart(fig)
+        streamlit_plotly_autoplay_once(fig)
 
     st.markdown("---")
 
