@@ -1,4 +1,4 @@
-c# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import json
 import pandas as pd
 import numpy as np
@@ -307,7 +307,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
                 textposition='outside',
                 textfont=dict(size=16, color='black'),
                 pull=[pull_val] * len(df),
-                marker=dict(line=dict(color='#d3d3d3', width=3))  # Aplicando stroke com largura 3
+                marker=dict(line=dict(color='#d3d3d3', width=3))
             )],
             name=str(i)
         ))
@@ -324,29 +324,26 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
     return fig
 
 def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=60):
-    fig_dict = fig.to_dict()
-    data_json = json.dumps(fig_dict.get('data', []))
-    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items() if k != 'uirevision'})
-    frames_json = json.dumps(fig_dict.get('frames', []))
-
+    # Usar o método to_json() que é compatível com serialização
+    fig_json = fig.to_json()
+    
     html = f"""
     <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
-        const data = {data_json};
-        const layout = {layout_json};
-        const frames = {frames_json};
-
-        Plotly.newPlot('plotly-div', data, layout).then(function(plot) {{
-            Plotly.addFrames(plot, frames).then(function() {{
-                const animOpts = {{
-                    frame: {{duration: {frame_duration}, redraw: true}},
-                    transition: {{duration: 0}},
-                    mode: 'immediate'
-                }};
-                Plotly.animate(plot, frames, animOpts);
-            }});
+        const figure = {fig_json};
+        Plotly.newPlot('plotly-div', figure.data, figure.layout, figure.frames).then(function(plot) {{
+            if (figure.frames && figure.frames.length > 0) {{
+                Plotly.addFrames(plot, figure.frames).then(function() {{
+                    const animOpts = {{
+                        frame: {{duration: {frame_duration}, redraw: true}},
+                        transition: {{duration: 0}},
+                        mode: 'immediate'
+                    }};
+                    Plotly.animate(plot, null, animOpts);
+                }});
+            }}
         }});
     }})();
     </script>
@@ -370,11 +367,11 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke com largura 3
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke
+    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
@@ -389,7 +386,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
     base = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)  # Aplicando stroke com largura 3
+    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
@@ -464,7 +461,7 @@ def create_horizontal_bar_animated(df):
                 x=[p * fator for p in pct_true],
                 orientation='h',
                 name="Concluído",
-                marker=dict(color='#2ecc71', line=dict(color='#d3d3d3', width=3)),  # Aplicando stroke com largura 3
+                marker=dict(color='#2ecc71', line=dict(color='#d3d3d3', width=3)),
                 text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
                 textposition='inside',
                 textfont=dict(color='white', size=12)
@@ -474,7 +471,7 @@ def create_horizontal_bar_animated(df):
                 x=[p * fator for p in pct_false],
                 orientation='h',
                 name="Pendente",
-                marker=dict(color='#e74c3c', line=dict(color='#d3d3d3', width=3)),  # Aplicando stroke com largura 3
+                marker=dict(color='#e74c3c', line=dict(color='#d3d3d3', width=3)),
                 text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
                 textposition='inside',
                 textfont=dict(color='white', size=12)
@@ -486,40 +483,38 @@ def create_horizontal_bar_animated(df):
     fig.update_layout(
         barmode='stack',
         xaxis=dict(tickformat='.0%', range=[0, 1]),
-        height=600,
+        height=400,
+        width=700,  # LARGURA AJUSTADA PARA 700 PIXELS
         showlegend=False,
-        title=None,
+        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
         margin=dict(l=120, r=40, t=60, b=40)
     )
 
-    # Renderização com animação automática
-    fig_dict = fig.to_dict()
-    data_json = json.dumps(fig_dict.get('data', []))
-    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items()})
-    frames_json = json.dumps(fig_dict.get('frames', []))
-
+    # Usar o método to_json() que é compatível com serialização
+    fig_json = fig.to_json()
+    
     html = f"""
-    <div id="plotly-bar" style="width:700px; height:600px;"></div>
+    <div id="plotly-bar" style="width:700px; height:400px;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
-        const data = {data_json};
-        const layout = {layout_json};
-        const frames = {frames_json};
-
-        Plotly.newPlot('plotly-bar', data, layout).then(function(plot) {{
-            Plotly.addFrames(plot, frames).then(function() {{
-                Plotly.animate(plot, frames, {{
-                    frame: {{duration: 50, redraw: true}},
-                    transition: {{duration: 0}},
-                    mode: 'immediate'
+        const figure = {fig_json};
+        Plotly.newPlot('plotly-bar', figure.data, figure.layout, figure.frames).then(function(plot) {{
+            if (figure.frames && figure.frames.length > 0) {{
+                Plotly.addFrames(plot, figure.frames).then(function() {{
+                    const animOpts = {{
+                        frame: {{duration: 50, redraw: true}},
+                        transition: {{duration: 0}},
+                        mode: 'immediate'
+                    }};
+                    Plotly.animate(plot, null, animOpts);
                 }});
-            }});
+            }}
         }});
     }})();
     </script>
     """
-    st.components.v1.html(html, height=450, width=750, scrolling=True)
+    st.components.v1.html(html, height=450, width=750, scrolling=False)
 
 def rodape_motivacional():
     st.markdown("""
