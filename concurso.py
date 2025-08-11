@@ -9,7 +9,6 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import locale
-import random
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -376,112 +375,85 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
             chart_index += 1
 
+# Corrigida para evitar SchemaValidationError, separando gráficos em colunas no Streamlit
 def create_stacked_bar_with_global_progress(df, progresso_geral):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
         return
 
     df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
+    if df_filtered.empty:
+        st.info("Nenhum dado válido para gráfico de barras.")
+        return
+
     df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
     if df_group.empty:
-        st.info("Nenhum dado válido para gráfico de barras empilhadas.")
+        st.info("Nenhum dado válido para gráfico de barras.")
         return
 
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
-    df_pivot['Total'] = df_pivot.sum(axis=1)
 
+    # Garantir colunas True e False existem
     if 'True' not in df_pivot.columns:
         df_pivot['True'] = 0
     if 'False' not in df_pivot.columns:
         df_pivot['False'] = 0
 
+    df_pivot['Total'] = df_pivot['True'] + df_pivot['False']
+
+    # Converter para string para evitar problemas
+    df_pivot.index = df_pivot.index.astype(str)
+
+    # Percentuais normalizados
     df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
     df_pivot['Pct_False'] = df_pivot['False'] / df_pivot['Total']
+
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
     df_melt = df_pivot.melt(
         id_vars=['Disciplinas'], value_vars=['Pct_True', 'Pct_False'],
         var_name='Status', value_name='Percentual'
     )
+
     df_melt['Status'] = df_melt['Status'].map({'Pct_True': 'Concluído', 'Pct_False': 'Pendente'})
 
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     base = alt.Chart(df_melt).encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
-        x=alt.X('Percentual:Q', axis=alt.Axis(format='%', tickCount=11)),
+        x=alt.X('Percentual:Q', stack="normalize", axis=alt.Axis(format='%')),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
     )
 
-    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=3)
+    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2)
 
-    text_true = base.transform_filter(
-        alt.datum.Status == 'Concluído'
-    ).mark_text(
+    text = base.mark_text(
+        size=12,
         color='white',
         fontWeight='bold',
-        fontSize=12
+        dx=0, dy=0,
+        align='center',
+        baseline='middle'
     ).encode(
-        text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize', offset='center')
+        text=alt.Text('Percentual:Q', format='.0%')
     )
 
-    text_false = base.transform_filter(
-        alt.datum.Status == 'Pendente'
-    ).mark_text(
-        color='white',
-        fontWeight='bold',
-        fontSize=12
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize', offset='center')
+    final_chart = (bars + text).properties(
+        height=400,
+        width=700,
+        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
     )
 
-    df_total = pd.DataFrame({
-        'Disciplinas': ['Progresso Geral'],
-        'Concluído': [progresso_geral / 100],
-        'Pendente': [1 - (progresso_geral / 100)]
-    }).melt(id_vars=['Disciplinas'], value_vars=['Concluído', 'Pendente'], var_name='Status', value_name='Percentual')
+    # Gráfico geral de progresso em donut separado
+    chart_progresso_geral = donut_chart_progresso_geral(progresso_geral)
 
-    base_total = alt.Chart(df_total).encode(
-        y=alt.Y('Disciplinas:N', sort=['Progresso Geral'], axis=alt.Axis(labels=True, ticks=False)),
-        x=alt.X('Percentual:Q', axis=alt.Axis(format='%', tickCount=11)),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    )
+    # Exibir lado a lado usando Streamlit columns
+    col1, col2 = st.columns([3, 1])
 
-    bars_total = base_total.mark_bar(stroke='#d3d3d3', strokeWidth=3)
-
-    text_total_true = base_total.transform_filter(
-        alt.datum.Status == 'Concluído'
-    ).mark_text(
-        color='white',
-        fontWeight='bold',
-        fontSize=12
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize', offset='center')
-    )
-
-    text_total_false = base_total.transform_filter(
-        alt.datum.Status == 'Pendente'
-    ).mark_text(
-        color='white',
-        fontWeight='bold',
-        fontSize=12
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize', offset='center')
-    )
-
-    final_chart = alt.vconcat(
-        bars_total + text_total_true + text_total_false,
-        bars + text_true + text_false
-    ).properties(
-        height=700,
-        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina (com Progresso Geral)"
-    )
-
-    st.altair_chart(final_chart, use_container_width=True)
+    with col1:
+        st.altair_chart(final_chart, use_container_width=True)
+    with col2:
+        st.altair_chart(chart_progresso_geral, use_container_width=True)
 
 def inject_css_e_background():
     st.markdown("""
