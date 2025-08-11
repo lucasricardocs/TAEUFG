@@ -486,7 +486,7 @@ def create_horizontal_bar_animated(df):
     fig.update_layout(
         barmode='stack',
         xaxis=dict(tickformat='.0%', range=[0, 1]),
-        height=700,
+        height=400,
         showlegend=False,
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
         margin=dict(l=120, r=40, t=60, b=40)
@@ -499,7 +499,7 @@ def create_horizontal_bar_animated(df):
     frames_json = json.dumps(fig_dict.get('frames', []))
 
     html = f"""
-    <div id="plotly-bar" style="width:700px; height:400px;"></div>
+    <div id="plotly-bar" style="width:700px; height:700px;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
