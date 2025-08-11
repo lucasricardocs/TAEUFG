@@ -700,7 +700,7 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-    col1, col2 = st.columns([2, 2], gap='small')
+    col1, col2 = st.columns([1, 3], gap='small')
 
     with col1:
         display_lista_numero_questoes(ED_DATA)
