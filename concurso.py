@@ -367,7 +367,7 @@ def create_stacked_bar(df):
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     chart = alt.Chart(df_melt).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
-                title=None, axis=alt.Axis(labels=False, ticks=False)),
+                title=None, axis=alt.Axis(labels=True, ticks=True)),
         x=alt.X('Percentual:Q', title=None,
                 axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
