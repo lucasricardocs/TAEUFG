@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-import streamlit as st
-import gspread
+import json
 import pandas as pd
 import numpy as np
+import streamlit as st
+import gspread
 from datetime import datetime
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
-import locale
-import plotly.graph_objects as go
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
 try:
+    import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except locale.Error:
+except:
     pass
 
 # --- Configurações ---
@@ -30,6 +30,7 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
+# --- Google Sheets Client ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -184,7 +185,7 @@ def render_topbar_with_logo(dias_restantes):
             padding: 0 3vw;
             min-height: 180px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 10px;  /* 10px distant to metric containers */
+            margin-bottom: 10px; /* distância exata 10px para containers métricas */
             font-family: 'Inter', sans-serif;
             flex-wrap: wrap;
             gap: 1rem;
@@ -236,7 +237,8 @@ def render_topbar_with_logo(dias_restantes):
         <img class="topbar-logo" src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG">
         <div class="topbar-text">⏰ Faltam {dias_restantes} dias para o concurso de TAE</div>
         <div class="topbar-date">Goiânia, {hoje_texto}</div>
-    </div>""", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_lista_numero_questoes():
     df = pd.DataFrame(ED_DATA)
@@ -267,64 +269,77 @@ def display_lista_numero_questoes():
         )
 
 def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
+    import plotly.graph_objects as go
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
     total = df['Peso_vezes_Questoes'].sum()
     df['Percentual'] = df['Peso_vezes_Questoes'] / total
 
-    pulls_expanded = [0, 0.05, 0.1, 0.15, 0.2]
-    num_slices = len(df)
+    num_frames = 36
+    max_pull = 0.15
+    labels_final = df.apply(lambda r: f"{r['Disciplinas']} ({r['Percentual']:.1%})", axis=1).tolist()
 
     frames = []
-    for i, pull_val in enumerate(pulls_expanded):
-        pulls = [pull_val] * num_slices
-        rotation = (i * 30) % 360
-
-        # Mostrar texto apenas no último frame
-        if i < len(pulls_expanded) - 1:
-            texts = [""] * num_slices
-        else:
-            texts = [
-                f"{row['Disciplinas']} ({row['Percentual']:.1%})" for idx, row in df.iterrows()
-            ]
-
+    for i in range(num_frames):
+        rotation = i * (360 / num_frames)
+        pull_val = (i / (num_frames - 1)) * max_pull
+        texts = labels_final if i == (num_frames - 1) else [""] * len(df)
         frames.append(go.Frame(
             data=[go.Pie(
                 labels=df['Disciplinas'],
                 values=df['Peso_vezes_Questoes'],
                 hole=0.4,
                 text=texts,
+                textinfo='text',
+                textposition='outside',
                 textfont=dict(size=16, color='black'),
-                textinfo="text",
-                textposition="outside",
-                pull=pulls,
-                marker=dict(line=dict(color="#d3d3d3", width=2)),
+                pull=[pull_val] * len(df),
+                marker=dict(line=dict(color='#d3d3d3', width=2)),
                 rotation=rotation
-            )]
+            )],
+            name=str(i)
         ))
 
-    fig = go.Figure(
-        data=frames[0].data,
-        frames=frames
-    )
-
+    fig = go.Figure(data=frames[0].data, frames=frames)
     fig.update_layout(
-        title={'text': "Número de Questões e Peso por Disciplina", 'x': 0.5, 'xanchor': 'center'},
         showlegend=False,
         height=600,
         width=480,
         margin=dict(t=80, b=40, l=40, r=40),
-        updatemenus=[{
-            "type": "buttons",
-            "buttons": [],
-            "showactive": False,
-            "visible": False
-        }],
-        sliders=[]
+        updatemenus=[],
+        sliders=[],
     )
-
-    fig.layout.transition = {"duration": 300}
     return fig
+
+def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=60):
+    fig_dict = fig.to_dict()
+    data_json = json.dumps(fig_dict.get('data', []))
+    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items() if k != 'uirevision'})
+    frames_json = json.dumps(fig_dict.get('frames', []))
+
+    html = f"""
+    <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+    (function() {{
+        const data = {data_json};
+        const layout = {layout_json};
+        const frames = {frames_json};
+
+        Plotly.newPlot('plotly-div', data, layout).then(function(plot) {{
+            Plotly.addFrames(plot, frames).then(function() {{
+                const animOpts = {{
+                    frame: {{duration: {frame_duration}, redraw: true}},
+                    transition: {{duration: 0}},
+                    mode: 'immediate'
+                }};
+                Plotly.animate(plot, frames, animOpts);
+            }});
+        }});
+    }})();
+    </script>
+    """
+    st.components.v1.html(html, height=height, width=width, scrolling=False)
 
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
@@ -403,79 +418,99 @@ def display_conteudos_com_checkboxes(df):
                         if sucesso:
                             st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                             load_data_with_row_indices.clear()
-                            st.experimental_rerun()
+                            st.rerun()  # Corrigido para substituir experimental_rerun
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                 except Exception as e:
                     st.error(f"Erro inesperado ao atualizar: {e}")
 
-def create_stacked_bar_with_global_progress(df, progresso_geral=None):
+def create_horizontal_bar_animated(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
-        st.info("Sem dados suficientes para gráfico de barras empilhadas.")
+        st.info("Sem dados suficientes para gráfico.")
         return
 
     df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    if df_filtered.empty:
-        st.info("Nenhum dado válido para gráfico de barras.")
-        return
-
     df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
-    if df_group.empty:
-        st.info("Nenhum dado válido para gráfico de barras.")
-        return
-
     df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
+
     df_pivot['True'] = df_pivot.get('True', 0)
     df_pivot['False'] = df_pivot.get('False', 0)
-
     df_pivot['Total'] = df_pivot['True'] + df_pivot['False']
-    df_pivot.index = df_pivot.index.astype(str)
     df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
     df_pivot['Pct_False'] = df_pivot['False'] / df_pivot['Total']
     df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
 
-    df_melt = df_pivot.melt(
-        id_vars=['Disciplinas'], value_vars=['Pct_True', 'Pct_False'],
-        var_name='Status', value_name='Percentual'
-    )
-    df_melt['Status'] = df_melt['Status'].map({'Pct_True': 'Concluído', 'Pct_False': 'Pendente'})
+    disciplinas = df_pivot['Disciplinas'].tolist()
+    pct_true = df_pivot['Pct_True'].tolist()
+    pct_false = df_pivot['Pct_False'].tolist()
 
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    num_frames = 30
+    frames = []
+    for i in range(num_frames + 1):
+        fator = i / num_frames
+        frames.append(go.Frame(
+            data=[
+                go.Bar(
+                    y=disciplinas,
+                    x=[p * fator for p in pct_true],
+                    orientation='h',
+                    name="Concluído",
+                    marker=dict(color='#2ecc71'),
+                    text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
+                    textposition='inside'
+                ),
+                go.Bar(
+                    y=disciplinas,
+                    x=[p * fator for p in pct_false],
+                    orientation='h',
+                    name="Pendente",
+                    marker=dict(color='#e74c3c'),
+                    text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
+                    textposition='inside'
+                )
+            ],
+            name=str(i)
+        ))
 
-    base = alt.Chart(df_melt).encode(
-        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
-        x=alt.X('Percentual:Q', stack="normalize", axis=alt.Axis(format='%')),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    )
+    fig = go.Figure(data=frames[0].data, frames=frames)
 
-    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2)
-
-    # Rótulos percentuais centralizados, coloridos conforme status
-    text = base.mark_text(
-        size=12,
-        fontWeight='bold',
-        align='center',
-        baseline='middle',
-        # cor condicional por categoria
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%'),
-        x=alt.X('Percentual:Q', stack='normalize'),
-        color=alt.condition(
-            alt.datum.Status == 'Concluído',
-            alt.value('white'),
-            alt.value('white')
-        )
-    )
-
-    # Para cor branca nos rótulos no gráfico com fundo verde/vermelho, mantido branco geralmente,
-    # pode ajustar se desejar cor diferente para maior contraste.
-
-    final_chart = (bars + text).properties(
+    fig.update_layout(
+        barmode='stack',
+        xaxis=dict(tickformat='.0%', range=[0, 1]),
         height=400,
         width=700,
-        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
+        showlegend=False,
+        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
+        margin=dict(l=120, r=40, t=60, b=40)
     )
-    st.altair_chart(final_chart, use_container_width=True)
+
+    fig_dict = fig.to_dict()
+    data_json = json.dumps(fig_dict.get('data', []))
+    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items()})
+    frames_json = json.dumps(fig_dict.get('frames', []))
+
+    html = f"""
+    <div id="plotly-bar" style="width:700px; height:400px;"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+    (function() {{
+        const data = {data_json};
+        const layout = {layout_json};
+        const frames = {frames_json};
+
+        Plotly.newPlot('plotly-bar', data, layout).then(function(plot) {{
+            Plotly.addFrames(plot, frames).then(function() {{
+                Plotly.animate(plot, frames, {{
+                    frame: {{duration: 50, redraw: true}},
+                    transition: {{duration: 0}},
+                    mode: 'immediate'
+                }});
+            }});
+        }});
+    }})();
+    </script>
+    """
+    st.components.v1.html(html, height=450, width=750, scrolling=False)
 
 def rodape_motivacional():
     st.markdown("""
@@ -493,7 +528,6 @@ def main():
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Container logo topo responsivo e com distância 10px para métricas
     with st.container():
         render_topbar_with_logo(dias_restantes)
 
@@ -501,7 +535,6 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Paleta de cores harmônica pastel para cards métricas
     cores_metricas = [
         "#cbe7f0",
         "#fdd8d6",
@@ -510,7 +543,6 @@ def main():
         "#d7c7f7",
     ]
 
-    # Injetar CSS para fontes responsivas, animação e interatividade cards métricas
     st.markdown(
         """
         <style>
@@ -528,33 +560,29 @@ def main():
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                font-size: clamp(1rem, 1.5vw, 2.5rem);
+                font-size: 16px !important;
                 line-height: 1.1;
                 user-select: none;
-                cursor: pointer;
-                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                cursor: default;
+                transition: box-shadow 0.3s ease, transform 0.3s ease;
                 margin-bottom: 10px;
             }
             .metric-container:hover {
-                box-shadow: 0 8px 30px #7186f3aa;
+                box-shadow: 0 8px 30px #5275e1cc;
                 transform: scale(1.05);
                 z-index: 10;
             }
             .metric-value {
                 color: #355e9e;
-                font-size: clamp(2rem, 5vw, 3rem);
                 margin-bottom: 0.25rem;
+                font-size: 16px !important;
             }
             .metric-label {
                 font-weight: 600;
-                font-size: clamp(1rem, 2vw, 1.5rem);
                 color: #566e95;
+                font-size: 16px !important;
             }
-            /* Ajuste gap entre topo e cards métricas */
-            .stContainer > div:nth-child(1) > div:nth-child(1) {
-                margin-bottom: 10px!important;
-            }
-            /* Responsivo empilhamento vertical em tela pequena */
+            /* responsividade das métricas */
             @media(max-width: 768px) {
                 .metric-row {
                     flex-direction: column !important;
@@ -592,18 +620,9 @@ def main():
                 valor = stats['maior_prioridade']
                 label = "Disciplina Prioritária"
 
-            # Usar checkbox para dar interatividade (foco alternativo)
-            checked_key = f"metric_checkbox_{idx}"
-            checked = st.checkbox(label="", value=False, key=checked_key, help=f"Selecionar {label}", label_visibility="collapsed")
-            
-            container_style = f"background: {cor};"
-            # Se checkbox marcado, realce extra
-            if checked:
-                container_style += " box-shadow: 0 10px 35px #5275e1cc; transform: scale(1.07); z-index: 10;"
-
             st.markdown(
                 f"""
-                <div class="metric-container" style="{container_style}">
+                <div class="metric-container" style="background: {cor};">
                     <div class="metric-value">{valor}</div>
                     <div class="metric-label">{label}</div>
                 </div>
@@ -614,14 +633,13 @@ def main():
 
     st.markdown("---")
 
-    # Ordem corrigida de títulos
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    create_stacked_bar_with_global_progress(df)  # mostra só disciplinas, rótulos centralizados e em branco
+    create_horizontal_bar_animated(df)
 
     st.markdown("---")
 
@@ -637,8 +655,8 @@ def main():
         display_lista_numero_questoes()
 
     with col2:
-        fig_pie_animado = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
-        st.plotly_chart(fig_pie_animado, use_container_width=True)
+        fig = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
+        streamlit_plotly_autoplay_once(fig)
 
     st.markdown("---")
 
@@ -646,7 +664,7 @@ def main():
 
 def rodape_motivacional():
     st.markdown("""
-    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 5px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
         🚀 Feito com muito amor, coragem e motivação para você! ✨
     </footer>
     """, unsafe_allow_html=True)
