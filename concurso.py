@@ -312,7 +312,7 @@ def display_conteudos_com_checkboxes(df):
 
 def donut_chart_progresso_geral(progresso_percentual, width=350, height=350,
                                colors=('#2ecc71', '#e74c3c'),
-                               inner_radius=70, font_size=22,
+                               inner_radius=70, font_size=12,
                                text_color='#2ecc71', show_tooltip=True):
     concluido = max(0, min(progresso_percentual, 100))
     pendente = 100 - concluido
@@ -354,15 +354,15 @@ def create_altair_donut(row):
     )
     donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
-        size=22, fontWeight='bold', color='#2ecc71'
+        size=12, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=350, height=350)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
+    return (donut + text).properties(width=350, height=350).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
     rows = (total_charts + max_cols - 1) // max_cols
     disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280, font_size=22, text_color='#2ecc71'))
+    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=350, height=350, font_size=12, text_color='#2ecc71'))
     chart_index = 0
     for _ in range(rows):
         cols = st.columns(max_cols, gap="medium")
