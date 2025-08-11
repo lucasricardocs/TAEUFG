@@ -373,7 +373,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
 
     chart_idx = 0
     for _ in range(rows):
-        cols = st.columns(max_cols, gap="medium")
+        cols = st.columns(max_cols, gap="small")
         for c in range(max_cols):
             if chart_idx >= total_charts:
                 break
@@ -508,7 +508,7 @@ def main():
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; margin-bottom:12px; height:180px;">', unsafe_allow_html=True)
+    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; margin-bottom:12px; height:18px;">', unsafe_allow_html=True)
     cols = st.columns(5, gap="small")
     for idx, col in enumerate(cols):
         cor = cores_metricas[idx]
