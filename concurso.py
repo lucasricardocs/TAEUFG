@@ -23,9 +23,7 @@ WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
 ED_DATA = {
-    'Disciplinas': [
-        'LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'
-    ],
+    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [20, 15, 10, 15, 30],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
@@ -96,7 +94,7 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# --- Atualizar status ---
+# --- Atualizar status na planilha ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -110,10 +108,10 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
         return False
     except Exception as e:
-        st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
+        st.error(f"❌ Erro inesperado ao atualizar planilha: {e}")
         return False
 
-# --- Cálculo progresso ---
+# --- Cálculo de progresso ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -125,20 +123,15 @@ def calculate_progress(df):
     resumo = df.groupby('Disciplinas', observed=True)['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    df_merged['Ponto_por_Conteudo'] = df_merged.apply(
-        lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
+    df_merged['Ponto_por_Conteudo'] = df_merged.apply(lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
     df_merged['Pontos_Concluidos'] = df_merged['Conteudos_Concluidos'] * df_merged['Ponto_por_Conteudo']
-    df_merged['Progresso_Ponderado'] = np.where(
-        df_merged['Peso'] > 0,
-        (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100,
-        0
-    ).round(1)
+    df_merged['Progresso_Ponderado'] = np.where(df_merged['Peso'] > 0, (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100, 0).round(1)
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
-# --- Estatísticas ---
+# --- Estatísticas resumo para indicadores ---
 def calculate_stats(df, df_summary):
     now = datetime.now()
     dias_restantes = max((CONCURSO_DATE - now).days, 0)
@@ -163,8 +156,8 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Título lateral destacado ---
-def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
-    st.markdown(f'''
+def titulo_com_destaque(texto, cor_lateral="#3498db"):
+    st.markdown(f"""
     <div style="
         display: flex;
         align-items: center;
@@ -182,27 +175,24 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     ">
         {texto}
     </div>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# --- Topo com logo e data ---
+# --- Topo do Dashboard ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
     <div style="
-        position: relative;
         display: flex;
         align-items: center;
-        justify-content: flex-start;
-        height: 250px;
         background-color: #f5f5f5;
-        padding: 0 40px;
         border-radius: 12px;
+        padding: 0 40px;
+        height: 250px;
         box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         margin-bottom: 20px;
         font-family: 'Inter', sans-serif;
     ">
-        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"
-             style="height: 150px; margin-right: 40px;">
+        <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 150px; margin-right: 40px;">
         <div style="
             font-size: 3rem;
             font-weight: 700;
@@ -226,79 +216,167 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Gráfico pizza (donut) peso × questões ---
-def pie_chart_peso_vezes_questoes(width, height):
-    df = pd.DataFrame(ED_DATA)
-    df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
-    df['Percentual'] = df['Peso_vezes_Questoes'] / df['Peso_vezes_Questoes'].sum()
-
-    chart = alt.Chart(df).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3).encode(
-        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+# --- Gráfico horizontal de Número de Questões ---
+def chart_questoes_horizontal(df_ordenado, height):
+    bars = alt.Chart(df_ordenado).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
+        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Questões', order='ascending'), title=None,
+                axis=alt.Axis(labels=True, ticks=True)),
+        x=alt.X('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=False, domain=False)),
         color=alt.Color('Disciplinas:N', legend=None),
-        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'),
-                 alt.Tooltip('Peso_vezes_Questoes', title='Peso × Questões'),
-                 alt.Tooltip('Percentual', format='.1%')]
-    ).properties(width=width, height=height)
+        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Questões', title='Quantidade de Questões')]
+    )
+    texts = alt.Chart(df_ordenado).mark_text(align='left', baseline='middle', dx=3, fontSize=12, color='#064820').encode(
+        y=alt.Y('Disciplinas:N', sort=alt.EncodingSortField(field='Questões', order='ascending')),
+        x='Questões:Q',
+        text='Questões:Q'
+    )
+    return (bars + texts).properties(width=350, height=height, title="Quantidade de Questões por Disciplina").configure_axis(grid=False, domain=False)
 
-    # Labels centralizados com percentual
-    text = alt.Chart(df).mark_text(radius=100, size=14, fontWeight='bold', color='black').encode(
-        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
-        text=alt.Text('Percentual:Q', format='.0%'),
-        color=alt.value('black')
+# --- Gráfico vertical Peso × Questões com rótulos ---
+def bar_chart_ponderado(height):
+    df = pd.DataFrame(ED_DATA)
+    df['Questoes_Ponderadas'] = df['Questões'] * df['Peso']
+
+    chart = alt.Chart(df).mark_bar(cornerRadius=5, stroke='#d3d3d3', strokeWidth=3).encode(
+        x=alt.X('Disciplinas:N', sort='-y', title=None, axis=alt.Axis(labelAngle=0, labels=False, ticks=False, domain=False)),
+        y=alt.Y('Questoes_Ponderadas:Q', title=None, axis=alt.Axis(labels=False, ticks=False, grid=False, domain=False)),
+        color=alt.Color('Disciplinas:N', legend=None),
+        tooltip=[alt.Tooltip('Disciplinas', title='Disciplina'), alt.Tooltip('Questoes_Ponderadas', title='Peso × Questões')]
+    ).properties(width=600, height=height, title="Peso × Questões por Disciplina")
+
+    text_labels = alt.Chart(df).mark_text(dy=-10, fontWeight='bold', fontSize=12, color='black').encode(
+        x=alt.X('Disciplinas:N', sort='-y'),
+        y='Questoes_Ponderadas:Q',
+        text=alt.Text('Questoes_Ponderadas:Q')
     )
 
-    return (chart + text).configure_view(strokeWidth=0).configure_axis(labelColor="black")
+    text_disciplinas = alt.Chart(df).mark_text(align='center', dy=12, fontWeight='bold', fontSize=12, color='black').encode(
+        x=alt.X('Disciplinas:N', sort='-y'),
+        y=alt.value(height - 15),
+        text='Disciplinas:N'
+    )
 
-# --- Exibe gráfico pizza junto com lista de número de questões (substituindo histograma) ---
-def display_questoes_e_peso_lista(df_summary):
+    return (chart + text_labels + text_disciplinas).configure_view(strokeWidth=0)
+
+# --- Exibe os dois gráficos lado a lado ---
+def display_questoes_e_peso(df_summary):
     if df_summary.empty:
-        st.info("Nenhum dado para mostrar.")
+        st.info("Nenhum dado para mostrar gráficos de questões e pesos.")
         return
-
-    titulo_com_destaque("📝 Número de Questões e Peso × Questões por Disciplina", cor_lateral="#8e44ad")
-
-    altura = 400
+    titulo_com_destaque("📝 Quantidade de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
+    altura = 600
     df_ed = pd.DataFrame(ED_DATA)
-    chart_pizza = pie_chart_peso_vezes_questoes(altura, altura)
-
-    col1, col2 = st.columns([2, 3])  # Proporção para melhor espaço do donut
-
+    chart_q = chart_questoes_horizontal(df_ed, altura)
+    chart_p = bar_chart_ponderado(altura)
+    col1, col2 = st.columns(2)
     with col1:
-        # Mostrar lista simples
-        st.markdown("### Número de Questões por Disciplina")
-        for _, row in df_ed.iterrows():
-            st.markdown(f"- **{row['Disciplinas'].title()}**: {row['Questões']} questões")
-
+        st.altair_chart(chart_q, use_container_width=True)
     with col2:
-        st.altair_chart(chart_pizza, use_container_width=True)
+        st.altair_chart(chart_p, use_container_width=True)
 
-# --- Lista expansível de conteúdos com checkboxes ---
-def display_conteudos_com_checkboxes(df):
-    worksheet = get_worksheet()
-    if df.empty or worksheet is None:
-        st.info("Nenhum dado disponível para exibir conteúdos.")
+# --- Gráfico donut para progresso geral ---
+def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
+                               colors=('#2ecc71', '#e74c3c'),
+                               inner_radius=70, font_size=32,
+                               text_color='#064820', show_tooltip=True):
+    concluido = max(0, min(progresso_percentual, 100))
+    pendente = 100 - concluido
+    df = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente]
+    })
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=list(colors))
+    base = alt.Chart(df).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None)
+    )
+    if show_tooltip:
+        base = base.encode(tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='.1f')])
+    donut = base.mark_arc(innerRadius=inner_radius, stroke='#d3d3d3', strokeWidth=3).properties(width=width, height=height)
+    text = alt.Chart(pd.DataFrame({'text': [f'{concluido:.1f}%']})).mark_text(
+        fontSize=font_size, fontWeight='bold', color=text_color, dy=0
+    ).encode(text='text:N').properties(width=width, height=height)
+    return (donut + text).configure_view(strokeWidth=0)
+
+# --- Donuts por disciplina ---
+def create_altair_donut(row):
+    concluido = int(row['Conteudos_Concluidos'])
+    pendente = int(row['Conteudos_Pendentes'])
+    total = max(concluido + pendente, 1)
+    concluido_pct = round((concluido / total) * 100, 1)
+    pendente_pct = round((pendente / total) * 100, 1)
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente],
+        'Percentual': [concluido_pct, pendente_pct]
+    })
+    source_label = pd.DataFrame({'Percentual': [concluido_pct / 100]})
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    base_chart = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
+    )
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+    text = alt.Chart(source_label).mark_text(
+        size=24, fontWeight='bold', color='#064820'
+    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
+    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
+
+def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
+    total_charts = len(df_summary) + 1
+    rows = (total_charts + max_cols - 1) // max_cols
+    disciplina_charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+    disciplina_charts.append(donut_chart_progresso_geral(progresso_geral, width=280, height=280))
+    chart_index = 0
+    for _ in range(rows):
+        cols = st.columns(max_cols, gap="medium")
+        for c in range(max_cols):
+            if chart_index >= total_charts:
+                break
+            with cols[c]:
+                if chart_index < len(df_summary):
+                    nome = df_summary.iloc[chart_index]['Disciplinas'].title()
+                else:
+                    nome = "Progresso Geral"
+                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
+                st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
+            chart_index += 1
+
+# --- Gráfico empilhado percentual concluídos/pendentes ---
+def create_stacked_bar(df):
+    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
+        st.info("Sem dados suficientes para gráfico de barras empilhadas.")
         return
-    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
-    disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-    for disc in disciplinas_ordenadas:
-        conteudos_disciplina = df[df['Disciplinas'] == disc]
-        with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
-            for _, row in conteudos_disciplina.iterrows():
-                key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
-                checked = (row['Status'] == 'True')
-                try:
-                    novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
-                    if novo_status != checked:
-                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'],
-                                                         "True" if novo_status else "False")
-                        if sucesso:
-                            st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                            load_data_with_row_indices.clear()
-                            st.experimental_rerun()
-                        else:
-                            st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-                except Exception as e:
-                    st.error(f"Erro inesperado ao atualizar: {e}")
+    df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
+    df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
+    if df_group.empty:
+        st.info("Nenhum dado válido para gráfico de barras empilhadas.")
+        return
+    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
+    df_pivot['Total'] = df_pivot.sum(axis=1)
+    if 'True' not in df_pivot.columns:
+        df_pivot['True'] = 0
+    df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
+    df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
+    df_pivot['True_Pct'] = (df_pivot['True'] / df_pivot['Total']).round(3).clip(upper=1)
+    df_pivot['False_Pct'] = 1 - df_pivot['True_Pct']
+    df_melt = df_pivot.melt(id_vars=['Disciplinas'], value_vars=['True_Pct', 'False_Pct'],
+                            var_name='Status', value_name='Percentual')
+    df_melt['Status'] = df_melt['Status'].map({'True_Pct': 'Concluído', 'False_Pct': 'Pendente'})
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    chart = alt.Chart(df_melt).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
+        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(),
+                title=None, axis=alt.Axis(labels=True, ticks=True)),
+        x=alt.X('Percentual:Q', title=None,
+                axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=['Disciplinas', 'Status', alt.Tooltip('Percentual', format='.1%')]
+    ).properties(
+        title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
+        height=600
+    ).configure_view(stroke='#d3d3d3', strokeWidth=3)
+    st.altair_chart(chart, use_container_width=True)
 
 # --- CSS ---
 def inject_css():
@@ -310,9 +388,17 @@ def inject_css():
         margin: 0; padding: 0;
         height: 100%;
         background: #ffffff;
-        color: #222831;
         overflow-x: hidden;
+        color: #222831;
         position: relative;
+    }
+    .reportview-container, .main, .block-container {
+        background-color: #ffffff !important;
+        color: #222831;
+    }
+    h1, h2, h3 {
+        color: #2c3e50;
+        font-weight: 600;
     }
     .metric-container {
         background: #f0f5ff;
@@ -323,13 +409,13 @@ def inject_css():
         color: #2c3e50;
         transition: box-shadow 0.3s ease;
         text-align: center;
-        font-weight: 700;
     }
     .metric-container:hover {
         box-shadow: 0 0 30px #6a8edecc;
     }
     .metric-value {
         font-size: 3rem;
+        font-weight: 700;
         color: #355e9e;
         margin-bottom: 0.2rem;
     }
@@ -346,102 +432,228 @@ def inject_css():
         background: #e0e9ff;
         margin-bottom: 2rem;
     }
-    h1, h2, h3 {
-        color: #2c3e50;
-        font-weight: 600;
+    [data-baseweb="accordion"] > div > div {
+        background: #f2f7ff !important;
+        border-radius: 14px !important;
+        color: #355e9e !important;
+        font-weight: 500;
+        transition: background 0.3s ease;
+    }
+    [data-baseweb="accordion"] > div > div:hover {
+        background: #a3bffa55 !important;
     }
     .streamlit-expanderContent > div {
         color: #2c3e50;
         font-weight: 400;
     }
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        color: #2c3e50;
+    }
+    th, td {
+        border: 1px solid #a3bffa;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background: #a3bffa22;
+    }
+    tr:nth-child(even) {
+        background: #cbdcff55;
+    }
     footer {
         font-style: italic !important;
-        font-size: 12px !important;
-        color: #064820 !important;
-        opacity: 0.75 !important;
-        margin-top: 10px !important;
+        font-size: 14px !important;
+        color: #0b3d01 !important;
+        opacity: 0.85 !important;
+        margin-top: 15px !important;
         text-align: center !important;
         user-select: none !important;
         font-family: 'Inter', sans-serif !important;
     }
     footer span {
-        font-weight: 500 !important;
-        color: #355e9e !important;
+        font-weight: 700 !important;
+        color: #2c6c02 !important;
+        font-size: 1rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Rodapé motivacional ---
+# --- Rodapé ---
 def rodape_motivacional():
+    # Melhor diagramação e frase nova
     st.markdown("""
     <footer>
-        🚀📚 "O sucesso é a soma de pequenos esforços repetidos dia após dia." 📅✨<br>
-        <span>Mantenha o foco, você está no caminho certo! 💪😊</span>
+        ✨ <strong>Pequenos esforços diários geram grandes conquistas.</strong> Continue firme e confiante! 💪📚
+        <br><br>
+        <span>Você está construindo seu futuro com conhecimento e dedicação.</span>
     </footer>
     """, unsafe_allow_html=True)
 
+# --- Lista conteúdos com checkboxes ---
+def display_conteudos_com_checkboxes(df):
+    worksheet = get_worksheet()
+    if df.empty or worksheet is None:
+        st.info("Nenhum dado disponível para exibir conteúdos.")
+        return
+    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
+    disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
+    for disc in disciplinas_ordenadas:
+        conteudos = df[df['Disciplinas'] == disc]
+        with st.expander(f"{disc} ({len(conteudos)} conteúdos)"):
+            for _, row in conteudos.iterrows():
+                key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
+                checked = (row['Status'] == 'True')
+                try:
+                    novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
+                    if novo_status != checked:
+                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
+                        if sucesso:
+                            st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
+                            load_data_with_row_indices.clear()
+                            st.experimental_rerun()
+                        else:
+                            st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
+                except Exception as e:
+                    st.error(f"Erro inesperado ao atualizar: {e}")
+
 # --- Main ---
 def main():
-    st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025",
-                       page_icon="📚", layout="wide")
+    st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
     inject_css()
-
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
+
+    # Topo
     render_topbar_with_logo(dias_restantes)
 
+    # Carregar e preparar dados
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
+    # Indicadores principais topo
     cols = st.columns(5)
     with cols[0]:
-        st.markdown(f'''
-            <div class="metric-container">
-                <div class="metric-value">{progresso_geral:.1f}%</div>
-                <div class="metric-label">Progresso Geral</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-value">{progresso_geral:.1f}%</div>
+            <div class="metric-label">Progresso Geral</div>
+        </div>
+        """, unsafe_allow_html=True)
     with cols[1]:
-        st.markdown(f'''
-            <div class="metric-container">
-                <div class="metric-value">{stats['concluidos']}</div>
-                <div class="metric-label">Conteúdos Concluídos</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-value">{stats['concluidos']}</div>
+            <div class="metric-label">Conteúdos Concluídos</div>
+        </div>
+        """, unsafe_allow_html=True)
     with cols[2]:
-        st.markdown(f'''
-            <div class="metric-container">
-                <div class="metric-value">{stats['pendentes']}</div>
-                <div class="metric-label">Conteúdos Pendentes</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-value">{stats['pendentes']}</div>
+            <div class="metric-label">Conteúdos Pendentes</div>
+        </div>
+        """, unsafe_allow_html=True)
     with cols[3]:
-        st.markdown(f'''
-            <div class="metric-container">
-                <div class="metric-value">{stats['topicos_por_dia']}</div>
-                <div class="metric-label">Tópicos/Dia Necessários</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-value">{stats['topicos_por_dia']}</div>
+            <div class="metric-label">Tópicos/Dia Necessários</div>
+        </div>
+        """, unsafe_allow_html=True)
     with cols[4]:
-        st.markdown(f'''
-            <div class="metric-container" style="font-size:1rem;">
-                <div class="metric-value" style="font-size:1.5rem;">{stats['maior_prioridade']}</div>
-                <div class="metric-label">Disciplina Prioritária</div>
-            </div>''', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container" style="font-size:1rem;">
+            <div class="metric-value" style="font-size:1.5rem;">{stats['maior_prioridade']}</div>
+            <div class="metric-label">Disciplina Prioritária</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # Aqui pode incluir outras seções de gráficos, etc.
+    # 1º título lateral destacado e gráfico donut por disciplina + progresso geral
+    titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
+    display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
+    # 2º título lateral destacado e gráfico empilhado concluídos/pendentes
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
+    create_stacked_bar(df)
+
+    st.markdown("---")
+
+    # 3º título lateral destacado e lista expansível com checkboxes para marcar conteúdos
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
-    # Aqui exibimos o gráfico pizza e a lista, lado a lado (sem histograma)
-    display_questoes_e_peso_lista(df_summary)
+    # 4º título lateral destacado e seção lado a lado: lista e gráfico pizza (peso x questão)
+    display_lista_e_pizza_rotulos_externos = lambda df_summary: (
+        (lambda:
+            (
+                titulo_com_destaque("📝 Questões e Peso × Questões por Disciplina", cor_lateral="#8e44ad"),
+                st.columns([2, 3])[0].markdown("\n".join(
+                    f"- **{disc.title()}**: {qs} questões"
+                    for disc, qs in zip(ED_DATA['Disciplinas'], ED_DATA['Questões'])
+                )),
+                st.columns([2, 3])[1].altair_chart(
+                    alt.Chart(pd.DataFrame({
+                        'Disciplinas': ED_DATA['Disciplinas'],
+                        'Peso_vezes_Questoes': np.array(ED_DATA['Peso']) * np.array(ED_DATA['Questões']),
+                    })).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2).encode(
+                        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+                        color=alt.Color('Disciplinas:N', legend=None),
+                        tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Peso_vezes_Questoes', title='Peso × Questões')],
+                        detail='Disciplinas:N',
+                    ).properties(width=400, height=400),
+                    use_container_width=True,
+                )
+            )
+        )()
+    )
+    # Implementar a seção usando colunas decentes para lista e gráfico lado a lado
+    col1, col2 = st.columns([2, 3])
+
+    with col1:
+        st.markdown("### Número de Questões por Disciplina")
+        for disc, qs in zip(ED_DATA['Disciplinas'], ED_DATA['Questões']):
+            st.markdown(f"- **{disc.title()}**: {qs} questões")
+
+    with col2:
+        df_pizza = pd.DataFrame({
+            'Disciplinas': ED_DATA['Disciplinas'],
+            'Peso_vezes_Questoes': np.array(ED_DATA['Peso']) * np.array(ED_DATA['Questões']),
+        })
+
+        total = df_pizza['Peso_vezes_Questoes'].sum()
+        df_pizza['Percentual'] = df_pizza['Peso_vezes_Questoes'] / total
+
+        chart = alt.Chart(df_pizza).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2).encode(
+            theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+            color=alt.Color('Disciplinas:N', legend=None),
+            tooltip=[alt.Tooltip('Disciplinas'), alt.Tooltip('Peso_vezes_Questoes', title='Peso × Questões')]
+        ).properties(width=400, height=400)
+
+        text = alt.Chart(df_pizza).mark_text(radius=115, fontSize=13, fontWeight='bold').encode(
+            theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+            text=alt.Text('Percentual:Q', format='.1%'),
+            color=alt.value('black')
+        )
+
+        label = alt.Chart(df_pizza).mark_text(radius=140, fontSize=11).encode(
+            theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+            text='Disciplinas:N',
+            color=alt.value('black')
+        )
+
+        st.altair_chart(chart + text + label, use_container_width=True)
 
     st.markdown("---")
 
+    # Rodapé
     rodape_motivacional()
-
 
 if __name__ == "__main__":
     main()
