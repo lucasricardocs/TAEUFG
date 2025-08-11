@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+c# -*- coding: utf-8 -*-
 import json
 import pandas as pd
 import numpy as np
@@ -486,7 +486,7 @@ def create_horizontal_bar_animated(df):
     fig.update_layout(
         barmode='stack',
         xaxis=dict(tickformat='.0%', range=[0, 1]),
-        height=400,
+        height=600,
         showlegend=False,
         title=None,
         margin=dict(l=120, r=40, t=60, b=40)
@@ -499,7 +499,7 @@ def create_horizontal_bar_animated(df):
     frames_json = json.dumps(fig_dict.get('frames', []))
 
     html = f"""
-    <div id="plotly-bar" style="width:700px; height:700px;"></div>
+    <div id="plotly-bar" style="width:700px; height:600px;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
@@ -519,7 +519,7 @@ def create_horizontal_bar_animated(df):
     }})();
     </script>
     """
-    st.components.v1.html(html, height=450, width=750, scrolling=False)
+    st.components.v1.html(html, height=450, width=750, scrolling=True)
 
 def rodape_motivacional():
     st.markdown("""
