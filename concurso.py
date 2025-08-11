@@ -453,8 +453,7 @@ def display_conteudos_com_checkboxes(df):
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
-
+        
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     alterou = False
 
