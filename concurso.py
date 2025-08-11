@@ -501,17 +501,16 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
 
     st.altair_chart(final_chart, use_container_width=True)
 
-def inject_css_e_fireworks():
+def inject_css_e_background():
     st.markdown("""
     <style>
-    /* Fonte */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
     body, html, [class*="css"] {
         font-family: 'Inter', sans-serif !important;
         margin: 0; padding: 0;
         min-height: 100vh;
-        background: #ffffff;
+        background: linear-gradient(to bottom, #8fa2ff 0%, #ffffff 100%) !important;
         color: #222831;
         overflow-x: hidden;
     }
@@ -564,8 +563,6 @@ def inject_css_e_fireworks():
         text-align: center !important;
         user-select: none !important;
         font-family: 'Inter', sans-serif !important;
-        position: relative;
-        padding-bottom: 70px; /* espaço para fogos */
     }
     .questao-item {
         margin: 5px 0;
@@ -581,94 +578,8 @@ def inject_css_e_fireworks():
         background-color: #d0e4ff;
         color: #064270;
     }
-
-    /* Fogos animação no rodapé, subindo até o topo */
-    #fireworks-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh; /* ocupa toda altura para a animação subir até o topo */
-        pointer-events: none;
-        z-index: 1;
-        overflow: visible;
-        background: transparent;
-        overflow-x: hidden;
-    }
-    .firework-footer {
-        position: absolute;
-        bottom: 0;
-        width: 6px;
-        height: 6px;
-        background: #ff4141;
-        border-radius: 50%;
-        box-shadow:
-            0 0 10px 2px rgba(255, 65, 65, 0.8),
-            0 0 20px 5px rgba(255, 99, 99, 0.6);
-        animation: rise-footer 4s ease-out infinite, flicker-footer 0.6s linear infinite;
-    }
-    @keyframes rise-footer {
-        0% {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(-100vh) scale(0.6);
-            opacity: 0;
-        }
-    }
-    @keyframes flicker-footer {
-        0%, 100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.4;
-        }
-    }
-    .firework-footer::after {
-        content: "";
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        width: 2px;
-        height: 12px;
-        background: #ffadad;
-        border-radius: 1px;
-        transform-origin: bottom center;
-        box-shadow:
-            0 0 6px 1px #ff6f6f;
-        animation: spark-footer 0.6s ease-out infinite;
-    }
-    @keyframes spark-footer {
-        0% {
-            transform: rotate(0deg) translateY(0);
-            opacity: 1;
-        }
-        100% {
-            transform: rotate(25deg) translateY(-14px);
-            opacity: 0;
-        }
-    }
     </style>
     """, unsafe_allow_html=True)
-
-def inject_fireworks_footer():
-    st.markdown("<div id='fireworks-footer'></div>", unsafe_allow_html=True)
-
-def add_fireworks_footer(num=30):
-    fireworks_html = ""
-    for _ in range(num):
-        left = random.uniform(0, 98)
-        delay = random.uniform(0, 3)
-        duration = random.uniform(3.5, 5.0)
-        fireworks_html += f"""
-        <div class="firework-footer" style="
-            left: {left}vw;
-            animation-delay: {delay}s;
-            animation-duration: {duration}s;
-        "></div>
-        """
-    st.markdown(f"<div style='position:fixed;bottom:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:1;overflow:visible;'>{fireworks_html}</div>", unsafe_allow_html=True)
 
 def rodape_motivacional():
     st.markdown("""
@@ -684,10 +595,7 @@ def main():
         layout="wide"
     )
 
-    # Injeta css geral + animação fogos subindo do rodapé até topo
-    inject_css_e_fireworks()
-    inject_fireworks_footer()
-    add_fireworks_footer(num=30)
+    inject_css_e_background()
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
