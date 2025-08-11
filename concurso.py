@@ -9,6 +9,7 @@ from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
+import plotly.graph_objects as go
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -18,7 +19,7 @@ try:
 except:
     pass
 
-# --- Configurações ---
+# Configurações
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -30,7 +31,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- Google Sheets Client ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -185,7 +185,7 @@ def render_topbar_with_logo(dias_restantes):
             padding: 0 3vw;
             min-height: 180px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 10px; /* distância exata 10px para containers métricas */
+            margin-bottom: 10px;  /* distância exata 10px para containers métricas */
             font-family: 'Inter', sans-serif;
             flex-wrap: wrap;
             gap: 1rem;
@@ -237,8 +237,7 @@ def render_topbar_with_logo(dias_restantes):
         <img class="topbar-logo" src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG">
         <div class="topbar-text">⏰ Faltam {dias_restantes} dias para o concurso de TAE</div>
         <div class="topbar-date">Goiânia, {hoje_texto}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
 def display_lista_numero_questoes():
     df = pd.DataFrame(ED_DATA)
@@ -269,7 +268,6 @@ def display_lista_numero_questoes():
         )
 
 def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
-    import plotly.graph_objects as go
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
     total = df['Peso_vezes_Questoes'].sum()
@@ -418,7 +416,7 @@ def display_conteudos_com_checkboxes(df):
                         if sucesso:
                             st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
                             load_data_with_row_indices.clear()
-                            st.rerun()  # Corrigido para substituir experimental_rerun
+                            st.rerun()  # Corrigido para st.rerun
                         else:
                             st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
                 except Exception as e:
@@ -448,29 +446,29 @@ def create_horizontal_bar_animated(df):
     frames = []
     for i in range(num_frames + 1):
         fator = i / num_frames
-        frames.append(go.Frame(
-            data=[
-                go.Bar(
-                    y=disciplinas,
-                    x=[p * fator for p in pct_true],
-                    orientation='h',
-                    name="Concluído",
-                    marker=dict(color='#2ecc71'),
-                    text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
-                    textposition='inside'
-                ),
-                go.Bar(
-                    y=disciplinas,
-                    x=[p * fator for p in pct_false],
-                    orientation='h',
-                    name="Pendente",
-                    marker=dict(color='#e74c3c'),
-                    text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
-                    textposition='inside'
-                )
-            ],
-            name=str(i)
-        ))
+        frame_data = [
+            go.Bar(
+                y=disciplinas,
+                x=[p * fator for p in pct_true],
+                orientation='h',
+                name="Concluído",
+                marker=dict(color='#2ecc71'),
+                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
+                textposition='inside',
+                textfont=dict(color='white', size=12)
+            ),
+            go.Bar(
+                y=disciplinas,
+                x=[p * fator for p in pct_false],
+                orientation='h',
+                name="Pendente",
+                marker=dict(color='#e74c3c'),
+                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
+                textposition='inside',
+                textfont=dict(color='white', size=12)
+            )
+        ]
+        frames.append(go.Frame(data=frame_data, name=str(i)))
 
     fig = go.Figure(data=frames[0].data, frames=frames)
 
