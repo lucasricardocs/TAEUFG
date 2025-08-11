@@ -461,7 +461,7 @@ def create_stacked_bar_with_global_progress(df, progresso_geral=None):
         x=alt.X('Percentual:Q', stack='normalize')
     )
     final_chart = (bars + text).properties(
-        height=400,
+        height=600,
         width=700,
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
     )
