@@ -509,7 +509,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
                 hole=0.3,
                 text=texts,
                 textinfo='text',
-                textposition='outside',
+                textposition=None,
                 textfont=dict(size=14, color='black', family='sans-serif'),
                 marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
@@ -537,7 +537,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
             font=dict(color='black', size=12, family='sans-serif'),
             traceorder='normal'
         ),
-        height=480,
+        height=700,
         width=700,
         margin=dict(t=20, b=20, l=20, r=20),
         font=dict(family="sans-serif"),
@@ -545,7 +545,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
         paper_bgcolor='rgba(0,0,0,0)',
     )
     return fig
-def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=80):
+def streamlit_plotly_autoplay_once(fig, height=700, width=700, frame_duration=80):
     fig_json = fig.to_json()
     html = f"""
     <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
