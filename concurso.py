@@ -331,7 +331,7 @@ def display_containers_metricas(stats, progresso_geral):
 # --- Funções dos gráficos ---
 def create_animated_histogram_horizontal(df):
     """
-    Histograma horizontal animado percentual 1000x600
+    Histograma horizontal animado percentual 1400x600
     """
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
@@ -390,7 +390,7 @@ def create_animated_histogram_horizontal(df):
         yaxis_title='Disciplinas',
         xaxis_title='Percentual (%)',
         barmode='stack',
-        height=600, width=1000,
+        height=600, width=1400,
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         font=dict(family="Inter, sans-serif"),
@@ -405,7 +405,7 @@ def create_animated_histogram_horizontal(df):
 def display_animated_histogram(fig):
     fig_json = fig.to_json()
     html = f"""
-    <div id="histogram-container" style="width:1000px; height:600px; margin:0 auto;">
+    <div id="histogram-container" style="width:1400px; height:600px; margin:0 auto;">
         <div id="histogram-plot" style="width:100%; height:100%;"></div>
     </div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -446,7 +446,7 @@ def display_animated_histogram(fig):
     }})();
     </script>
     """
-    st.components.v1.html(html, height=650, width=1000, scrolling=False)
+    st.components.v1.html(html, height=650, width=1400, scrolling=False)
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
