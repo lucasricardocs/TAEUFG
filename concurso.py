@@ -184,7 +184,7 @@ def render_topbar_with_logo(dias_restantes):
         padding: 0 3vw;
         min-height: 250px;
         box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        margin-bottom: 8px;  /* distância menor após topo */
+        margin-bottom: 10px;  /* menor distância */
         font-family: 'Inter', sans-serif;
         flex-wrap: wrap;
         gap: 1rem;
@@ -270,12 +270,12 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
         margin=dict(t=80, b=40, l=40, r=40),
         updatemenus=[{
             "type": "buttons",
-            "buttons": [],  # remove botão play
+            "buttons": [],  # remover botão play
             "showactive": False,
             "visible": False
         }]
     )
-    # Animação automática 1x (sem controles)
+    # Configura a animação para rodar 1 vez ao carregar (sem controles)
     fig.layout.sliders = []
     fig.layout.transition = {'duration': 0}
     fig.layout.frame = {'duration': 30, 'redraw': True}
@@ -335,12 +335,12 @@ def create_altair_donut(row):
     return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1  # incluindo progresso geral
+    total_charts = len(df_summary) + 1  # adding overall progress donut
     rows = (total_charts + max_cols - 1) // max_cols
 
     donuts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
 
-    # Donut progresso geral
+    # Donut for overall progress (progresso geral)
     source = pd.DataFrame({
         'Status': ['Concluído', 'Pendente'],
         'Valor': [progresso_geral, 100 - progresso_geral]
@@ -431,7 +431,7 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
     )
 
-    # Gráfico progresso geral em histograma horizontal
+    # Gráfico do progresso geral como histograma horizontal
     df_progresso_geral = pd.DataFrame({
         'Status': ['Concluído', 'Pendente'],
         'Percentual': [progresso_geral / 100, 1 - progresso_geral / 100]
@@ -455,7 +455,7 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
 
 def rodape_motivacional():
     st.markdown("""
-    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+    <footer>
         🚀 Feito com muito amor, coragem e motivação para você! ✨
     </footer>
     """, unsafe_allow_html=True)
@@ -467,11 +467,9 @@ def main():
         layout="wide"
     )
 
-    # NÃO insere background nem gradiente
-
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Container topo (com margin bottom menor)
+    # Top container com menor margin-bottom para aproximar os blocos abaixo
     with st.container():
         render_topbar_with_logo(dias_restantes)
 
@@ -479,7 +477,8 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Métricas coloridas com distanciamento menor
+    # Containers métricas com cores agradáveis e distanciamento reduzido
+    # Paleta: tons suaves e harmoniosos
     cores_metricas = [
         "#cbe7f0",  # azul claro
         "#fdd8d6",  # vermelho claro
