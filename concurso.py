@@ -171,17 +171,6 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         position: relative;
     ">
         {texto}
-        <div style="
-            position: absolute;
-            top: 8px;
-            right: 16px;
-            font-size: 11px;
-            color: #2c3e50;
-            font-weight: 600;
-            user-select: none;
-        ">
-            Goiânia, {datetime.now().strftime('%d/%m/%Y')}
-        </div>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
@@ -265,7 +254,6 @@ def pie_chart_peso_vezes_questoes_com_labels(width=600, height=600):
 
     pie = base.mark_arc(outerRadius=120, stroke='#fff', strokeWidth=2)
 
-    # Rótulos externos horizontais alinhados para fácil leitura
     text_labels = alt.Chart(df).mark_text(
         align='left',
         baseline='middle',
@@ -420,8 +408,8 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     base = alt.Chart(df_melt).encode(
-        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None, axis=alt.Axis(labels=True, ticks=True)),
-        x=alt.X('Percentual:Q', axis=alt.Axis(format='%', tickCount=11, labels=True, ticks=True)),
+        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
+        x=alt.X('Percentual:Q', axis=alt.Axis(format='%', tickCount=11)),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
     )
 
@@ -451,10 +439,9 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
 
     df_total = pd.DataFrame({
         'Disciplinas': ['Progresso Geral'],
-        'Concluido': [progresso_geral / 100],
+        'Concluído': [progresso_geral / 100],
         'Pendente': [1 - (progresso_geral / 100)]
-    }).melt(id_vars=['Disciplinas'], value_vars=['Concluido', 'Pendente'], var_name='Status', value_name='Percentual')
-    df_total['Status'] = df_total['Status'].map({'Concluido': 'Concluído', 'Pendente': 'Pendente'})
+    }).melt(id_vars=['Disciplinas'], value_vars=['Concluído', 'Pendente'], var_name='Status', value_name='Percentual')
 
     base_total = alt.Chart(df_total).encode(
         y=alt.Y('Disciplinas:N', sort=['Progresso Geral'], axis=alt.Axis(labels=True, ticks=False)),
@@ -489,14 +476,9 @@ def create_stacked_bar_with_global_progress(df, progresso_geral):
     final_chart = alt.vconcat(
         bars_total + text_total_true + text_total_false,
         bars + text_true + text_false
-    ).resolve_scale(
-        y='independent',
-        color='independent'
     ).properties(
         height=700,
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina (com Progresso Geral)"
-    ).configure_view(
-        stroke=None
     )
 
     st.altair_chart(final_chart, use_container_width=True)
@@ -578,6 +560,19 @@ def inject_css_e_background():
         background-color: #d0e4ff;
         color: #064270;
     }
+    .metric-block {
+        height: 200px; /* Altura aumentada para deixar os containers mais altos */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+    }
+    .metric-block > div[role="listitem"] {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -604,6 +599,8 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
+    # Contêiner com altura aumentada para as 5 métricas
+    st.markdown('<div class="metric-block">', unsafe_allow_html=True)
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f"""
@@ -640,6 +637,7 @@ def main():
                 <div class="metric-label">Disciplina Prioritária</div>
             </div>
         """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
