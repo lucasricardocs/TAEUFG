@@ -488,7 +488,7 @@ def create_horizontal_bar_animated(df):
         xaxis=dict(tickformat='.0%', range=[0, 1]),
         height=400,
         showlegend=False,
-        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
+        title=None,
         margin=dict(l=120, r=40, t=60, b=40)
     )
 
