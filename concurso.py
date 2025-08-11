@@ -375,7 +375,7 @@ def create_stacked_bar(df):
     ).properties(
         title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
         height=600
-    ).configure_view(stroke='#d3d3d3', strokeWidth=1)
+    ).configure_view(stroke='#fff', strokeWidth=1)
     st.altair_chart(chart, use_container_width=True)
 
 # --- CSS ---
