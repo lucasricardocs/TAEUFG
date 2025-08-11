@@ -9,6 +9,8 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import locale
+import random
+import time
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -63,7 +65,6 @@ def get_worksheet():
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
-# --- Carregar dados da planilha ---
 @st.cache_data(ttl=600, show_spinner=False)
 def load_data_with_row_indices():
     worksheet = get_worksheet()
@@ -94,7 +95,6 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# --- Atualizar status na planilha ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -131,7 +131,6 @@ def calculate_progress(df):
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
-# --- Estatísticas resumidas ---
 def calculate_stats(df, df_summary):
     now = datetime.now()
     dias_restantes = max((CONCURSO_DATE - now).days, 0)
@@ -155,7 +154,6 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- Título lateral destacado ---
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="
@@ -174,10 +172,8 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         color: #2c3e50;
     ">
         {texto}
-    </div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
-# --- Topo do dashboard ---
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
@@ -218,10 +214,8 @@ def render_topbar_with_logo(dias_restantes):
         ">
             Goiânia, {hoje_texto}
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
 
-# --- Lista interativa e responsiva número de questões ---
 def display_lista_numero_questoes():
     df = pd.DataFrame(ED_DATA)
     css = """
@@ -243,44 +237,28 @@ def display_lista_numero_questoes():
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
-
     for _, row in df.iterrows():
         st.markdown(f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>', unsafe_allow_html=True)
 
-# --- Gráfico pie chart com legenda, título, rótulos externos ---
+# Substituição do gráfico pie chart segundo modelo solicitado
 def pie_chart_peso_vezes_questoes_com_labels(width=480, height=600):
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
-    df['Percentual'] = df['Peso_vezes_Questoes'] / df['Peso_vezes_Questoes'].sum()
 
-    chart = alt.Chart(df).mark_arc(stroke='#d3d3d3', strokeWidth=2).encode(
-        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
-        color=alt.Color('Disciplinas:N', legend=alt.Legend(title="Disciplinas", orient='right')),
-        tooltip=[
-            alt.Tooltip('Disciplinas', title='Disciplina'),
-            alt.Tooltip('Peso_vezes_Questoes', title='Peso × Questões'),
-            alt.Tooltip('Percentual', format='.1%', title='Percentual'),
-        ]
-    ).properties(
-        width=width,
-        height=height,
-        title="Peso × Número de Questões por Disciplina"
+    base = alt.Chart(df).encode(
+        theta=alt.Theta("Peso_vezes_Questoes:Q", stack=True),
+        color=alt.Color("Disciplinas:N", legend=None)
     )
 
-    # Rótulos externos percentuais e nomes das disciplinas
-    text = alt.Chart(df).mark_text(radius=140, fontSize=14, fontWeight='bold', color='black').encode(
-        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
-        text=alt.Text('Percentual:Q', format='.1%')
-    )
+    pie = base.mark_arc(outerRadius=120)
 
-    labels = alt.Chart(df).mark_text(radius=165, fontSize=12, color='black').encode(
-        theta=alt.Theta(field='Peso_vezes_Questoes', type='quantitative'),
+    text = base.mark_text(radius=140, size=14).encode(
         text='Disciplinas:N'
     )
 
-    return (chart + text + labels).configure_view(strokeWidth=0)
+    chart = pie + text
+    return chart.properties(width=width, height=height)
 
-# --- Lista expansível conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
@@ -309,7 +287,6 @@ def display_conteudos_com_checkboxes(df):
                 except Exception as e:
                     st.error(f"Erro inesperado ao atualizar: {e}")
 
-# --- Gráfico donut progresso geral ---
 def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
                                colors=('#2ecc71', '#e74c3c'),
                                inner_radius=70, font_size=32,
@@ -333,7 +310,6 @@ def donut_chart_progresso_geral(progresso_percentual, width=280, height=280,
     ).encode(text='text:N').properties(width=width, height=height)
     return (donut + text).configure_view(strokeWidth=0)
 
-# --- Donuts por disciplina ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -353,9 +329,9 @@ def create_altair_donut(row):
         tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
     )
     donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
-    text = alt.Chart(source_label).mark_text(size=24, fontWeight='bold', color='#064820').encode(
-        text=alt.Text('Percentual:Q', format='.0%')
-    ).properties(width=280, height=280)
+    text = alt.Chart(source_label).mark_text(
+        size=24, fontWeight='bold', color='#064820'
+    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
     return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
@@ -375,7 +351,6 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(disciplina_charts[chart_index], use_container_width=True)
             chart_index += 1
 
-# --- Gráfico empilhado percentual concluídos/pendentes ---
 def create_stacked_bar(df):
     if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
         st.info("Sem dados suficientes para gráfico de barras empilhadas.")
@@ -404,8 +379,7 @@ def create_stacked_bar(df):
     ).properties(title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina', height=600).configure_view(stroke='#d3d3d3', strokeWidth=3)
     st.altair_chart(chart, use_container_width=True)
 
-# --- CSS para responsividade e estilo ---
-def inject_css():
+def inject_css_e_fireworks():
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -482,10 +456,102 @@ def inject_css():
         background-color: #d0e4ff;
         color: #064270;
     }
+
+    /* Fogos animação fundo */
+    #fireworks-background {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: -1;
+        overflow: hidden;
+        background: radial-gradient(ellipse at bottom, #000000 0%, #01010a 80%);
+    }
+    .firework {
+        position: absolute;
+        bottom: 0;
+        width: 6px;
+        height: 6px;
+        background: #ff4141;
+        border-radius: 50%;
+        box-shadow:
+            0 0 10px 2px rgba(255, 65, 65, 0.8),
+            0 0 20px 5px rgba(255, 99, 99, 0.6);
+        animation-name: rise, flicker;
+        animation-timing-function: ease-out, linear;
+        animation-direction: normal, normal;
+        animation-iteration-count: 1, infinite;
+    }
+    @keyframes rise {
+        0% {
+            transform: translateY(0) translateX(0) scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-110vh) translateX(var(--x-move)) scale(0.6);
+            opacity: 0;
+        }
+    }
+    @keyframes flicker {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.4;
+        }
+    }
+    .firework::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 2px;
+        height: 12px;
+        background: #ffadad;
+        border-radius: 1px;
+        transform-origin: bottom center;
+        box-shadow:
+            0 0 6px 1px #ff6f6f;
+        animation-name: spark;
+        animation-duration: 0.6s;
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-out;
+    }
+    @keyframes spark {
+        0% {
+            transform: rotate(0deg) translateY(0);
+            opacity: 1;
+        }
+        100% {
+            transform: rotate(25deg) translateY(-14px);
+            opacity: 0;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Rodapé compacto ---
+def inject_fireworks_background():
+    st.markdown("<div id='fireworks-background'></div>", unsafe_allow_html=True)
+
+def add_fireworks(num=30):
+    fireworks_html = ""
+    for i in range(num):
+        left = random.randint(0, 98)
+        delay = random.uniform(0, 10)
+        x_move = random.randint(-20, 20)
+        duration = random.uniform(2.5, 4.0)
+        fireworks_html += f"""
+        <div class="firework" style="
+            left: {left}vw;
+            animation-delay: {delay}s;
+            --x-move: {x_move}px;
+            animation-duration: {duration}s;
+        "></div>
+        """
+    st.markdown(f"<div id='fireworks-container'>{fireworks_html}</div>", unsafe_allow_html=True)
+
 def rodape_motivacional():
     st.markdown("""
     <footer>
@@ -493,15 +559,17 @@ def rodape_motivacional():
     </footer>
     """, unsafe_allow_html=True)
 
-# --- Main ---
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso 2025",
         page_icon="📚",
-        layout="wide"
+        layout="centered"
     )
 
-    inject_css()
+    inject_css_e_fireworks()
+    inject_fireworks_background()
+    time.sleep(0.5)
+    add_fireworks(num=30)
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
@@ -511,7 +579,6 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Indicadores responsivos em 5 colunas
     cols = st.columns(5)
     with cols[0]:
         st.markdown(f"""
@@ -551,24 +618,20 @@ def main():
 
     st.markdown("---")
 
-    # Primeira seção: progresso em donuts
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
     display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
-    # Segunda seção: gráfico empilhado concluídos/pendentes
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
     create_stacked_bar(df)
 
     st.markdown("---")
 
-    # Terceira seção: lista expansível conteúdos com checkboxes
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
-    # Quarta seção: lista interativa e gráfico pie chart lado a lado
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     col1, col2 = st.columns([2, 3], gap='medium')
 
@@ -576,13 +639,12 @@ def main():
         display_lista_numero_questoes()
 
     with col2:
-        st.altair_chart(pie_chart_peso_vezes_questoes_com_labels(width=480, height=600), use_container_width=True)
+        chart_pie = pie_chart_peso_vezes_questoes_com_labels(width=480, height=600)
+        st.altair_chart(chart_pie, use_container_width=True)
 
     st.markdown("---")
 
-    # Rodapé compacto
     rodape_motivacional()
-
 
 if __name__ == "__main__":
     main()
