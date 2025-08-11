@@ -510,7 +510,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
                 text=texts,
                 textinfo='text',
                 textposition='outside',
-                textfont=dict(size=14, color='white', family='Inter'),
+                textfont=dict(size=14, color='black', family='Inter'),
                 marker=dict(colors=cores[:len(df)], line=dict(color='white', width=2)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
@@ -524,7 +524,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
             'text': 'Número de Questões e Peso por Disciplina',
             'x': 0.5,
             'xanchor': 'center',
-            'font': {'size': 18, 'color': '#2c3e50', 'family': 'Inter'}
+            'font': {'size': 16, 'color': '#2c3e50', 'family': 'Inter'}
         },
         showlegend=True,
         legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05, font=dict(size=12)),
