@@ -184,7 +184,7 @@ def render_topbar_with_logo(dias_restantes):
         padding: 0 3vw;
         min-height: 250px;
         box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-        margin-bottom: 10px;  /* menor distância */
+        margin-bottom: 6px;  /* ainda menor distância para o topo */
         font-family: 'Inter', sans-serif;
         flex-wrap: wrap;
         gap: 1rem;
@@ -239,7 +239,10 @@ def display_lista_numero_questoes():
     """
     st.markdown(css, unsafe_allow_html=True)
     for _, row in df.iterrows():
-        st.markdown(f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>',
+            unsafe_allow_html=True,
+        )
 
 def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
     df = pd.DataFrame(ED_DATA)
@@ -247,19 +250,32 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
     total = df['Peso_vezes_Questoes'].sum()
     df['Percentual'] = df['Peso_vezes_Questoes'] / total
 
+    # Preparar frames com pull animado para explosão e rotação combinada
+    pulls_expanded = [0, 0.05, 0.1, 0.15, 0.2]  # exemplo incremental para efeito explosão progressiva
+    num_slices = len(df)
+    
+    frames = []
+    for i, pull_val in enumerate(pulls_expanded):
+        pulls = [pull_val] * num_slices
+        # Rotação simultânea na animação - aqui arbitrário demonstrativo
+        rotation = (i * 30) % 360  
+        frames.append(go.Frame(
+            data=[go.Pie(
+                labels=df['Disciplinas'],
+                values=df['Peso_vezes_Questoes'],
+                hole=0.4,
+                text=df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1%})", axis=1),
+                textinfo="text",
+                textposition="outside",
+                pull=pulls,
+                marker=dict(line=dict(color="white", width=2)),
+                rotation=rotation
+            )]
+        ))
+
     fig = go.Figure(
-        data=[go.Pie(
-            labels=df['Disciplinas'],
-            values=df['Peso_vezes_Questoes'],
-            hole=0.4,
-            text=df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1%})", axis=1),
-            textinfo="text",
-            textposition="outside",
-            pull=0.05,
-            marker=dict(line=dict(color="white", width=2)),
-            rotation=0
-        )],
-        frames=[go.Frame(data=[go.Pie(rotation=i)]) for i in range(0, 360, 10)]
+        data=frames[0].data,
+        frames=frames
     )
 
     fig.update_layout(
@@ -270,15 +286,14 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
         margin=dict(t=80, b=40, l=40, r=40),
         updatemenus=[{
             "type": "buttons",
-            "buttons": [],  # remover botão play
+            "buttons": [],  # remove play button
             "showactive": False,
             "visible": False
-        }]
+        }],
+        sliders=[]
     )
-    # Configura a animação para rodar 1 vez ao carregar (sem controles)
-    fig.layout.sliders = []
-    fig.layout.transition = {'duration': 0}
-    fig.layout.frame = {'duration': 30, 'redraw': True}
+    # Animação automática ao carregar girando e explodindo uma vez
+    fig.layout.transition = {"duration": 300}
     return fig
 
 def display_conteudos_com_checkboxes(df):
@@ -319,14 +334,13 @@ def create_altair_donut(row):
     source = pd.DataFrame({
         'Status': ['Concluído', 'Pendente'],
         'Valor': [concluido, pendente],
-        'Percentual': [concluido_pct, pendente_pct]
     })
     source_label = pd.DataFrame({'text': [f'{concluido_pct:.1f}%']})
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     base_chart = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
+        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
     )
     donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
@@ -335,12 +349,12 @@ def create_altair_donut(row):
     return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1  # adding overall progress donut
+    total_charts = len(df_summary) + 1  # incluindo progresso geral donut
     rows = (total_charts + max_cols - 1) // max_cols
 
     donuts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
 
-    # Donut for overall progress (progresso geral)
+    # Donut para progresso geral
     source = pd.DataFrame({
         'Status': ['Concluído', 'Pendente'],
         'Valor': [progresso_geral, 100 - progresso_geral]
@@ -368,97 +382,14 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(donuts[chart_idx], use_container_width=True)
             chart_idx += 1
 
-def create_stacked_bar_with_global_progress(df, progresso_geral):
-    if df.empty or 'Disciplinas' not in df.columns or 'Status' not in df.columns:
-        st.info("Sem dados suficientes para gráfico de barras empilhadas.")
-        return
-
-    df_filtered = df[df['Status'].isin(['True', 'False'])].copy()
-    if df_filtered.empty:
-        st.info("Nenhum dado válido para gráfico de barras.")
-        return
-
-    df_group = df_filtered.groupby(['Disciplinas', 'Status'], observed=True).size().reset_index(name='Qtd')
-    if df_group.empty:
-        st.info("Nenhum dado válido para gráfico de barras.")
-        return
-
-    df_pivot = df_group.pivot(index='Disciplinas', columns='Status', values='Qtd').fillna(0)
-
-    if 'True' not in df_pivot.columns:
-        df_pivot['True'] = 0
-    if 'False' not in df_pivot.columns:
-        df_pivot['False'] = 0
-
-    df_pivot['Total'] = df_pivot['True'] + df_pivot['False']
-    df_pivot.index = df_pivot.index.astype(str)
-
-    df_pivot['Pct_True'] = df_pivot['True'] / df_pivot['Total']
-    df_pivot['Pct_False'] = df_pivot['False'] / df_pivot['Total']
-    df_pivot = df_pivot.sort_values('Pct_True', ascending=False).reset_index()
-
-    df_melt = df_pivot.melt(
-        id_vars=['Disciplinas'], value_vars=['Pct_True', 'Pct_False'],
-        var_name='Status', value_name='Percentual'
-    )
-
-    df_melt['Status'] = df_melt['Status'].map({'Pct_True': 'Concluído', 'Pct_False': 'Pendente'})
-
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-
-    base = alt.Chart(df_melt).encode(
-        y=alt.Y('Disciplinas:N', sort=df_pivot['Disciplinas'].tolist(), title=None),
-        x=alt.X('Percentual:Q', stack="normalize", axis=alt.Axis(format='%')),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    )
-
-    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2)
-
-    text = base.mark_text(
-        size=12,
-        color='white',
-        fontWeight='bold',
-        dx=0, dy=0,
-        align='center',
-        baseline='middle'
-    ).encode(
-        text=alt.Text('Percentual:Q', format='.0%')
-    )
-
-    final_chart = (bars + text).properties(
-        height=400,
-        width=700,
-        title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina"
-    )
-
-    # Gráfico do progresso geral como histograma horizontal
-    df_progresso_geral = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Percentual': [progresso_geral / 100, 1 - progresso_geral / 100]
-    })
-
-    chart_progresso_geral = alt.Chart(df_progresso_geral).mark_bar().encode(
-        x=alt.X('Percentual:Q', axis=alt.Axis(format='%'), scale=alt.Scale(domain=[0, 1]), title='Percentual'),
-        y=alt.Y('Status:N', sort=['Concluído', 'Pendente'], title='Status'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).properties(
-        width=300,
-        height=200,
-        title="Progresso Geral (Histograma Horizontal)"
-    )
-
-    col1, col2 = st.columns([3, 1], gap="small")
-    with col1:
-        st.altair_chart(final_chart, use_container_width=True)
-    with col2:
-        st.altair_chart(chart_progresso_geral, use_container_width=True)
 
 def rodape_motivacional():
     st.markdown("""
-    <footer>
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
         🚀 Feito com muito amor, coragem e motivação para você! ✨
     </footer>
     """, unsafe_allow_html=True)
+
 
 def main():
     st.set_page_config(
@@ -469,7 +400,6 @@ def main():
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    # Top container com menor margin-bottom para aproximar os blocos abaixo
     with st.container():
         render_topbar_with_logo(dias_restantes)
 
@@ -477,8 +407,6 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
 
-    # Containers métricas com cores agradáveis e distanciamento reduzido
-    # Paleta: tons suaves e harmoniosos
     cores_metricas = [
         "#cbe7f0",  # azul claro
         "#fdd8d6",  # vermelho claro
@@ -487,7 +415,7 @@ def main():
         "#d7c7f7",  # roxo claro
     ]
 
-    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; margin-bottom:16px; height:180px;">', unsafe_allow_html=True)
+    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; margin-bottom:12px; height:180px;">', unsafe_allow_html=True)
     cols = st.columns(5, gap="small")
     for idx, col in enumerate(cols):
         cor = cores_metricas[idx]
@@ -538,15 +466,6 @@ def main():
 
     st.markdown("---")
 
-    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    create_stacked_bar_with_global_progress(df, progresso_geral)
-
-    st.markdown("---")
-
-    display_conteudos_com_checkboxes(df)
-
-    st.markdown("---")
-
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     col1, col2 = st.columns([1, 3], gap='medium')
 
@@ -556,6 +475,10 @@ def main():
     with col2:
         fig_pie_animado = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
         st.plotly_chart(fig_pie_animado, use_container_width=True)
+
+    st.markdown("---")
+
+    display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
