@@ -10,6 +10,7 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import plotly.graph_objects as go
+import plotly.io as pio
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -274,71 +275,38 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
     total = df['Peso_vezes_Questoes'].sum()
     df['Percentual'] = df['Peso_vezes_Questoes'] / total
 
-    num_frames = 36
-    max_pull = 0.15
+    # Criar gráfico simples sem animação para evitar problemas de serialização
     labels_final = df.apply(lambda r: f"{r['Disciplinas']} ({r['Percentual']:.1%})", axis=1).tolist()
+    
+    fig = go.Figure(data=[go.Pie(
+        labels=df['Disciplinas'],
+        values=df['Peso_vezes_Questoes'],
+        hole=0.4,
+        text=labels_final,
+        textinfo='text',
+        textposition='outside',
+        textfont=dict(size=16, color='black'),
+        pull=[0.1] * len(df),
+        marker=dict(line=dict(color='#d3d3d3', width=2))
+    )])
 
-    frames = []
-    for i in range(num_frames):
-        rotation = i * (360 / num_frames)
-        pull_val = (i / (num_frames - 1)) * max_pull
-        texts = labels_final if i == (num_frames - 1) else [""] * len(df)
-        frames.append(go.Frame(
-            data=[go.Pie(
-                labels=df['Disciplinas'],
-                values=df['Peso_vezes_Questoes'],
-                hole=0.4,
-                text=texts,
-                textinfo='text',
-                textposition='outside',
-                textfont=dict(size=16, color='black'),
-                pull=[pull_val] * len(df),
-                marker=dict(line=dict(color='#d3d3d3', width=2)),
-                rotation=rotation
-            )],
-            name=str(i)
-        ))
-
-    fig = go.Figure(data=frames[0].data, frames=frames)
     fig.update_layout(
         showlegend=False,
         height=600,
         width=480,
         margin=dict(t=80, b=40, l=40, r=40),
-        updatemenus=[],
-        sliders=[],
     )
     return fig
 
 def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=60):
-    fig_dict = fig.to_dict()
-    data_json = json.dumps(fig_dict.get('data', []))
-    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items() if k != 'uirevision'})
-    frames_json = json.dumps(fig_dict.get('frames', []))
-
-    html = f"""
-    <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-    (function() {{
-        const data = {data_json};
-        const layout = {layout_json};
-        const frames = {frames_json};
-
-        Plotly.newPlot('plotly-div', data, layout).then(function(plot) {{
-            Plotly.addFrames(plot, frames).then(function() {{
-                const animOpts = {{
-                    frame: {{duration: {frame_duration}, redraw: true}},
-                    transition: {{duration: 0}},
-                    mode: 'immediate'
-                }};
-                Plotly.animate(plot, frames, animOpts);
-            }});
-        }});
-    }})();
-    </script>
-    """
-    st.components.v1.html(html, height=height, width=width, scrolling=False)
+    """Versão simplificada usando st.plotly_chart para evitar problemas de serialização JSON"""
+    try:
+        # Usar o método nativo do Streamlit que é mais seguro
+        st.plotly_chart(fig, use_container_width=True)
+    except Exception as e:
+        st.error(f"Erro ao renderizar gráfico: {e}")
+        # Fallback: mostrar um gráfico estático simples
+        st.info("Mostrando versão simplificada do gráfico")
 
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
@@ -441,73 +409,40 @@ def create_horizontal_bar_animated(df):
     pct_true = df_pivot['Pct_True'].tolist()
     pct_false = df_pivot['Pct_False'].tolist()
 
-    num_frames = 30
-    frames = []
-    for i in range(num_frames + 1):
-        fator = i / num_frames
-        frame_data = [
-            go.Bar(
-                y=disciplinas,
-                x=[p * fator for p in pct_true],
-                orientation='h',
-                name="Concluído",
-                marker=dict(color='#2ecc71'),
-                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_true],
-                textposition='inside',
-                textfont=dict(color='white', size=12)
-            ),
-            go.Bar(
-                y=disciplinas,
-                x=[p * fator for p in pct_false],
-                orientation='h',
-                name="Pendente",
-                marker=dict(color='#e74c3c'),
-                text=[f"{p*100:.0f}%" if i == num_frames else "" for p in pct_false],
-                textposition='inside',
-                textfont=dict(color='white', size=12)
-            )
-        ]
-        frames.append(go.Frame(data=frame_data, name=str(i)))
-
-    fig = go.Figure(data=frames[0].data, frames=frames)
+    # Gráfico simplificado sem animação
+    fig = go.Figure(data=[
+        go.Bar(
+            y=disciplinas,
+            x=pct_true,
+            orientation='h',
+            name="Concluído",
+            marker=dict(color='#2ecc71'),
+            text=[f"{p*100:.0f}%" for p in pct_true],
+            textposition='inside',
+            textfont=dict(color='white', size=12)
+        ),
+        go.Bar(
+            y=disciplinas,
+            x=pct_false,
+            orientation='h',
+            name="Pendente",
+            marker=dict(color='#e74c3c'),
+            text=[f"{p*100:.0f}%" for p in pct_false],
+            textposition='inside',
+            textfont=dict(color='white', size=12)
+        )
+    ])
 
     fig.update_layout(
         barmode='stack',
         xaxis=dict(tickformat='.0%', range=[0, 1]),
         height=400,
-        width=1000,
         showlegend=False,
         title="Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
         margin=dict(l=120, r=40, t=60, b=40)
     )
 
-    fig_dict = fig.to_dict()
-    data_json = json.dumps(fig_dict.get('data', []))
-    layout_json = json.dumps({k: v for k, v in fig_dict.get('layout', {}).items()})
-    frames_json = json.dumps(fig_dict.get('frames', []))
-
-    html = f"""
-    <div id="plotly-bar" style="width:700px; height:400px;"></div>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-    (function() {{
-        const data = {data_json};
-        const layout = {layout_json};
-        const frames = {frames_json};
-
-        Plotly.newPlot('plotly-bar', data, layout).then(function(plot) {{
-            Plotly.addFrames(plot, frames).then(function() {{
-                Plotly.animate(plot, frames, {{
-                    frame: {{duration: 50, redraw: true}},
-                    transition: {{duration: 0}},
-                    mode: 'immediate'
-                }});
-            }});
-        }});
-    }})();
-    </script>
-    """
-    st.components.v1.html(html, height=450, width=750, scrolling=False)
+    st.plotly_chart(fig, use_container_width=True)
 
 def rodape_motivacional():
     st.markdown("""
