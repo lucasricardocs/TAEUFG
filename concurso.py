@@ -510,7 +510,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
                 text=texts,
                 textinfo='text',
                 textposition='outside',
-                textfont=dict(size=14, color='black', family='Inter'),
+                textfont=dict(size=14, color='black', family='sans-serif'),
                 marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
@@ -525,7 +525,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
             'text': 'Número de Questões e Peso por Disciplina',
             'x': 0.5,
             'xanchor': 'center',
-            'font': {'size': 16, 'color': '#2c3e50', 'family': 'Inter'}
+            'font': {'size': 16, 'color': '#2c3e50', 'family': 'sans-serif', 'weight': 'bold'}
         },
         showlegend=True,
         legend=dict(
@@ -534,17 +534,17 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
             y=0.5,
             xanchor="left",
             x=1.05,
-            font=dict(color='black', size=12, family='Inter')
+            font=dict(color='black', size=12, family='sans-serif'),
+            traceorder='normal'
         ),
-        height=600,
+        height=480,
         width=700,
-        margin=dict(t=80, b=40, l=40, r=120),
-        font=dict(family="Inter, sans-serif"),
+        margin=dict(t=20, b=20, l=20, r=20),
+        font=dict(family="sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
     return fig
-
 def streamlit_plotly_autoplay_once(fig, height=600, width=480, frame_duration=80):
     fig_json = fig.to_json()
     html = f"""
