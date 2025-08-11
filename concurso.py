@@ -511,13 +511,14 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
                 textinfo='text',
                 textposition='outside',
                 textfont=dict(size=14, color='black', family='Inter'),
-                marker=dict(colors=cores[:len(df)], line=dict(color='white', width=2)),
+                marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
             )],
             name=str(i)
         )
         frames.append(frame)
+
     fig = go.Figure(data=frames[0].data, frames=frames)
     fig.update_layout(
         title={
@@ -527,7 +528,14 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
             'font': {'size': 16, 'color': '#2c3e50', 'family': 'Inter'}
         },
         showlegend=True,
-        legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05, font=dict(size=12)),
+        legend=dict(
+            orientation="v",
+            yanchor="middle",
+            y=0.5,
+            xanchor="left",
+            x=1.05,
+            font=dict(color='black', size=12, family='Inter')
+        ),
         height=600,
         width=700,
         margin=dict(t=80, b=40, l=40, r=120),
