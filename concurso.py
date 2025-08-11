@@ -8,9 +8,7 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
-import altair as alt
 import plotly.graph_objects as go
-import plotly.express as px
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
@@ -86,6 +84,7 @@ def load_data_with_row_indices():
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
         df = df[df['Status'].isin(['true', 'false'])].copy()
+        df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
@@ -117,19 +116,13 @@ def calculate_progress(df):
         df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
         df_edital['Progresso_Ponderado'] = 0.0
         return df_edital, 0.0
-    df['Concluido'] = (df['Status'] == 'true').astype(int)
-    resumo = df.groupby('Disciplinas')['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
+    df['Concluido'] = (df['Status'] == 'True').astype(int)
+    resumo = df.groupby('Disciplinas', observed=True)['Concluido'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    df_merged['Ponto_por_Conteudo'] = df_merged.apply(
-        lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1
-    )
+    df_merged['Ponto_por_Conteudo'] = df_merged.apply(lambda row: row['Peso'] / row['Total_Conteudos'] if row['Total_Conteudos'] > 0 else 0, axis=1)
     df_merged['Pontos_Concluidos'] = df_merged['Conteudos_Concluidos'] * df_merged['Ponto_por_Conteudo']
-    df_merged['Progresso_Ponderado'] = np.where(
-        df_merged['Peso'] > 0, 
-        (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100, 
-        0
-    ).round(1)
+    df_merged['Progresso_Ponderado'] = np.where(df_merged['Peso'] > 0, (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100, 0).round(1)
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -143,11 +136,9 @@ def calculate_stats(df, df_summary):
     pendentes = df_summary['Conteudos_Pendentes'].sum() if not df_summary.empty else 0
     percentual_geral = round((concluidos / total_conteudos) * 100, 1) if total_conteudos > 0 else 0
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-    
     if not df_summary.empty:
-        df_summary_copy = df_summary.copy()
-        df_summary_copy['Prioridade_Score'] = (100 - df_summary_copy['Progresso_Ponderado']) * df_summary_copy['Peso']
-        maior_prioridade = df_summary_copy.loc[df_summary_copy['Prioridade_Score'].idxmax()]['Disciplinas']
+        df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Ponderado']) * df_summary['Peso']
+        maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
     else:
         maior_prioridade = ""
     return {
@@ -182,15 +173,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
-    try:
-        locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-        hoje_texto = datetime.now().strftime('%d de %B de %Y')
-    except:
-        meses = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
-                "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
-        hoje = datetime.now()
-        hoje_texto = f"{hoje.day} de {meses[hoje.month-1]} de {hoje.year}"
-
+    hoje_texto = datetime.now().strftime('%d de %B de %Y')
     st.markdown(f"""
     <style>
         .topbar-container {{
@@ -253,7 +236,8 @@ def render_topbar_with_logo(dias_restantes):
         <img class="topbar-logo" src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG">
         <div class="topbar-text">⏰ Faltam {dias_restantes} dias para o concurso de TAE</div>
         <div class="topbar-date">Goiânia, {hoje_texto}</div>
-    </div>""", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_lista_numero_questoes():
     df = pd.DataFrame(ED_DATA)
@@ -283,72 +267,55 @@ def display_lista_numero_questoes():
             unsafe_allow_html=True,
         )
 
-# NOVO: Função para criar histograma animado com as especificações do usuário
-def create_animated_histogram(df_summary):
+def create_animated_histogram_horizontal(df_summary):
     """
-    Cria um histograma animado com 700px de largura e 600px de altura
-    com animação recorrente sempre que passar por ele
+    Histograma animado horizontal com 700px de largura e 600px de altura
     """
-    # Preparar dados para o histograma
     disciplinas = df_summary['Disciplinas'].tolist()
     conteudos_concluidos = df_summary['Conteudos_Concluidos'].tolist()
     conteudos_pendentes = df_summary['Conteudos_Pendentes'].tolist()
     
-    # Criar frames para animação
     num_frames = 30
     frames = []
     
     for i in range(num_frames):
-        # Animação crescente das barras
         progress = (i + 1) / num_frames
-        
-        # Valores animados
         animated_concluidos = [val * progress for val in conteudos_concluidos]
         animated_pendentes = [val * progress for val in conteudos_pendentes]
         
         frame = go.Frame(
             data=[
                 go.Bar(
-                    x=disciplinas,
-                    y=animated_concluidos,
+                    y=disciplinas,
+                    x=animated_concluidos,
                     name='Concluídos',
                     marker_color='#2ecc71',
                     text=[f'{int(val)}' for val in animated_concluidos],
                     textposition='auto',
+                    orientation='h'
                 ),
                 go.Bar(
-                    x=disciplinas,
-                    y=animated_pendentes,
+                    y=disciplinas,
+                    x=animated_pendentes,
                     name='Pendentes',
                     marker_color='#e74c3c',
                     text=[f'{int(val)}' for val in animated_pendentes],
                     textposition='auto',
+                    orientation='h'
                 )
             ],
             name=str(i)
         )
         frames.append(frame)
     
-    # Criar figura inicial
     fig = go.Figure(
         data=[
-            go.Bar(
-                x=disciplinas,
-                y=[0] * len(disciplinas),
-                name='Concluídos',
-                marker_color='#2ecc71'
-            ),
-            go.Bar(
-                x=disciplinas,
-                y=[0] * len(disciplinas),
-                name='Pendentes',
-                marker_color='#e74c3c'
-            )
+            go.Bar(y=disciplinas, x=[0] * len(disciplinas), name='Concluídos', marker_color='#2ecc71', orientation='h'),
+            go.Bar(y=disciplinas, x=[0] * len(disciplinas), name='Pendentes', marker_color='#e74c3c', orientation='h')
         ],
         frames=frames
     )
     
-    # Configurar layout
     fig.update_layout(
         title={
             'text': 'Progresso por Disciplina',
@@ -356,41 +323,24 @@ def create_animated_histogram(df_summary):
             'xanchor': 'center',
             'font': {'size': 20, 'color': '#2c3e50'}
         },
-        xaxis_title='Disciplinas',
-        yaxis_title='Número de Conteúdos',
+        yaxis_title='Disciplinas',
+        xaxis_title='Número de Conteúdos',
         barmode='stack',
         height=600,
         width=700,
         showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         font=dict(family="Inter, sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
     
-    # Configurar eixos
-    fig.update_xaxes(
-        tickangle=45,
-        tickfont=dict(size=12),
-        gridcolor='rgba(128,128,128,0.2)'
-    )
-    fig.update_yaxes(
-        tickfont=dict(size=12),
-        gridcolor='rgba(128,128,128,0.2)'
-    )
+    fig.update_yaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
+    fig.update_xaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
     
     return fig
 
-def display_animated_histogram_with_intersection_observer(fig):
-    """
-    Exibe o histograma com animação recorrente usando Intersection Observer
-    """
+def display_animated_histogram(fig):
     fig_json = fig.to_json()
     
     html = f"""
@@ -405,10 +355,6 @@ def display_animated_histogram_with_intersection_observer(fig):
         let isAnimating = false;
         
         function createPlot() {{
-            if (plot) {{
-                Plotly.purge('histogram-plot');
-            }}
-            
             Plotly.newPlot('histogram-plot', figure.data, figure.layout).then(function(newPlot) {{
                 plot = newPlot;
                 if (figure.frames && figure.frames.length > 0) {{
@@ -419,7 +365,6 @@ def display_animated_histogram_with_intersection_observer(fig):
         
         function animateHistogram() {{
             if (!plot || isAnimating) return;
-            
             isAnimating = true;
             const animOpts = {{
                 frame: {{duration: 50, redraw: true}},
@@ -428,51 +373,35 @@ def display_animated_histogram_with_intersection_observer(fig):
             }};
             
             Plotly.animate(plot, null, animOpts).then(function() {{
-                setTimeout(function() {{
-                    isAnimating = false;
-                }}, 100);
+                setTimeout(function() {{ isAnimating = false; }}, 100);
             }});
         }}
         
-        // Criar o plot inicial
         createPlot();
         
-        // Configurar Intersection Observer para animação recorrente
         const observer = new IntersectionObserver(function(entries) {{
             entries.forEach(function(entry) {{
                 if (entry.isIntersecting) {{
-                    // Elemento está visível, iniciar animação
                     setTimeout(animateHistogram, 200);
                 }}
             }});
-        }}, {{
-            threshold: 0.3 // Animar quando 30% do elemento estiver visível
-        }});
+        }}, {{ threshold: 0.3 }});
         
-        // Observar o container do histograma
         observer.observe(document.getElementById('histogram-container'));
-        
-        // Cleanup quando a página for recarregada
-        window.addEventListener('beforeunload', function() {{
-            observer.disconnect();
-        }});
     }})();
     </script>
     """
     
     st.components.v1.html(html, height=650, width=750, scrolling=False)
 
-# CORRIGIDO: Função do gráfico de pizza com correções de cor, proporção e animação
-def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
+def create_animated_pie_chart(ED_DATA):
     df = pd.DataFrame(ED_DATA)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
     total = df['Peso_vezes_Questoes'].sum()
     df['Percentual'] = df['Peso_vezes_Questoes'] / total
     
-    # Ordenar do maior para o menor para animação correta
     df = df.sort_values('Peso_vezes_Questoes', ascending=False).reset_index(drop=True)
     
-    # Cores vibrantes e distintas para cada disciplina
     cores = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6']
     
     num_frames = 40
@@ -480,13 +409,10 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
     
     frames = []
     for i in range(num_frames):
-        # Animação crescente do maior para o menor
         progress = (i + 1) / num_frames
-        
-        # Calcular valores animados baseados no progresso
         animated_values = []
+        
         for idx, val in enumerate(df['Peso_vezes_Questoes']):
-            # Cada fatia aparece em sequência baseada no tamanho
             slice_start_frame = idx * (num_frames // len(df))
             if i >= slice_start_frame:
                 slice_progress = min(1.0, (i - slice_start_frame) / (num_frames // len(df)))
@@ -494,7 +420,6 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
             else:
                 animated_values.append(0)
         
-        # Mostrar labels apenas no final
         texts = labels_final if i >= (num_frames - 5) else [""] * len(df)
         
         frame = go.Frame(
@@ -506,10 +431,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
                 textinfo='text',
                 textposition='outside',
                 textfont=dict(size=14, color='white', family='Inter'),
-                marker=dict(
-                    colors=cores[:len(df)],
-                    line=dict(color='white', width=2)
-                ),
+                marker=dict(colors=cores[:len(df)], line=dict(color='white', width=2)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
             )],
@@ -517,10 +439,8 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
         )
         frames.append(frame)
     
-    # Figura inicial
     fig = go.Figure(data=frames[0].data, frames=frames)
     
-    # Layout corrigido com dimensões e alinhamento adequados
     fig.update_layout(
         title={
             'text': 'Distribuição Peso × Questões por Disciplina',
@@ -529,17 +449,10 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
             'font': {'size': 18, 'color': '#2c3e50', 'family': 'Inter'}
         },
         showlegend=True,
-        legend=dict(
-            orientation="v",
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.05,
-            font=dict(size=12)
-        ),
+        legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.05, font=dict(size=12)),
         height=600,
-        width=700,  # Largura corrigida para ocupar a coluna adequadamente
-        margin=dict(t=80, b=40, l=40, r=120),  # Margens ajustadas
+        width=700,
+        margin=dict(t=80, b=40, l=40, r=120),
         font=dict(family="Inter, sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -547,14 +460,11 @@ def pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA):
     
     return fig
 
-def streamlit_plotly_autoplay_once_corrigido(fig, height=600, width=700, frame_duration=80):
-    """
-    Versão corrigida da função de autoplay com melhor controle de animação
-    """
+def display_animated_pie_chart(fig):
     fig_json = fig.to_json()
     
     html = f"""
-    <div id="pie-container" style="width:{width}px; height:{height}px; margin: 0 auto;">
+    <div id="pie-container" style="width:700px; height:600px; margin: 0 auto;">
         <div id="pie-plot" style="width:100%; height:100%;"></div>
     </div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -565,10 +475,6 @@ def streamlit_plotly_autoplay_once_corrigido(fig, height=600, width=700, frame_d
         let isAnimating = false;
         
         function createPlot() {{
-            if (plot) {{
-                Plotly.purge('pie-plot');
-            }}
-            
             Plotly.newPlot('pie-plot', figure.data, figure.layout).then(function(newPlot) {{
                 plot = newPlot;
                 if (figure.frames && figure.frames.length > 0) {{
@@ -579,138 +485,191 @@ def streamlit_plotly_autoplay_once_corrigido(fig, height=600, width=700, frame_d
         
         function animatePie() {{
             if (!plot || isAnimating) return;
-            
             isAnimating = true;
             const animOpts = {{
-                frame: {{duration: {frame_duration}, redraw: true}},
+                frame: {{duration: 80, redraw: true}},
                 transition: {{duration: 50}},
                 mode: 'immediate'
             }};
             
             Plotly.animate(plot, null, animOpts).then(function() {{
-                setTimeout(function() {{
-                    isAnimating = false;
-                }}, 200);
+                setTimeout(function() {{ isAnimating = false; }}, 200);
             }});
         }}
         
-        // Criar o plot inicial
         createPlot();
         
-        // Configurar Intersection Observer para animação recorrente
         const observer = new IntersectionObserver(function(entries) {{
             entries.forEach(function(entry) {{
                 if (entry.isIntersecting) {{
-                    // Elemento está visível, iniciar animação
                     setTimeout(animatePie, 300);
                 }}
             }});
-        }}, {{
-            threshold: 0.4 // Animar quando 40% do elemento estiver visível
-        }});
+        }}, {{ threshold: 0.4 }});
         
-        // Observar o container do gráfico de pizza
         observer.observe(document.getElementById('pie-container'));
-        
-        // Cleanup
-        window.addEventListener('beforeunload', function() {{
-            observer.disconnect();
-        }});
     }})();
     </script>
     """
     
-    st.components.v1.html(html, height=height + 50, width=width + 50, scrolling=False)
+    st.components.v1.html(html, height=650, width=750, scrolling=False)
 
-def create_altair_donut(row):
-    concluido = int(row['Conteudos_Concluidos'])
-    pendente = int(row['Conteudos_Pendentes'])
-    total = max(concluido + pendente, 1)
-    concluido_pct = round((concluido / total) * 100, 1)
+def rodape_motivacional():
+    st.markdown("""
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+        🚀 Feito com muito amor, coragem e motivação para você! ✨
+    </footer>
+    """, unsafe_allow_html=True)
 
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente],
-    })
-    source_label = pd.DataFrame({'text': [f'{concluido_pct:.1f}%']})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base_chart = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
+def main():
+    st.set_page_config(
+        page_title="📚 Dashboard de Estudos - Concurso 2025",
+        page_icon="📚",
+        layout="wide"
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
-    text = alt.Chart(source_label).mark_text(
-        size=22, fontWeight='bold', color='#2ecc71'
-    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
 
-def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1
-    rows = (total_charts + max_cols - 1) // max_cols
-    donuts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+    dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [progresso_geral, 100 - progresso_geral]
-    })
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
-    text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
-        size=22, fontWeight='bold', color='#2ecc71'
-    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    donut_geral = (base + text).properties(width=280, height=280)
-    donuts.append(donut_geral)
+    with st.container():
+        render_topbar_with_logo(dias_restantes)
 
-    chart_idx = 0
-    for _ in range(rows):
-        cols = st.columns(max_cols, gap="medium")
-        for c in range(max_cols):
-            if chart_idx >= total_charts:
-                break
-            with cols[c]:
-                nome = "Progresso Geral" if chart_idx == len(df_summary) else df_summary.iloc[chart_idx]['Disciplinas'].title()
-                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
-                st.altair_chart(donuts[chart_idx], use_container_width=True)
-            chart_idx += 1
+    df = load_data_with_row_indices()
+    df_summary, progresso_geral = calculate_progress(df)
+    stats = calculate_stats(df, df_summary)
 
-def display_conteudos_com_checkboxes(df):
-    worksheet = get_worksheet()
-    if df.empty or worksheet is None:
-        st.info("Nenhum dado disponível para exibir conteúdos.")
-        return
+    cores_metricas = [
+        "#cbe7f0",
+        "#fdd8d6",
+        "#d1f2d8",
+        "#fdebd0",
+        "#d7c7f7",
+    ]
 
-    disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-    for disc in disciplinas_ordenadas:
-        conteudos_disciplina = df[df['Disciplinas'] == disc]
-        with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
-            for _, row in conteudos_disciplina.iterrows():
-                key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}"
-                checked = (row['Status'] == 'true')
-                try:
-                    novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
-                    if novo_status != checked:
-                        sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "true" if novo_status else "false")
-                        if sucesso:
-                            st.cache_data.clear()
-                            st.rerun()
-                        else:
-                            st.error("❌ Falha ao atualizar status na planilha.")
-                except Exception as e:
-                    st.error(f"❌ Erro ao processar checkbox: {e}")
+    st.markdown(
+        """
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+            .metric-container {
+                font-family: 'Inter', sans-serif !important;
+                background: var(--bg-color);
+                border-radius: 16px;
+                padding: 1rem 1.2rem;
+                box-shadow: 0 4px 15px #a3bffa90;
+                text-align: center;
+                font-weight: 700;
+                color: #2c3e50;
+                height: 160px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                font-size: 16px !important;
+                line-height: 1.1;
+                user-select: none;
+                cursor: default;
+                transition: box-shadow 0.3s ease, transform 0.3s ease;
+                margin-bottom: 10px;
+            }
+            .metric-container:hover {
+                box-shadow: 0 8px 30px #5275e1cc;
+                transform: scale(1.05);
+                z-index: 10;
+            }
+            .metric-value {
+                color: #355e9e;
+                margin-bottom: 0.25rem;
+                font-size: 16px !important;
+            }
+            .metric-label {
+                font-weight: 600;
+                color: #566e95;
+                font-size: 16px !important;
+            }
+            @media(max-width: 768px) {
+                .metric-row {
+                    flex-direction: column !important;
+                    height: auto !important;
+                }
+                .metric-container {
+                    height: 130px !important;
+                    margin-bottom: 12px !important;
+                }
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-# Exemplo de uso das novas funções (adicionar onde apropriado no código principal):
-# 
-# # Para exibir o histograma animado:
-# titulo_com_destaque("📊 Histograma de Progresso por Disciplina")
-# hist_fig = create_animated_histogram(df_summary)
-# display_animated_histogram_with_intersection_observer(hist_fig)
-#
-# # Para exibir o gráfico de pizza corrigido:
-# titulo_com_destaque("🥧 Distribuição Peso × Questões")
-# pie_fig = pie_chart_peso_vezes_questoes_com_labels_animado_corrigido(ED_DATA)
-# streamlit_plotly_autoplay_once_corrigido(pie_fig)
+    st.markdown('<div style="display:flex; gap:1rem; justify-content:center;" class="metric-row">', unsafe_allow_html=True)
+    cols = st.columns(5, gap="small")
+    for idx, col in enumerate(cols):
+        cor = cores_metricas[idx]
+        with col:
+            label, valor = "", ""
+            if idx == 0:
+                valor = f"{progresso_geral:.1f}%"
+                label = "Progresso Geral"
+            elif idx == 1:
+                valor = f"{stats['concluidos']}"
+                label = "Conteúdos Concluídos"
+            elif idx == 2:
+                valor = f"{stats['pendentes']}"
+                label = "Conteúdos Pendentes"
+            elif idx == 3:
+                valor = f"{stats['topicos_por_dia']}"
+                label = "Tópicos/Dia Necessários"
+            else:
+                valor = stats['maior_prioridade']
+                label = "Disciplina Prioritária"
 
+            st.markdown(
+                f"""
+                <div class="metric-container" style="background: {cor};">
+                    <div class="metric-value">{valor}</div>
+                    <div class="metric-label">{label}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
+    fig_hist = create_animated_histogram_horizontal(df_summary)
+    display_animated_histogram(fig_hist)
+
+    st.markdown("---")
+
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
+    # Mantido somente o título (podemos adicionar gráficos adicionais se quiser)
+
+    st.markdown("---")
+
+    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
+    display_conteudos_com_checkboxes(df)
+
+    st.markdown("---")
+
+    titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
+    col1, col2 = st.columns([1, 3], gap='medium')
+
+    with col1:
+        display_lista_numero_questoes()
+
+    with col2:
+        fig_pie = create_animated_pie_chart(ED_DATA)
+        display_animated_pie_chart(fig_pie)
+
+    st.markdown("---")
+
+    rodape_motivacional()
+
+def rodape_motivacional():
+    st.markdown("""
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+        🚀 Feito com muito amor, coragem e motivação para você! ✨
+    </footer>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
