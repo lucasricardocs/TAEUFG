@@ -33,7 +33,6 @@ def inject_common_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
-        /* Containers métricas e questões */
         .metric-container, .questao-container {
             font-family: 'Inter', sans-serif !important;
             background: var(--bg-color);
@@ -50,7 +49,7 @@ def inject_common_css():
             font-size: 16px !important;
             line-height: 1.1;
             user-select: none;
-            cursor: pointer;
+            cursor: default;
             transition: box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
             margin-bottom: 10px;
         }
@@ -93,7 +92,7 @@ def inject_common_css():
                 height: auto !important;
             }
         }
-        /* Topbar estilos */
+        /* Topbar */
         .topbar-container {
             display: flex;
             align-items: center;
@@ -348,7 +347,119 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Gráfico 1: Questões horizontais ---
+def display_containers_metricas(stats, progresso_geral):
+    cores_metricas = [
+        "#cbe7f0",
+        "#fdd8d6",
+        "#d1f2d8",
+        "#fdebd0",
+        "#d7c7f7",
+    ]
+    inject_common_css()
+    st.markdown('<div class="metric-row">', unsafe_allow_html=True)
+    cols = st.columns(5, gap="small")
+    values_labels = [
+        (f"{progresso_geral:.1f}%", "Progresso Geral"),
+        (f"{stats['concluidos']}", "Conteúdos Concluídos"),
+        (f"{stats['pendentes']}", "Conteúdos Pendentes"),
+        (f"{stats['topicos_por_dia']}", "Tópicos/Dia Necessários"),
+        (stats['maior_prioridade'], "Disciplina Prioritária"),
+    ]
+    for idx, col in enumerate(cols):
+        valor, label = values_labels[idx]
+        cor = cores_metricas[idx]
+        with col:
+            st.markdown(f"""
+                <div class="metric-container" style="background: {cor};">
+                    <div class="metric-value">{valor}</div>
+                    <div class="metric-label">{label}</div>
+                </div>
+            """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+def create_altair_donut(row):
+    concluido = int(row['Conteudos_Concluidos'])
+    pendente = int(row['Conteudos_Pendentes'])
+    total = max(concluido + pendente, 1)
+    concluido_pct = round((concluido / total) * 100, 1)
+    pendente_pct = round((pendente / total) * 100, 1)
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente],
+        'Percentual': [concluido_pct, pendente_pct]
+    })
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    base_chart = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Valor', format='d'), alt.Tooltip('Percentual', format='.1f')]
+    )
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
+    text = alt.Chart(pd.DataFrame({'Percentual': [concluido_pct / 100]})).mark_text(
+        size=24, fontWeight='bold', color='#064820',
+        align='center', baseline='middle'
+    ).encode(text=alt.Text('Percentual:Q', format='.0%')).properties(width=280, height=280)
+    return (donut + text).properties(width=280, height=280).configure_view(stroke=None)
+
+def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
+    if df_summary.empty:
+        st.info("Nenhum dado disponível para exibir progresso por disciplina.")
+        return
+    total_charts = len(df_summary) + 1
+    rows = (total_charts + max_cols - 1) // max_cols
+    charts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+    geral_chart = create_altair_donut(pd.Series({
+        'Conteudos_Concluidos': int(round(progresso_geral/100 * sum(df_summary['Total_Conteudos']))),
+        'Conteudos_Pendentes': int(round((1 - progresso_geral/100) * sum(df_summary['Total_Conteudos']))),
+        'Disciplinas': 'Progresso Geral'
+    }))
+    charts.append(geral_chart)
+
+    chart_idx = 0
+    for _ in range(rows):
+        cols = st.columns(max_cols, gap='medium')
+        for c in range(max_cols):
+            if chart_idx >= total_charts:
+                break
+            with cols[c]:
+                if chart_idx == len(df_summary):
+                    titulo = "Progresso Geral"
+                else:
+                    titulo = df_summary.iloc[chart_idx]['Disciplinas'].title()
+                st.markdown(f'<h3 style="text-align:center;">{titulo}</h3>', unsafe_allow_html=True)
+                st.altair_chart(charts[chart_idx], use_container_width=True)
+            chart_idx += 1
+
+def create_histogram_horizontal_altair(df_summary):
+    df_long = pd.melt(df_summary,
+                      id_vars=['Disciplinas'],
+                      value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
+                      var_name='Status',
+                      value_name='Quantidade')
+
+    status_map = {'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'}
+    df_long['Status'] = df_long['Status'].map(status_map)
+
+    df_totals = df_summary[['Disciplinas', 'Total_Conteudos']].set_index('Disciplinas')
+    df_long = df_long.join(df_totals, on='Disciplinas')
+    df_long['Percentual'] = df_long['Quantidade'] / df_long['Total_Conteudos']
+
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+
+    chart = alt.Chart(df_long).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
+        y=alt.Y('Disciplinas:N', sort=df_summary['Disciplinas'].tolist(), axis=alt.Axis(title=None)),
+        x=alt.X('Percentual:Q', axis=alt.Axis(title=None, format='%')),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=[alt.Tooltip('Status'), alt.Tooltip('Percentual:Q', format='.1%')]
+    ).properties(
+        height=400,
+        width='container'
+    )
+    return chart
+
+def display_animated_histogram(chart):
+    st.altair_chart(chart, use_container_width=True)
+
 def chart_questoes_horizontal(df_ed: pd.DataFrame, height=400):
     chart = alt.Chart(df_ed).mark_bar(stroke='#d3d3d3', strokeWidth=3, cornerRadius=5).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None),
@@ -375,7 +486,6 @@ def chart_questoes_horizontal(df_ed: pd.DataFrame, height=400):
 
     return (chart + text).configure_view(stroke=None)
 
-# --- Gráfico 2: Peso percentual horizontais ---
 def chart_peso_ponderado_percentual(df_ed: pd.DataFrame, height=400):
     df_ed = df_ed.copy()
     df_ed['Valor'] = df_ed['Peso'] * df_ed['Questões']
@@ -457,12 +567,13 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📊 Progresso por Disciplina", cor_lateral="#3498db")
-    # Use sua função de progresso com donuts aqui (não mostrada para brevidade; mantenha a sua implementada)
+    display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3)
 
     st.markdown("---")
 
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    # Use sua função de histograma empilhado aqui (não mostrada para brevidade; mantenha a sua implementada)
+    hist_chart = create_histogram_horizontal_altair(df_summary)
+    display_animated_histogram(hist_chart)
 
     st.markdown("---")
 
