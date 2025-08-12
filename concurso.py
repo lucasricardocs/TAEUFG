@@ -28,7 +28,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- CSS Comum para UI aprimorada ---
 def inject_common_css():
     st.markdown("""
     <style>
@@ -91,6 +90,70 @@ def inject_common_css():
             .metric-row {
                 flex-direction: column !important;
                 height: auto !important;
+            }
+        }
+        /* Estilo textarea ao redor da logo e texto na topbar */
+        .topbar-container {
+            display: flex;
+            align-items: center;
+            background-color: #f5f5f5;
+            border-radius: 12px;
+            padding: 0 3vw;
+            min-height: 220px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+        }
+        .topbar-logo {
+            height: 140px;
+            flex-shrink: 0;
+            margin-right: 1.5rem;
+        }
+        .topbar-text {
+            font-size: clamp(1.4rem, 3vw, 2.5rem);
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1.2;
+            flex-grow: 1;
+            min-width: 200px;
+            display: flex;
+            align-items: center;
+        }
+        .topbar-date {
+            position: absolute;
+            top: 12px;
+            right: 24px;
+            font-size: clamp(10px, 1vw, 12px);
+            font-weight: 600;
+            color: #2c3e50;
+            user-select: none;
+            white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+            .topbar-container {
+                min-height: 160px;
+                padding: 0 2vw;
+                flex-direction: column;
+                align-items: center;
+            }
+            .topbar-logo {
+                height: 110px;
+                margin-right: 0;
+                margin-bottom: 12px;
+            }
+            .topbar-text {
+                font-size: clamp(1.1rem, 4vw, 2rem);
+                min-width: auto;
+                justify-content: center;
+            }
+            .topbar-date {
+                position: static;
+                margin-top: 4px;
+                font-size: clamp(8px, 1.5vw, 10px);
             }
         }
     </style>
@@ -256,6 +319,7 @@ def render_topbar_with_logo(dias_restantes):
             gap: 1.5rem;
             flex-wrap: wrap;
             justify-content: center;
+            position: relative;
         }}
         .topbar-logo {{
             height: 140px;
@@ -288,7 +352,6 @@ def render_topbar_with_logo(dias_restantes):
                 padding: 0 2vw;
                 flex-direction: column;
                 align-items: center;
-                position: relative;
             }}
             .topbar-logo {{
                 height: 110px;
@@ -383,13 +446,13 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q')]
     )
-    text_df = pd.DataFrame({'label': [f"{concluido_pct:.1f}%"]})
-    text = alt.Chart(text_df).mark_text(
-        size=24,
-        fontWeight='bold',
-        color='#2ecc71',
+
+    text = alt.Chart(pd.DataFrame({'label':[f"{concluido_pct:.1f}%"]})).mark_text(
         align='center',
-        baseline='middle'
+        baseline='middle',
+        fontSize=24,
+        fontWeight='bold',
+        color='#2ecc71'
     ).encode(
         text='label:N',
         x=alt.value(140),
@@ -414,11 +477,11 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
     )
     text_df = pd.DataFrame({'label': [f"{progresso_geral:.1f}%"]})
     text = alt.Chart(text_df).mark_text(
-        size=24,
-        fontWeight='bold',
-        color='#2ecc71',
         align='center',
-        baseline='middle'
+        baseline='middle',
+        fontSize=24,
+        fontWeight='bold',
+        color='#2ecc71'
     ).encode(
         text='label:N',
         x=alt.value(140),
@@ -449,7 +512,6 @@ def create_histogram_horizontal_altair(df_summary):
     status_map = {'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'}
     df_long['Status'] = df_long['Status'].map(status_map)
 
-    # Calcular percentual por disciplina para eixo X
     df_totals = df_summary[['Disciplinas', 'Total_Conteudos']].set_index('Disciplinas')
     df_long = df_long.join(df_totals, on='Disciplinas')
     df_long['Percentual'] = df_long['Quantidade'] / df_long['Total_Conteudos']
@@ -482,26 +544,51 @@ def create_peso_ponderado_donut_altair(ed_data):
         color=alt.Color('Disciplinas:N', scale=color_scale, legend=None)
     )
 
-    # Rótulos internos com percentual
-    label = alt.Chart(df).mark_text(radius=100, fontWeight='bold', color='black').encode(
+    label = alt.Chart(df).mark_text(radius=95, fontWeight='bold', color='black').encode(
         theta=alt.Theta('Valor:Q'),
         text=alt.Text('Percentual:Q', format='.1%')
     )
 
     donut = (base + label).properties(width=400, height=400)
 
-    # Legenda manual em markdown abaixo do gráfico, centralizado
-    legend_html = "<div style='text-align:center; margin-top:12px; font-size: 14px; color: #555;'>"
-    legend_html += "<br>".join([f"<span style='color:{color_scale.range[i]}'>{row['Disciplinas'].title()}:</span> {row['Valor']}" for i, row in df.iterrows()])
-    legend_html += "</div>"
+    legenda_itens = "".join([
+        f"<div style='margin-bottom: 8px; font-weight: 700; font-size: 14px;'>"
+        f"<span style='display: inline-block; width: 16px; height: 16px; background-color: {color_scale.range[i]}; margin-right: 8px; border-radius: 3px;'></span>"
+        f"{row['Disciplinas'].title()}: {row['Valor']}</div>"
+        for i, row in df.iterrows()
+    ])
 
-    return donut, legend_html
+    legenda_html = f"""
+    <div style="
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        border-left: 3px solid #d3d3d3; 
+        padding-left: 12px;
+        margin-left: 20px;
+        max-width: 180px;
+        font-family: 'Inter', sans-serif;
+        color: #555;">
+        {legenda_itens}
+    </div>
+    """
+
+    return donut, legenda_html
 
 def display_pie_chart(chart, legend_html):
-    st.markdown('<div style="display:flex; justify-content:center; flex-direction: column; align-items: center;">', unsafe_allow_html=True)
-    st.altair_chart(chart, use_container_width=True)
+    st.markdown("""
+    <div style="
+        display: flex; 
+        justify-content: center; 
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 12px;
+        margin-top: 20px;
+        margin-bottom: 20px;">
+    """, unsafe_allow_html=True)
+    st.altair_chart(chart, use_container_width=False)
     st.markdown(legend_html, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
