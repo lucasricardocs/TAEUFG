@@ -154,9 +154,11 @@ def calculate_stats(df, df_summary):
     }
 
 # --- Estilo e containers ---
-def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
+def titulo_com_destaque(texto, cor_lateral="#8e44ad", max_width=900):
     st.markdown(f"""
     <div style="
+        max-width: {max_width}px;
+        margin: 0 auto 24px auto;
         display: flex;
         align-items: center;
         border-left: 6px solid {cor_lateral};
@@ -166,7 +168,6 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         padding-bottom: 12px;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        margin-bottom: 24px;
         font-weight: 700;
         font-size: 1.5rem;
         color: #2c3e50;
@@ -387,17 +388,17 @@ def create_animated_histogram_horizontal(df):
         yaxis=dict(showticklabels=True, showgrid=False, zeroline=False),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        height=600,
+        height=500,
         width=None
     )
     fig.update_yaxes(tickfont=dict(size=12))
     fig.update_xaxes(tickfont=dict(size=12))
     return fig
 
-def display_animated_histogram(fig):
+def display_animated_histogram(fig, max_width=900, height=500):
     fig_json = fig.to_json()
     html = f"""
-    <div id="histogram-container" style="width:100%; height:600px; margin:0 auto;">
+    <div id="histogram-container" style="width:100%; max-width:{max_width}px; margin:0 auto; height:{height}px;">
         <div id="histogram-plot" style="width:100%; height:100%;"></div>
     </div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -438,7 +439,7 @@ def display_animated_histogram(fig):
     }})();
     </script>
     """
-    st.components.v1.html(html, height=630, width=None, scrolling=False)
+    st.components.v1.html(html, height=height+30, width=max_width, scrolling=False)
 
 # --- Containers para 'Número de Questões e Peso por Disciplina' ---
 def display_containers_questoes_peso(ed_data):
@@ -519,7 +520,7 @@ def display_containers_questoes_peso(ed_data):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Gráfico de rosca animado e interativo usando Plotly ---
+# --- Gráfico de rosca animado e interativo usando Plotly SEM rótulos internos, só legenda abaixo ---
 def pie_chart_peso_vezes_questoes_animado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
@@ -530,7 +531,7 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
     cores = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6']
 
     num_frames = 40
-    labels_final = df.apply(lambda r: f"{r['Disciplinas']}<br>({r['Percentual']:.1%})", axis=1).tolist()
+    labels_final = df['Disciplinas'].tolist()
 
     frames = []
     for i in range(num_frames):
@@ -543,7 +544,8 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
             else:
                 animated_values.append(0)
 
-        texts = labels_final if i >= (num_frames - 5) else [""] * len(df)
+        # Não mostrar rótulos internos, só texto vazio para não poluir
+        texts = [""] * len(df)
 
         frame = go.Frame(
             data=[go.Pie(
@@ -551,9 +553,8 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
                 values=animated_values,
                 hole=0.4,
                 text=texts,
-                textinfo='text',
+                textinfo='none',  # não mostrar texto interno
                 textposition='inside',
-                textfont=dict(size=14, color='black', family='sans-serif'),
                 marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
@@ -572,34 +573,32 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
         },
         showlegend=True,
         legend=dict(
-            orientation="v",
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.05,
+            orientation="h",  # legenda horizontal
+            yanchor="bottom",
+            y=-0.2,  # abaixo do gráfico
+            xanchor="center",
+            x=0.5,
             font=dict(color='black', size=12, family='sans-serif'),
             traceorder='normal'
         ),
-        margin=dict(t=60, b=20, l=20, r=20),
+        margin=dict(t=60, b=60, l=20, r=20),
         font=dict(family="sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        height=600,
+        height=500,
         width=None
     )
     return fig
 
-def streamlit_plotly_autoplay_on_hover(fig, container_height=600):
-    """
-    Renderiza o gráfico Plotly animado com animação ativada ao passar o mouse sobre o gráfico.
-    O container é responsivo e tem altura fixa igual ao do histograma.
-    """
+def streamlit_plotly_autoplay_on_hover(fig, max_width=900, height=500):
     fig_json = fig.to_json()
     html = f"""
     <style>
     #plotly-div {{
         width: 100%;
-        height: {container_height}px;
+        max-width: {max_width}px;
+        height: {height}px;
+        margin: 0 auto;
     }}
     </style>
     <div id="plotly-div"></div>
@@ -640,7 +639,7 @@ def streamlit_plotly_autoplay_on_hover(fig, container_height=600):
     }})();
     </script>
     """
-    st.components.v1.html(html, height=container_height, width=None, scrolling=False)
+    st.components.v1.html(html, height=height, width=max_width, scrolling=False)
 
 # --- Conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
@@ -668,7 +667,7 @@ def display_conteudos_com_checkboxes(df):
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
         load_data_with_row_indices.clear()
-        st.experimental_rerun  # corrigido sem parênteses
+        st.experimental_rerun  # sem parênteses para evitar erro
 
 def rodape_motivacional():
     st.markdown("""
@@ -697,23 +696,23 @@ def main():
 
     st.markdown("---")
 
-    # Container com título para histograma + gráfico animado responsivo
-    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
+    # Container título + histograma animado responsivo
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9", max_width=900)
     fig_hist = create_animated_histogram_horizontal(df_summary)
-    display_animated_histogram(fig_hist)
+    display_animated_histogram(fig_hist, max_width=900, height=500)
 
     st.markdown("---")
 
-    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
+    titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad", max_width=900)
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
 
-    titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
+    titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad", max_width=900)
     display_containers_questoes_peso(ED_DATA)
 
     fig_pie = pie_chart_peso_vezes_questoes_animado(ED_DATA)
-    streamlit_plotly_autoplay_on_hover(fig_pie, container_height=600)  # animação ao passar o mouse, tamanho igual ao histograma
+    streamlit_plotly_autoplay_on_hover(fig_pie, max_width=900, height=500)
 
     st.markdown("---")
 
