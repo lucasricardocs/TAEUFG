@@ -12,7 +12,6 @@ import locale
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Ajusta localidade para datas em português
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
@@ -216,7 +215,7 @@ def load_data_with_row_indices():
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # considera header em linha 1
+        df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
@@ -523,36 +522,26 @@ def display_conteudos_com_checkboxes(df):
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
-
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     alterou = False
-
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
                 checked = (row['Status'] == 'True')
-
-                if key not in st.session_state:
-                    st.session_state[key] = checked
-
-                novo_status = st.checkbox(label=row['Conteúdos'], value=st.session_state[key], key=key)
-
-                if novo_status != st.session_state[key]:
+                novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
+                if novo_status != checked:
                     sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                     if sucesso:
                         st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                        st.session_state[key] = novo_status
                         alterou = True
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-
     if alterou:
-        load_data_with_row_indices.clear()  # Limpa cache para carregar dados atualizados
-        st.experimental_rerun()  # Recarrega o app para refletir mudanças
+        load_data_with_row_indices.clear()
+        st.experimental_rerun()
 
 def rodape_motivacional():
     st.markdown("""
