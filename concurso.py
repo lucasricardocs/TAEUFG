@@ -639,7 +639,7 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ed_data):
     fig.update_layout(
         title={
             'text': 'Número de Questões e Peso por Disciplina',
-            'x': 0.5,
+            'x': 1.5,
             'xanchor': 'center',
             'font': {'size': 16, 'color': '#2c3e50', 'family': 'sans-serif', 'weight': 'bold'}
         },
