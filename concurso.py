@@ -165,12 +165,13 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         padding-top: 12px;
         padding-bottom: 12px;
         border-radius: 12px;
-        box-shadow: 0 4px 10px #a3bffa88;
-        margin-bottom: 40px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        margin-bottom: 24px;
         font-weight: 700;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         color: #2c3e50;
         position: relative;
+        user-select: none;
     ">
         {texto}
     </div>""", unsafe_allow_html=True)
@@ -242,13 +243,14 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
+# Containers neutros, sombreados e animados (para todas as métricas)
 def display_containers_metricas(stats, progresso_geral):
     cores_metricas = [
-        "#cbe7f0",
-        "#fdd8d6",
-        "#d1f2d8",
-        "#fdebd0",
-        "#d7c7f7",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
     ]
     st.markdown(
         """
@@ -259,7 +261,7 @@ def display_containers_metricas(stats, progresso_geral):
                 background: var(--bg-color);
                 border-radius: 16px;
                 padding: 1rem 1.2rem;
-                box-shadow: 0 4px 15px #a3bffa90;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 text-align: center;
                 font-weight: 700;
                 color: #2c3e50;
@@ -275,14 +277,14 @@ def display_containers_metricas(stats, progresso_geral):
                 margin-bottom: 10px;
             }
             .metric-container:hover {
-                box-shadow: 0 8px 30px #5275e1cc;
-                transform: scale(1.05);
+                box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+                transform: scale(1.06);
                 z-index: 10;
             }
             .metric-value {
                 color: #355e9e;
                 margin-bottom: 0.25rem;
-                font-size: 16px !important;
+                font-size: 20px !important;
             }
             .metric-label {
                 font-weight: 600;
@@ -327,7 +329,7 @@ def display_containers_metricas(stats, progresso_geral):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Gráfico histograma horizontal sem título, largura e altura adaptáveis ---
+# --- Gráfico histograma horizontal com container e título ---
 def create_histograma_horizontal_simplificado(df):
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
@@ -337,40 +339,43 @@ def create_histograma_horizontal_simplificado(df):
     pct_pendentes = 100 - pct_concluidos
 
     fig = go.Figure(data=[
-        go.Bar(y=disciplinas, x=pct_concluidos, name='Concluídos', marker_color='#2ecc71', orientation='h', text=[f"{val:.1f}%" for val in pct_concluidos], textposition='inside', textfont=dict(color='white')),
-        go.Bar(y=disciplinas, x=pct_pendentes, name='Pendentes', marker_color='#e74c3c', orientation='h', text=[f"{val:.1f}%" for val in pct_pendentes], textposition='inside', textfont=dict(color='white'))
+        go.Bar(y=disciplinas, x=pct_concluidos, name='Concluídos', marker_color='#2ecc71', orientation='h',
+               text=[f"{val:.1f}%" for val in pct_concluidos], textposition='inside', textfont=dict(color='white')),
+        go.Bar(y=disciplinas, x=pct_pendentes, name='Pendentes', marker_color='#e74c3c', orientation='h',
+               text=[f"{val:.1f}%" for val in pct_pendentes], textposition='inside', textfont=dict(color='white'))
     ])
 
     fig.update_layout(
         barmode='stack',
-        margin=dict(l=100, r=40, t=40, b=20),
+        margin=dict(l=110, r=40, t=40, b=20),
         showlegend=False,
         xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
         yaxis=dict(showticklabels=True, showgrid=False, zeroline=False),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         title={
-            'text': "Percentual de Conteúdos Concluídos e Pendentes por Disciplina",
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': dict(family='Arial, sans-serif', size=18, color='#2c3e50', weight='bold'),
-        }
+            'text': "",  # título no container, não no gráfico
+        },
+        font=dict(family='Arial, sans-serif', size=14, color='#2c3e50'),
+        height=600,
+        width=None
     )
-
     return fig
 
-def display_histograma_horizontal_simplificado(fig):
+def display_histograma_horizontal_com_container(df_summary):
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
+    fig = create_histograma_horizontal_simplificado(df_summary)
     st.plotly_chart(fig, use_container_width=True)
 
 # --- Containers animados para 'Número de Questões e Peso por Disciplina' ---
 def display_containers_questoes_peso(ed_data):
     df = pd.DataFrame(ed_data)
     cores_metricas = [
-        "#cbe7f0",
-        "#fdd8d6",
-        "#d1f2d8",
-        "#fdebd0",
-        "#d7c7f7",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
+        "#f0f0f0",
     ]
     st.markdown(
         """
@@ -381,7 +386,7 @@ def display_containers_questoes_peso(ed_data):
                 background: var(--bg-color);
                 border-radius: 16px;
                 padding: 1rem 1.2rem;
-                box-shadow: 0 4px 15px #a3bffa90;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
                 text-align: center;
                 font-weight: 700;
                 color: #2c3e50;
@@ -397,8 +402,8 @@ def display_containers_questoes_peso(ed_data):
                 margin-bottom: 10px;
             }
             .question-weight-container:hover {
-                box-shadow: 0 8px 30px #5275e1cc;
-                transform: scale(1.05);
+                box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+                transform: scale(1.06);
                 z-index: 10;
             }
             .question-weight-value {
@@ -441,7 +446,7 @@ def display_containers_questoes_peso(ed_data):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Gráfico de rosca animado e interativo usando Plotly ---
+# --- Gráfico de rosca animado e interativo usando Plotly, animação ao passar o mouse e tamanho adaptativo ---
 def pie_chart_peso_vezes_questoes_animado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
@@ -490,7 +495,7 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
             'text': "Número de Questões e Peso por Disciplina",
             'x': 0.5,
             'xanchor': 'center',
-            'font': dict(family='Arial, sans-serif', size=18, color='#2c3e50', weight='bold'),
+            'font': dict(family='Arial, sans-serif', size=20, color='#2c3e50', weight='bold'),
         },
         showlegend=True,
         legend=dict(
@@ -502,41 +507,67 @@ def pie_chart_peso_vezes_questoes_animado(ed_data):
             font=dict(color='black', size=12, family='sans-serif'),
             traceorder='normal'
         ),
-        margin=dict(t=40, b=20, l=20, r=20),
+        margin=dict(t=60, b=20, l=20, r=20),
         font=dict(family="sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
+        height=600,
+        width=None
     )
     return fig
 
-def streamlit_plotly_autoplay_once(fig, height=None, width=None, frame_duration=80):
+def streamlit_plotly_autoplay_on_hover(fig, container_height=600):
+    """
+    Renderiza o gráfico Plotly animado com animação ativada ao passar o mouse sobre o gráfico.
+    O container é responsivo e tem altura fixa igual ao do histograma.
+    """
     fig_json = fig.to_json()
-    width_style = f'{width}px' if width else '100%'
-    height_style = f'{height}px' if height else '100%'
     html = f"""
-    <div id="plotly-div" style="width:{width_style}; height:{height_style};"></div>
+    <style>
+    #plotly-div {{
+        width: 100%;
+        height: {container_height}px;
+    }}
+    </style>
+    <div id="plotly-div"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
         const figure = JSON.parse(`{fig_json}`);
         let plot = null;
+        let animating = false;
+            
+        function createPlot() {{
+            Plotly.newPlot('plotly-div', figure.data, figure.layout).then(function(p) {{
+                plot = p;
+                if (figure.frames && figure.frames.length > 0) {{
+                    Plotly.addFrames(plot, figure.frames);
+                }}
+            }});
+        }}
 
-        Plotly.newPlot('plotly-div', figure.data, figure.layout).then(function(p) {{
-            plot = p;
-            if (figure.frames && figure.frames.length > 0) {{
-                Plotly.addFrames(plot, figure.frames);
-                const animOpts = {{
-                    frame: {{duration: {frame_duration}, redraw: true}},
-                    transition: {{duration: 50}},
-                    mode: 'immediate'
-                }};
-                Plotly.animate(plot, figure.frames, animOpts);
-            }}
+        function animateChart() {{
+            if(animating || !plot) return;
+            animating = true;
+            const animOpts = {{
+                frame: {{duration:50, redraw:true}},
+                transition: {{duration:30}},
+                mode:'immediate'
+            }};
+            Plotly.animate(plot, figure.frames, animOpts).then(() => {{
+                animating = false;
+            }});
+        }}
+
+        createPlot();
+        const container = document.getElementById('plotly-div');
+        container.addEventListener('mouseenter', () => {{
+            animateChart();
         }});
     }})();
     </script>
     """
-    st.components.v1.html(html, height=height or 600, width=width or None, scrolling=False)
+    st.components.v1.html(html, height=container_height, width=None, scrolling=False)
 
 # --- Conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
@@ -564,7 +595,7 @@ def display_conteudos_com_checkboxes(df):
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
         load_data_with_row_indices.clear()
-        st.experimental_rerun()
+        st.experimental_rerun  # Corrigido: sem parênteses para evitar erro no Streamlit
 
 def rodape_motivacional():
     st.markdown("""
@@ -593,9 +624,8 @@ def main():
 
     st.markdown("---")
 
-    # Histograma horizontal responsivo com título centralizado e fonte padrão
-    fig_hist = create_histograma_horizontal_simplificado(df_summary)
-    display_histograma_horizontal_simplificado(fig_hist)
+    # Container com título para histograma + gráfico responsivo
+    display_histograma_horizontal_com_container(df_summary)
 
     st.markdown("---")
 
@@ -608,7 +638,7 @@ def main():
     display_containers_questoes_peso(ED_DATA)
 
     fig_pie = pie_chart_peso_vezes_questoes_animado(ED_DATA)
-    streamlit_plotly_autoplay_once(fig_pie, height=700)  # largura adaptável
+    streamlit_plotly_autoplay_on_hover(fig_pie, container_height=600)  # mesma altura do histograma e animação ao passar mouse
 
     st.markdown("---")
 
