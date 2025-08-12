@@ -28,7 +28,7 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- Configurações CSS comuns para containers e melhorias UI ---
+# --- CSS Comum para UI aprimorada ---
 def inject_common_css():
     st.markdown("""
     <style>
@@ -95,7 +95,6 @@ def inject_common_css():
         }
     </style>
     """, unsafe_allow_html=True)
-
 
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
@@ -250,52 +249,60 @@ def render_topbar_with_logo(dias_restantes):
             background-color: #f5f5f5;
             border-radius: 12px;
             padding: 0 3vw;
-            min-height: 180px;
+            min-height: 220px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             font-family: 'Inter', sans-serif;
+            gap: 1.5rem;
             flex-wrap: wrap;
-            gap: 1rem;
-            position: relative;
+            justify-content: center;
         }}
         .topbar-logo {{
-            height: 120px;
+            height: 140px;
             flex-shrink: 0;
-            margin-right: 2vw;
+            margin-right: 1.5rem;
         }}
         .topbar-text {{
             font-size: clamp(1.4rem, 3vw, 2.5rem);
             font-weight: 700;
             color: #2c3e50;
-            white-space: nowrap;
             line-height: 1.2;
             flex-grow: 1;
-            min-width: 150px;
+            min-width: 200px;
+            display: flex;
+            align-items: center;
         }}
         .topbar-date {{
             position: absolute;
-            top: 8px;
-            right: 16px;
-            font-size: clamp(9px, 1vw, 11px);
+            top: 12px;
+            right: 24px;
+            font-size: clamp(10px, 1vw, 12px);
             font-weight: 600;
             color: #2c3e50;
             user-select: none;
             white-space: nowrap;
         }}
-        @media (max-width: 700px) {{
+        @media (max-width: 768px) {{
             .topbar-container {{
-                min-height: 140px;
+                min-height: 160px;
                 padding: 0 2vw;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
             }}
             .topbar-logo {{
-                height: 90px;
-                margin-right: 1vw;
+                height: 110px;
+                margin-right: 0;
+                margin-bottom: 12px;
             }}
             .topbar-text {{
                 font-size: clamp(1.1rem, 4vw, 2rem);
-                white-space: normal;
+                min-width: auto;
+                justify-content: center;
             }}
             .topbar-date {{
+                position: static;
+                margin-top: 4px;
                 font-size: clamp(8px, 1.5vw, 10px);
             }}
         }}
@@ -370,13 +377,20 @@ def create_altair_donut(row):
         'Valor': [concluido, pendente]
     })
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+
     base = alt.Chart(df).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3).encode(
         theta=alt.Theta('Valor:Q'),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q')]
     )
     text_df = pd.DataFrame({'label': [f"{concluido_pct:.1f}%"]})
-    text = alt.Chart(text_df).mark_text(size=22, fontWeight='bold', color='#2ecc71').encode(
+    text = alt.Chart(text_df).mark_text(
+        size=24,
+        fontWeight='bold',
+        color='#2ecc71',
+        align='center',
+        baseline='middle'
+    ).encode(
         text='label:N',
         x=alt.value(140),
         y=alt.value(140)
@@ -399,7 +413,13 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q')]
     )
     text_df = pd.DataFrame({'label': [f"{progresso_geral:.1f}%"]})
-    text = alt.Chart(text_df).mark_text(size=22, fontWeight='bold', color='#2ecc71').encode(
+    text = alt.Chart(text_df).mark_text(
+        size=24,
+        fontWeight='bold',
+        color='#2ecc71',
+        align='center',
+        baseline='middle'
+    ).encode(
         text='label:N',
         x=alt.value(140),
         y=alt.value(140)
@@ -429,13 +449,18 @@ def create_histogram_horizontal_altair(df_summary):
     status_map = {'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'}
     df_long['Status'] = df_long['Status'].map(status_map)
 
+    # Calcular percentual por disciplina para eixo X
+    df_totals = df_summary[['Disciplinas', 'Total_Conteudos']].set_index('Disciplinas')
+    df_long = df_long.join(df_totals, on='Disciplinas')
+    df_long['Percentual'] = df_long['Quantidade'] / df_long['Total_Conteudos']
+
     color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     chart = alt.Chart(df_long).mark_bar(stroke='#d3d3d3', strokeWidth=3).encode(
         y=alt.Y('Disciplinas:N', sort=df_summary['Disciplinas'].tolist(), axis=alt.Axis(title=None)),
-        x=alt.X('Quantidade:Q', axis=alt.Axis(title=None)),
+        x=alt.X('Percentual:Q', axis=alt.Axis(title=None, format='%')),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Quantidade:Q')]
+        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Percentual:Q', format='.1%')]
     ).properties(
         height=400,
         width='container'
@@ -445,30 +470,38 @@ def create_histogram_horizontal_altair(df_summary):
 def display_animated_histogram(chart):
     st.altair_chart(chart, use_container_width=True)
 
-def pie_chart_peso_vezes_questoes_altair(ed_data):
+def create_peso_ponderado_donut_altair(ed_data):
     df = pd.DataFrame(ed_data)
     df['Valor'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Valor'] / df['Valor'].sum()
     color_scale = alt.Scale(domain=df['Disciplinas'].tolist(),
-                            range=['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'])
-    chart = alt.Chart(df).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color(field='Disciplinas', type='nominal', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Valor:Q')]
-    ).properties(
-        width=450,
-        height=450
+                            range=['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#d7c7f7'])
+
+    base = alt.Chart(df).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3).encode(
+        theta=alt.Theta('Valor:Q'),
+        color=alt.Color('Disciplinas:N', scale=color_scale, legend=None)
     )
 
+    # Rótulos internos com percentual
+    label = alt.Chart(df).mark_text(radius=100, fontWeight='bold', color='black').encode(
+        theta=alt.Theta('Valor:Q'),
+        text=alt.Text('Percentual:Q', format='.1%')
+    )
+
+    donut = (base + label).properties(width=400, height=400)
+
+    # Legenda manual em markdown abaixo do gráfico, centralizado
     legend_html = "<div style='text-align:center; margin-top:12px; font-size: 14px; color: #555;'>"
-    legend_html += "<br>".join([f"{row['Disciplinas'].title()}: {row['Valor']}" for _, row in df.iterrows()])
+    legend_html += "<br>".join([f"<span style='color:{color_scale.range[i]}'>{row['Disciplinas'].title()}:</span> {row['Valor']}" for i, row in df.iterrows()])
     legend_html += "</div>"
-    st.markdown(legend_html, unsafe_allow_html=True)
 
-    return chart
+    return donut, legend_html
 
-def display_pie_chart(chart):
+def display_pie_chart(chart, legend_html):
+    st.markdown('<div style="display:flex; justify-content:center; flex-direction: column; align-items: center;">', unsafe_allow_html=True)
     st.altair_chart(chart, use_container_width=True)
+    st.markdown(legend_html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
@@ -496,11 +529,9 @@ def display_conteudos_com_checkboxes(df):
         st.experimental_rerun()
 
 def main():
-    st.set_page_config(
-        page_title="📚 Dashboard de Estudos - Concurso 2025",
-        page_icon="📚",
-        layout="wide"
-    )
+    st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso 2025", page_icon="📚", layout="wide")
+
+    inject_common_css()
 
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
 
@@ -534,8 +565,10 @@ def main():
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
     display_containers_questoes(ED_DATA)
 
-    pie_chart = pie_chart_peso_vezes_questoes_altair(ED_DATA)
-    display_pie_chart(pie_chart)
+    donut_peso_chart, peso_legend = create_peso_ponderado_donut_altair(ED_DATA)
+    display_pie_chart(donut_peso_chart, peso_legend)
+
+    st.markdown("---")
 
     st.markdown("""
     <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
