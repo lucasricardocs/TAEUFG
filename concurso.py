@@ -282,7 +282,7 @@ def render_topbar_with_logo(dias_restantes):
             user-select: none;
             white-space: nowrap;
         }}
-        @media (max-width: 600px) {{
+        @media (max-width: 700px) {{
             .topbar-container {{
                 min-height: 140px;
                 padding: 0 2vw;
