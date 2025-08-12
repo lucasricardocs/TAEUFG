@@ -23,7 +23,7 @@ WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
 ED_DATA = {
-    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
+    'Disciplinas': ['PORTUGUÊS', 'LÓGICA', 'INFORMÁTICA', 'LEGISLAÇÃO', 'C. ESPECÍFICOS'],
     'Total_Conteudos': [20, 15, 10, 15, 30],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
