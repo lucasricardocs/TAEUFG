@@ -522,23 +522,35 @@ def display_conteudos_com_checkboxes(df):
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
+
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
+
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     alterou = False
+
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
                 checked = (row['Status'] == 'True')
-                novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
-                if novo_status != checked:
+
+                # Inicializa session_state para o checkbox
+                if key not in st.session_state:
+                    st.session_state[key] = checked
+
+                novo_status = st.checkbox(label=row['Conteúdos'], value=st.session_state[key], key=key)
+
+                # Atualiza só quando o checkbox for efetivamente alterado
+                if novo_status != st.session_state[key]:
                     sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                     if sucesso:
                         st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
+                        st.session_state[key] = novo_status
                         alterou = True
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
+    
     if alterou:
         load_data_with_row_indices.clear()
         st.experimental_rerun()
