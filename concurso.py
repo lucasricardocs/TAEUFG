@@ -18,7 +18,7 @@ except locale.Error:
     pass
 
 # --- Configurações ---
-SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
@@ -431,6 +431,8 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
             chart_idx += 1
 
 def create_histogram_horizontal_altair(df_summary):
+    if df_summary.empty:
+        return None  # Retorna None se o DataFrame estiver vazio
     df_long = pd.melt(df_summary,
                       id_vars=['Disciplinas'],
                       value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
@@ -458,7 +460,10 @@ def create_histogram_horizontal_altair(df_summary):
     return chart
 
 def display_animated_histogram(chart):
-    st.altair_chart(chart, use_container_width=True)
+    if chart is not None:
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("Nenhum dado disponível para exibir o histograma.")
 
 def chart_questoes_horizontal(df_ed: pd.DataFrame, height=400):
     chart = alt.Chart(df_ed).mark_bar(stroke='#d3d3d3', strokeWidth=3, cornerRadius=5).encode(
@@ -524,7 +529,6 @@ def display_conteudos_com_checkboxes(df):
         return
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-    alterou = False
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
@@ -536,11 +540,10 @@ def display_conteudos_com_checkboxes(df):
                     sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                     if sucesso:
                         st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                        alterou = True
+                        # The update itself triggers a rerun, so we don't need st.experimental_rerun()
+                        # We also don't need the session state flag
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-    if alterou:
-        st.session_state['alterou_conteudo'] = True
 
 def rodape_motivacional():
     st.markdown("""
@@ -578,9 +581,10 @@ def main():
 
     display_conteudos_com_checkboxes(df)
 
-    if st.session_state.get('alterou_conteudo', False):
-        st.session_state['alterou_conteudo'] = False
-        st.experimental_rerun()
+    # Removed the problematic rerun logic here
+    # if st.session_state.get('alterou_conteudo', False):
+    #     st.session_state['alterou_conteudo'] = False
+    #     st.experimental_rerun()
 
     st.markdown("---")
 
