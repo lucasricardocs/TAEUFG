@@ -13,14 +13,12 @@ import altair as alt
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Tentar definir locale para pt_BR
 try:
     import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except:
     pass
 
-# --- Configurações Globais ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -32,7 +30,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# --- Google Sheets client and data loading ---
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -112,7 +109,6 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar planilha: {e}")
         return False
 
-# --- Cálculo dos dados ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -155,7 +151,6 @@ def calculate_stats(df, df_summary):
         'maior_prioridade': maior_prioridade
     }
 
-# --- UI Containers ---
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="
@@ -324,8 +319,6 @@ def display_containers_metricas(stats, progresso_geral):
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-# --- Donut charts Responsivos ---
 def create_altair_donut(row):
     concluido = int(row['Conteudos_Concluidos'])
     pendente = int(row['Conteudos_Pendentes'])
@@ -342,11 +335,11 @@ def create_altair_donut(row):
         color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
     )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(source_label).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
+    return (donut + text).properties(width=280, height=280).configure_view(strokeWidth=3, stroke='#d3d3d3')
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
@@ -362,7 +355,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
     base = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=3)
     text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
         size=22, fontWeight='bold', color='#2ecc71'
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
@@ -382,8 +375,6 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
                 st.altair_chart(donuts[chart_idx], use_container_width=True)
             chart_idx += 1
 
-
-# --- Histograma animado com Plotly ---
 def create_animated_histogram_horizontal(df):
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
@@ -406,6 +397,7 @@ def create_animated_histogram_horizontal(df):
                     x=x_concluidos,
                     name='Concluídos',
                     marker_color='#2ecc71',
+                    marker_line=dict(color='#d3d3d3', width=3),
                     text=[f"{val:.1f}%" if i == num_frames else "" for val in x_concluidos],
                     textposition='inside',
                     orientation='h',
@@ -416,6 +408,7 @@ def create_animated_histogram_horizontal(df):
                     x=x_pendentes,
                     name='Pendentes',
                     marker_color='#e74c3c',
+                    marker_line=dict(color='#d3d3d3', width=3),
                     text=[f"{val:.1f}%" if i == num_frames else "" for val in x_pendentes],
                     textposition='inside',
                     orientation='h',
@@ -428,8 +421,8 @@ def create_animated_histogram_horizontal(df):
 
     fig = go.Figure(
         data=[
-            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Concluídos', marker_color='#2ecc71', orientation='h'),
-            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Pendentes', marker_color='#e74c3c', orientation='h')
+            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Concluídos', marker_color='#2ecc71', marker_line=dict(color='#d3d3d3', width=3), orientation='h'),
+            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Pendentes', marker_color='#e74c3c', marker_line=dict(color='#d3d3d3', width=3), orientation='h')
         ], 
         frames=frames
     )
@@ -439,8 +432,9 @@ def create_animated_histogram_horizontal(df):
             'x': 0.5, 'xanchor': 'center',
             'font': {'size': 20, 'color': '#2c3e50', 'family':'Inter, sans-serif'}
         },
-        yaxis_title='Disciplinas',
-        xaxis_title='Percentual (%)',
+        # Removendo títulos dos eixos conforme solicitado
+        yaxis=dict(showticklabels=True, showgrid=True, zeroline=False),
+        xaxis=dict(showticklabels=True, showgrid=True, zeroline=False, range=[0, 100]),
         barmode='stack',
         height=600, width=1400,
         showlegend=True,
@@ -448,7 +442,7 @@ def create_animated_histogram_horizontal(df):
         font=dict(family="Inter, sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(range=[0, 100], tickformat=".0f%")
+        xaxis_tickformat=".0f%"
     )
     fig.update_yaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
     fig.update_xaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
@@ -500,16 +494,13 @@ def display_animated_histogram(fig):
     """
     st.components.v1.html(html, height=650, width=1400, scrolling=False)
 
-# --- Conteúdos com checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-    
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     alterou = False
-    
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
@@ -526,9 +517,8 @@ def display_conteudos_com_checkboxes(df):
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
         load_data_with_row_indices.clear()
-        st.experimental_rerun()  # chamada correta para reload do app
+        st.experimental_rerun()
 
-# --- Contêineres estilizados para número de questões ---
 def display_questoes_containers(ed_data):
     df = pd.DataFrame(ed_data)
     cores = ["#cbe7f0", "#fdd8d6", "#d1f2d8", "#fdebd0", "#d7c7f7"]
@@ -552,8 +542,9 @@ def display_questoes_containers(ed_data):
                 user-select: none;
                 cursor: default;
                 transition: box-shadow 0.3s ease, transform 0.3s ease;
-                margin-bottom: 12px;
-                max-width: 260px;
+                margin-right: 1rem;
+                min-width: 180px;
+                flex: 1 0 auto;
             }
             .questao-container:hover {
                 box-shadow: 0 8px 30px #5275e1cc;
@@ -572,14 +563,14 @@ def display_questoes_containers(ed_data):
             }
             .questoes-row {
                 display: flex;
-                flex-wrap: wrap;
                 gap: 1rem;
                 justify-content: center;
+                flex-wrap: wrap;
                 margin-bottom: 30px;
             }
             @media(max-width: 720px) {
                 .questao-container {
-                    max-width: 100%;
+                    min-width: 100%;
                     height: 90px;
                 }
                 .questao-numero {
@@ -603,7 +594,6 @@ def display_questoes_containers(ed_data):
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Gráfico de rosca animado e rotulado com Plotly ---
 def pie_chart_peso_vezes_questoes_com_labels_animado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
@@ -699,7 +689,12 @@ def streamlit_plotly_autoplay_once(fig, height=700, width=700, frame_duration=80
     """
     st.components.v1.html(html, height=height, width=width, scrolling=False)
 
-# --- MAIN ---
+def rodape_motivacional():
+    st.markdown("""
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+        🚀 Feito com muito amor, coragem e motivação para você! ✨
+    </footer>
+    """, unsafe_allow_html=True)
 
 def main():
     st.set_page_config(
@@ -738,7 +733,6 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-
     display_questoes_containers(ED_DATA)
 
     fig_pie = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
