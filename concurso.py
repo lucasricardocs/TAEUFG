@@ -432,9 +432,8 @@ def create_animated_histogram_horizontal(df):
             'x': 0.5, 'xanchor': 'center',
             'font': {'size': 20, 'color': '#2c3e50', 'family':'Inter, sans-serif'}
         },
-        # Removendo títulos dos eixos conforme solicitado
-        yaxis=dict(showticklabels=True, showgrid=True, zeroline=False),
-        xaxis=dict(showticklabels=True, showgrid=True, zeroline=False, range=[0, 100]),
+        yaxis=dict(showticklabels=True, showgrid=True, zeroline=False, title=None),
+        xaxis=dict(showticklabels=True, showgrid=True, zeroline=False, range=[0, 100], title=None),
         barmode='stack',
         height=600, width=1400,
         showlegend=True,
@@ -626,8 +625,6 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ed_data):
                 hole=0.3,
                 text=texts,
                 textinfo='text',
-                textposition=None,
-                textfont=dict(size=14, color='black', family='sans-serif'),
                 marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
                 hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
                 rotation=90
@@ -641,31 +638,32 @@ def pie_chart_peso_vezes_questoes_com_labels_animado(ed_data):
             'text': 'Número de Questões e Peso por Disciplina',
             'x': 0.5,
             'xanchor': 'center',
-            'font': {'size': 16, 'color': '#2c3e50', 'family': 'sans-serif', 'weight': 'bold'}
+            'y':0.94,
+            'font': {'size': 20, 'color': '#2c3e50', 'family': 'sans-serif', 'weight': 'bold'}
         },
         showlegend=True,
         legend=dict(
-            orientation="v",
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.05,
-            font=dict(color='black', size=12, family='sans-serif'),
+            orientation="h",
+            yanchor="top",
+            y=-0.12,
+            xanchor="center",
+            x=0.5,
+            font=dict(color='black', size=14, family='sans-serif'),
             traceorder='normal'
         ),
         height=700,
-        width=700,
-        margin=dict(t=20, b=20, l=20, r=20),
+        width=800,
+        margin=dict(t=80, b=80, l=20, r=20),
         font=dict(family="sans-serif"),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
     return fig
 
-def streamlit_plotly_autoplay_once(fig, height=700, width=700, frame_duration=80):
+def streamlit_plotly_autoplay_once(fig, height=700, width=800, frame_duration=80):
     fig_json = fig.to_json()
     html = f"""
-    <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
+    <div id="plotly-div" style="width:{width}px; height:{height}px; margin: 0 auto;"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
     (function() {{
@@ -736,7 +734,7 @@ def main():
     display_questoes_containers(ED_DATA)
 
     fig_pie = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
-    streamlit_plotly_autoplay_once(fig_pie, height=700, width=700)
+    streamlit_plotly_autoplay_once(fig_pie, height=700, width=800)  # largura aumentada e centralizado
 
     st.markdown("---")
 
