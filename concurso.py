@@ -12,6 +12,7 @@ import locale
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
+# Ajusta localidade para datas em português
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
@@ -215,7 +216,7 @@ def load_data_with_row_indices():
         df = df[df['Status'].isin(['true', 'false'])].copy()
         df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2
+        df['sheet_row'] = df['index'] + 2  # considera header em linha 1
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
@@ -535,13 +536,11 @@ def display_conteudos_com_checkboxes(df):
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
                 checked = (row['Status'] == 'True')
 
-                # Inicializa session_state para o checkbox
                 if key not in st.session_state:
                     st.session_state[key] = checked
 
                 novo_status = st.checkbox(label=row['Conteúdos'], value=st.session_state[key], key=key)
 
-                # Atualiza só quando o checkbox for efetivamente alterado
                 if novo_status != st.session_state[key]:
                     sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                     if sucesso:
@@ -550,10 +549,10 @@ def display_conteudos_com_checkboxes(df):
                         alterou = True
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-    
+
     if alterou:
-        load_data_with_row_indices.clear()
-        st.experimental_rerun()
+        load_data_with_row_indices.clear()  # Limpa cache para carregar dados atualizados
+        st.experimental_rerun()  # Recarrega o app para refletir mudanças
 
 def rodape_motivacional():
     st.markdown("""
