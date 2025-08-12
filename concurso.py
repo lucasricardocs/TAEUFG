@@ -23,7 +23,7 @@ WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
 ED_DATA = {
-    'Disciplinas': ['PORTUGUÊS', 'LÓGICA', 'INFORMÁTICA', 'LEGISLAÇÃO', 'C. ESPECÍFICOS'],
+    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [20, 15, 10, 15, 30],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
@@ -540,8 +540,7 @@ def display_conteudos_com_checkboxes(df):
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
-        load_data_with_row_indices.clear()
-        st.experimental_rerun()
+        st.session_state['alterou_conteudo'] = True
 
 def rodape_motivacional():
     st.markdown("""
@@ -578,6 +577,10 @@ def main():
     st.markdown("---")
 
     display_conteudos_com_checkboxes(df)
+
+    if st.session_state.get('alterou_conteudo', False):
+        st.session_state['alterou_conteudo'] = False
+        st.experimental_rerun()
 
     st.markdown("---")
 
