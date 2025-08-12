@@ -329,8 +329,8 @@ def display_containers_metricas(stats, progresso_geral):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Gráfico histograma horizontal com container e título ---
-def create_histograma_horizontal_simplificado(df):
+# --- Gráfico histograma horizontal animado com Plotly ---
+def create_animated_histogram_horizontal(df):
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
     pendentes = df['Conteudos_Pendentes'].tolist()
@@ -338,36 +338,109 @@ def create_histograma_horizontal_simplificado(df):
     pct_concluidos = np.divide(concluidos, total, out=np.zeros_like(concluidos, dtype=float), where=total != 0) * 100
     pct_pendentes = 100 - pct_concluidos
 
-    fig = go.Figure(data=[
-        go.Bar(y=disciplinas, x=pct_concluidos, name='Concluídos', marker_color='#2ecc71', orientation='h',
-               text=[f"{val:.1f}%" for val in pct_concluidos], textposition='inside', textfont=dict(color='white')),
-        go.Bar(y=disciplinas, x=pct_pendentes, name='Pendentes', marker_color='#e74c3c', orientation='h',
-               text=[f"{val:.1f}%" for val in pct_pendentes], textposition='inside', textfont=dict(color='white'))
-    ])
+    num_frames = 30
+    frames = []
+    for i in range(num_frames + 1):
+        fator = i / num_frames
+        x_concluidos = [val * fator for val in pct_concluidos]
+        x_pendentes = [val * fator for val in pct_pendentes]
 
+        frame = go.Frame(
+            data=[
+                go.Bar(
+                    y=disciplinas,
+                    x=x_concluidos,
+                    name='Concluídos',
+                    marker_color='#2ecc71',
+                    text=[f"{val:.1f}%" if i == num_frames else "" for val in x_concluidos],
+                    textposition='inside',
+                    orientation='h',
+                    textfont=dict(color='white', size=12)
+                ),
+                go.Bar(
+                    y=disciplinas,
+                    x=x_pendentes,
+                    name='Pendentes',
+                    marker_color='#e74c3c',
+                    text=[f"{val:.1f}%" if i == num_frames else "" for val in x_pendentes],
+                    textposition='inside',
+                    orientation='h',
+                    textfont=dict(color='white', size=12)
+                )
+            ],
+            name=str(i)
+        )
+        frames.append(frame)
+
+    fig = go.Figure(
+        data=[
+            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Concluídos', marker_color='#2ecc71', orientation='h'),
+            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Pendentes', marker_color='#e74c3c', orientation='h')
+        ], 
+        frames=frames
+    )
     fig.update_layout(
         barmode='stack',
         margin=dict(l=110, r=40, t=40, b=20),
         showlegend=False,
-        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False, range=[0,100]),
         yaxis=dict(showticklabels=True, showgrid=False, zeroline=False),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        title={
-            'text': "",  # título no container, não no gráfico
-        },
-        font=dict(family='Arial, sans-serif', size=14, color='#2c3e50'),
         height=600,
         width=None
     )
+    fig.update_yaxes(tickfont=dict(size=12))
+    fig.update_xaxes(tickfont=dict(size=12))
     return fig
 
-def display_histograma_horizontal_com_container(df_summary):
-    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    fig = create_histograma_horizontal_simplificado(df_summary)
-    st.plotly_chart(fig, use_container_width=True)
+def display_animated_histogram(fig):
+    fig_json = fig.to_json()
+    html = f"""
+    <div id="histogram-container" style="width:100%; height:600px; margin:0 auto;">
+        <div id="histogram-plot" style="width:100%; height:100%;"></div>
+    </div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+    (function(){{
+        const figure = {fig_json};
+        let plot = null;
+        let isAnimating = false;
+        function createPlot(){{
+            Plotly.newPlot('histogram-plot', figure.data, figure.layout).then(function(newPlot){{
+                plot = newPlot;
+                if(figure.frames && figure.frames.length > 0){{
+                    Plotly.addFrames(plot, figure.frames);
+                }}
+            }});
+        }}
+        function animateHistogram(){{
+            if(!plot || isAnimating) return;
+            isAnimating = true;
+            const animOpts = {{
+                frame: {{duration:50, redraw:true}},
+                transition: {{duration:30}},
+                mode:'immediate'
+            }};
+            Plotly.animate(plot, null, animOpts).then(function(){{
+                setTimeout(function(){{ isAnimating = false;}}, 100);
+            }});
+        }}
+        createPlot();
+        const observer = new IntersectionObserver(function(entries){{
+            entries.forEach(function(entry){{
+                if(entry.isIntersecting){{
+                    setTimeout(animateHistogram, 200);
+                }}
+            }});
+        }}, {{threshold:0.3}});
+        observer.observe(document.getElementById('histogram-container'));
+    }})();
+    </script>
+    """
+    st.components.v1.html(html, height=630, width=None, scrolling=False)
 
-# --- Containers animados para 'Número de Questões e Peso por Disciplina' ---
+# --- Containers para 'Número de Questões e Peso por Disciplina' ---
 def display_containers_questoes_peso(ed_data):
     df = pd.DataFrame(ed_data)
     cores_metricas = [
@@ -446,7 +519,7 @@ def display_containers_questoes_peso(ed_data):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Gráfico de rosca animado e interativo usando Plotly, animação ao passar o mouse e tamanho adaptativo ---
+# --- Gráfico de rosca animado e interativo usando Plotly ---
 def pie_chart_peso_vezes_questoes_animado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
@@ -595,7 +668,7 @@ def display_conteudos_com_checkboxes(df):
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
         load_data_with_row_indices.clear()
-        st.experimental_rerun  # Corrigido: sem parênteses para evitar erro no Streamlit
+        st.experimental_rerun  # corrigido sem parênteses
 
 def rodape_motivacional():
     st.markdown("""
@@ -624,8 +697,10 @@ def main():
 
     st.markdown("---")
 
-    # Container com título para histograma + gráfico responsivo
-    display_histograma_horizontal_com_container(df_summary)
+    # Container com título para histograma + gráfico animado responsivo
+    titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
+    fig_hist = create_animated_histogram_horizontal(df_summary)
+    display_animated_histogram(fig_hist)
 
     st.markdown("---")
 
@@ -638,7 +713,7 @@ def main():
     display_containers_questoes_peso(ED_DATA)
 
     fig_pie = pie_chart_peso_vezes_questoes_animado(ED_DATA)
-    streamlit_plotly_autoplay_on_hover(fig_pie, container_height=600)  # mesma altura do histograma e animação ao passar mouse
+    streamlit_plotly_autoplay_on_hover(fig_pie, container_height=600)  # animação ao passar o mouse, tamanho igual ao histograma
 
     st.markdown("---")
 
