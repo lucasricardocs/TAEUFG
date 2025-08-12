@@ -28,6 +28,75 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
+# --- Configurações CSS comuns para containers e melhorias UI ---
+def inject_common_css():
+    st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+        /* Containers métricas e questões */
+        .metric-container, .questao-container {
+            font-family: 'Inter', sans-serif !important;
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            font-weight: 700;
+            color: #2c3e50;
+            height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 16px !important;
+            line-height: 1.1;
+            user-select: none;
+            cursor: pointer;
+            transition: box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        .metric-container:hover, .questao-container:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+            background-color: #f0f8ff;
+            z-index: 10;
+        }
+        .metric-value, .questao-numero {
+            color: #355e9e;
+            margin-bottom: 0.25rem;
+            font-size: 18px !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .metric-label, .questao-label {
+            font-weight: 600;
+            color: #566e95;
+            font-size: 16px !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .metric-row, .questoes-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        @media(max-width: 768px) {
+            .metric-container, .questao-container {
+                height: 130px !important;
+                margin-bottom: 12px !important;
+            }
+            .questao-container {
+                min-width: 100% !important;
+                max-width: 100% !important;
+            }
+            .metric-row {
+                flex-direction: column !important;
+                height: auto !important;
+            }
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
     SCOPES = [
@@ -246,57 +315,8 @@ def display_containers_metricas(stats, progresso_geral):
         "#fdebd0",
         "#d7c7f7",
     ]
-    st.markdown("""
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
-            .metric-container {
-                font-family: 'Inter', sans-serif !important;
-                background: var(--bg-color);
-                border-radius: 16px;
-                padding: 1rem 1.2rem;
-                box-shadow: 0 4px 15px #a3bffa90;
-                text-align: center;
-                font-weight: 700;
-                color: #2c3e50;
-                height: 160px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                font-size: 16px !important;
-                line-height: 1.1;
-                user-select: none;
-                cursor: default;
-                transition: box-shadow 0.3s ease, transform 0.3s ease;
-                margin-bottom: 10px;
-            }
-            .metric-container:hover {
-                box-shadow: 0 8px 30px #5275e1cc;
-                transform: scale(1.05);
-                z-index: 10;
-            }
-            .metric-value {
-                color: #355e9e;
-                margin-bottom: 0.25rem;
-                font-size: 16px !important;
-            }
-            .metric-label {
-                font-weight: 600;
-                color: #566e95;
-                font-size: 16px !important;
-            }
-            @media(max-width: 768px) {
-                .metric-row {
-                    flex-direction: column !important;
-                    height: auto !important;
-                }
-                .metric-container {
-                    height: 130px !important;
-                    margin-bottom: 12px !important;
-                }
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    st.markdown('<div style="display:flex; gap:1rem; justify-content:center; flex-wrap: wrap;" class="metric-row">', unsafe_allow_html=True)
+    inject_common_css()
+    st.markdown('<div class="metric-row">', unsafe_allow_html=True)
     cols = st.columns(5, gap="small")
     values_labels = [
         (f"{progresso_geral:.1f}%", "Progresso Geral"),
@@ -317,7 +337,6 @@ def display_containers_metricas(stats, progresso_geral):
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Containers para número de questões adaptados para usar o mesmo estilo dos containers métricas
 def display_containers_questoes(ed_data):
     df = pd.DataFrame(ed_data)
     cores_questoes = [
@@ -327,82 +346,18 @@ def display_containers_questoes(ed_data):
         "#fdebd0",
         "#d7c7f7",
     ]
-    st.markdown("""
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
-            .questao-container {
-                font-family: 'Inter', sans-serif !important;
-                background: var(--bg-color);
-                border-radius: 16px;
-                padding: 1rem 1.2rem;
-                box-shadow: 0 4px 15px #a3bffa90;
-                text-align: center;
-                font-weight: 700;
-                color: #2c3e50;
-                height: 160px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                font-size: 16px !important;
-                line-height: 1.1;
-                user-select: none;
-                cursor: default;
-                transition: box-shadow 0.3s ease, transform 0.3s ease;
-
-                margin-bottom: 10px;
-                margin-right: 0;
-                flex: 1 0 180px;
-                min-width: 180px;
-                max-width: 220px;
-            }
-            .questao-container:hover {
-                box-shadow: 0 8px 30px #5275e1cc !important;
-                transform: scale(1.05);
-                z-index: 10;
-            }
-            .questao-numero {
-                color: #355e9e;
-                margin-bottom: 0.25rem;
-                font-size: 20px !important;
-            }
-            .questao-label {
-                font-weight: 600;
-                color: #566e95;
-                font-size: 16px !important;
-            }
-            .questoes-row {
-                display: flex;
-                gap: 1rem;
-                justify-content: center;
-                flex-wrap: wrap;
-                margin-bottom: 30px;
-            }
-            @media(max-width: 768px) {
-                .questao-container {
-                    height: 130px !important;
-                    margin-right: 0;
-                    min-width: 100%;
-                    max-width: 100%;
-                }
-                .questao-numero {
-                    font-size: 18px !important;
-                }
-                .questao-label {
-                    font-size: 14px !important;
-                }
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
+    inject_common_css()
     st.markdown('<div class="questoes-row">', unsafe_allow_html=True)
+    cols = st.columns(len(df), gap="small")
     for i, row in df.iterrows():
         cor = cores_questoes[i % len(cores_questoes)]
-        st.markdown(f"""
-            <div class="questao-container" style="background: {cor};">
-                <div class="questao-numero">{row['Questões']}</div>
-                <div class="questao-label">{row['Disciplinas'].title()}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        with cols[i]:
+            st.markdown(f"""
+                <div class="questao-container" style="background: {cor};">
+                    <div class="questao-numero">{row['Questões']}</div>
+                    <div class="questao-label">{row['Disciplinas'].title()}</div>
+                </div>
+            """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 def create_altair_donut(row):
@@ -426,7 +381,7 @@ def create_altair_donut(row):
         x=alt.value(140),
         y=alt.value(140)
     )
-    return (base + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
+    return (base + text).properties(width=280, height=280).configure_view(stroke=None)
 
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
@@ -449,7 +404,7 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
         x=alt.value(140),
         y=alt.value(140)
     )
-    donut_geral = (base + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=3)
+    donut_geral = (base + text).properties(width=280, height=280).configure_view(stroke=None)
     donuts.append(donut_geral)
 
     chart_idx = 0
@@ -465,14 +420,12 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
             chart_idx += 1
 
 def create_histogram_horizontal_altair(df_summary):
-    # Transformar dados para formato longo
     df_long = pd.melt(df_summary,
                       id_vars=['Disciplinas'],
                       value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
                       var_name='Status',
                       value_name='Quantidade')
 
-    # Re-map status para rótulos e cores
     status_map = {'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'}
     df_long['Status'] = df_long['Status'].map(status_map)
 
@@ -507,9 +460,10 @@ def pie_chart_peso_vezes_questoes_altair(ed_data):
         height=450
     )
 
-    # Legenda sob o gráfico, feita manualmente como texto
-    legend_texts = "\n".join([f"{row['Disciplinas'].title()}: {row['Valor']}" for _, row in df.iterrows()])
-    st.markdown(f"<div style='text-align:center; margin-top:10px; font-size: 14px; color: #555;'>{legend_texts.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+    legend_html = "<div style='text-align:center; margin-top:12px; font-size: 14px; color: #555;'>"
+    legend_html += "<br>".join([f"{row['Disciplinas'].title()}: {row['Valor']}" for _, row in df.iterrows()])
+    legend_html += "</div>"
+    st.markdown(legend_html, unsafe_allow_html=True)
 
     return chart
 
@@ -582,8 +536,6 @@ def main():
 
     pie_chart = pie_chart_peso_vezes_questoes_altair(ED_DATA)
     display_pie_chart(pie_chart)
-
-    st.markdown("---")
 
     st.markdown("""
     <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
