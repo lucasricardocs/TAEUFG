@@ -18,7 +18,7 @@ except locale.Error:
     pass
 
 # --- Configurações ---
-SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruK_g-b3f'  # ID CORRETO
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
@@ -388,7 +388,7 @@ def create_altair_donut(row):
         'Valor': [concluido, pendente],
         'Percentual': [concluido_pct, pendente_pct]
     })
-    color_scale = alt.Scale(domain=['Concluídoc', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
     base_chart = alt.Chart(source).encode(
         theta=alt.Theta(field='Valor', type='quantitative'),
         color=alt.Color('Status:N', scale=color_scale, legend=None),
@@ -431,8 +431,6 @@ def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_col
             chart_idx += 1
 
 def create_histogram_horizontal_altair(df_summary):
-    if df_summary.empty:
-        return None
     df_long = pd.melt(df_summary,
                       id_vars=['Disciplinas'],
                       value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
@@ -460,10 +458,7 @@ def create_histogram_horizontal_altair(df_summary):
     return chart
 
 def display_animated_histogram(chart):
-    if chart is not None:
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        st.info("Nenhum dado disponível para exibir o histograma.")
+    st.altair_chart(chart, use_container_width=True)
 
 def chart_questoes_horizontal(df_ed: pd.DataFrame, height=400):
     chart = alt.Chart(df_ed).mark_bar(stroke='#d3d3d3', strokeWidth=3, cornerRadius=5).encode(
@@ -527,43 +522,25 @@ def display_conteudos_com_checkboxes(df):
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-
+    alterou = False
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
-                
-                # Use st.session_state para gerenciar o estado da checkbox.
-                # Se o estado não existe, inicialize com o valor do DataFrame.
-                if key not in st.session_state:
-                    st.session_state[key] = (row['Status'] == 'True')
-
-                # Define o rótulo com base no estado do session_state
-                label_content = row['Conteúdos']
-                if st.session_state[key]:
-                    label_content = f"✅ <span style='color: green; text-decoration: line-through;'>{label_content}</span>"
-                
-                # Renderiza o checkbox sem rótulo, e o rótulo formatado com st.markdown ao lado.
-                cols = st.columns([0.05, 0.95])
-                with cols[0]:
-                    st.checkbox(label=' ', value=st.session_state[key], key=f"checkbox_{key}")
-                with cols[1]:
-                    st.markdown(label_content, unsafe_allow_html=True)
-
-                # Lógica para atualizar a planilha e o app se o estado mudar.
-                if st.session_state[f"checkbox_{key}"] != st.session_state[key]:
-                    new_status_str = "True" if st.session_state[f"checkbox_{key}"] else "False"
-                    
-                    if update_status_in_sheet(worksheet, row['sheet_row'], new_status_str):
-                        st.cache_data.clear()  # Limpa o cache para recarregar os dados
-                        st.session_state[key] = st.session_state[f"checkbox_{key}"]
-                        st.rerun()  # Força a reexecução do script
+                checked = (row['Status'] == 'True')
+                novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
+                if novo_status != checked:
+                    sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
+                    if sucesso:
+                        st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
+                        alterou = True
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
+    if alterou:
+        st.session_state['alterou_conteudo'] = True
 
 def rodape_motivacional():
     st.markdown("""
@@ -600,6 +577,10 @@ def main():
     st.markdown("---")
 
     display_conteudos_com_checkboxes(df)
+
+    if st.session_state.get('alterou_conteudo', False):
+        st.session_state['alterou_conteudo'] = False
+        st.experimental_rerun()
 
     st.markdown("---")
 
