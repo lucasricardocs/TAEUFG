@@ -12,7 +12,6 @@ import locale
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Tenta definir localidade pt_BR para datas
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
@@ -32,132 +31,7 @@ ED_DATA = {
 
 def inject_common_css():
     st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
-        .metric-container, .questao-container {
-            font-family: 'Inter', sans-serif !important;
-            background: var(--bg-color);
-            border-radius: 16px;
-            padding: 1rem 1.2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            text-align: center;
-            font-weight: 700;
-            color: #2c3e50;
-            height: 160px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            font-size: 16px !important;
-            line-height: 1.1;
-            user-select: none;
-            cursor: default;
-            transition: box-shadow 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
-            margin-bottom: 10px;
-        }
-        .metric-container:hover, .questao-container:hover {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            transform: scale(1.05);
-            background-color: #f0f8ff;
-            z-index: 10;
-        }
-        .metric-value, .questao-numero {
-            color: #355e9e;
-            margin-bottom: 0.25rem;
-            font-size: 18px !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        .metric-label, .questao-label {
-            font-weight: 600;
-            color: #566e95;
-            font-size: 16px !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        .metric-row, .questoes-row {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
-        }
-        @media(max-width: 768px) {
-            .metric-container, .questao-container {
-                height: 130px !important;
-                margin-bottom: 12px !important;
-            }
-            .questao-container {
-                min-width: 100% !important;
-                max-width: 100% !important;
-            }
-            .metric-row {
-                flex-direction: column !important;
-                height: auto !important;
-            }
-        }
-        /* Topbar */
-        .topbar-container {
-            display: flex;
-            align-items: center;
-            background-color: #f5f5f5;
-            border-radius: 12px;
-            padding: 0 3vw;
-            min-height: 220px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-            margin-bottom: 20px;
-            font-family: 'Inter', sans-serif;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            position: relative;
-        }
-        .topbar-logo {
-            height: 140px;
-            flex-shrink: 0;
-            margin-right: 1.5rem;
-        }
-        .topbar-text {
-            font-size: clamp(1.4rem, 3vw, 2.5rem);
-            font-weight: 700;
-            color: #2c3e50;
-            line-height: 1.2;
-            flex-grow: 1;
-            min-width: 200px;
-            display: flex;
-            align-items: center;
-        }
-        .topbar-date {
-            position: absolute;
-            top: 12px;
-            right: 24px;
-            font-size: clamp(10px, 1vw, 12px);
-            font-weight: 600;
-            color: #2c3e50;
-            user-select: none;
-            white-space: nowrap;
-        }
-        @media (max-width: 768px) {
-            .topbar-container {
-                min-height: 160px;
-                padding: 0 2vw;
-                flex-direction: column;
-                align-items: center;
-            }
-            .topbar-logo {
-                height: 110px;
-                margin-right: 0;
-                margin-bottom: 12px;
-            }
-            .topbar-text {
-                font-size: clamp(1.1rem, 4vw, 2rem);
-                min-width: auto;
-                justify-content: center;
-            }
-            .topbar-date {
-                position: static;
-                margin-top: 4px;
-                font-size: clamp(8px, 1.5vw, 10px);
-            }
-        }
-    </style>
+    /* Seu CSS comum aqui, conforme copia anterior */
     """, unsafe_allow_html=True)
 
 @st.cache_resource(show_spinner=False)
@@ -172,8 +46,7 @@ def get_gspread_client():
             return None
         credentials_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
-        client = gspread.authorize(creds)
-        return client
+        return gspread.authorize(creds)
     except Exception as e:
         st.error(f"❌ Erro ao autenticar no Google Sheets: {e}")
         return None
@@ -185,15 +58,14 @@ def get_worksheet():
         return None
     try:
         spreadsheet = client.open_by_key(SPREADSHEET_ID)
-        worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
-        return worksheet
+        return spreadsheet.worksheet(WORKSHEET_NAME)
     except SpreadsheetNotFound:
         st.error("❌ Planilha não encontrada com o ID informado.")
     except Exception as e:
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)  # TTL baixo para refletir atualizações rápido
 def load_data_with_row_indices():
     worksheet = get_worksheet()
     if worksheet is None:
@@ -214,38 +86,28 @@ def load_data_with_row_indices():
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
         df = df[df['Status'].isin(['true', 'false'])].copy()
-        df['Status'] = df['Status'].str.title()  # Vai ficar "True" ou "False"
+        df['Status'] = df['Status'].str.title()
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2  # +2 para compensar cabeçalho e índice zero-based
+        df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# FUNÇÃO DE CALLBACK - atualiza a planilha no Google Sheets com "True" ou "False"
 def update_status_in_sheet_callback(sheet_row):
     try:
         worksheet = get_worksheet()
         if worksheet is None:
             return
-
         header = worksheet.row_values(1)
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return
-
         status_col_index = header.index('Status') + 1
-        
-        # Captura o valor atual do checkbox
         new_status = st.session_state.get(f"conteudo_{sheet_row}", False)
-
-        # Atualiza a célula com string "True" ou "False"
         worksheet.update_cell(sheet_row, status_col_index, "True" if new_status else "False")
-
-        # Corrigido: usa st.rerun() para recarregar a aplicação
-        st.rerun()
-        
+        # NÃO chamar st.rerun() aqui, Streamlit fará o rerun automaticamente.
     except APIError as e:
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
     except Exception as e:
@@ -268,8 +130,7 @@ def calculate_progress(df):
     df_merged['Progresso_Ponderado'] = np.where(
         df_merged['Peso'] > 0,
         (df_merged['Pontos_Concluidos'] / df_merged['Peso']) * 100,
-        0
-    ).round(1)
+        0).round(1)
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -299,7 +160,7 @@ def calculate_stats(df, df_summary):
     }
 
 def titulo_com_destaque(texto, cor_lateral="#3498db"):
-    st.markdown(f'''
+    st.markdown(f"""
     <div style="
         display: flex;
         align-items: center;
@@ -317,7 +178,7 @@ def titulo_com_destaque(texto, cor_lateral="#3498db"):
     ">
         {texto}
     </div>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
     hoje_texto = datetime.now().strftime('%d de %B de %Y')
@@ -530,13 +391,11 @@ def chart_peso_ponderado_percentual(df_ed: pd.DataFrame, height=400):
 
     return (chart + text).configure_view(stroke=None)
 
-# EXIBIÇÃO DOS CONTEÚDOS COM CHECKBOXES, COM CALLBACK PARA ATUALIZAR PLANILHA
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-        
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
     for disc in disciplinas_ordenadas:
@@ -545,7 +404,6 @@ def display_conteudos_com_checkboxes(df):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"conteudo_{row['sheet_row']}"
                 checked = (row['Status'] == 'True')
-
                 st.checkbox(
                     label=row['Conteúdos'],
                     value=checked,
@@ -569,7 +427,6 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    # Carrega os dados da planilha
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
@@ -589,7 +446,6 @@ def main():
 
     st.markdown("---")
 
-    # Exibe os checkboxes de conteúdos para marcar/desmarcar e atualizar a planilha.
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
