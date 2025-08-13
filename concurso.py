@@ -12,6 +12,7 @@ import locale
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
+# Tenta definir localidade pt_BR para datas
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
@@ -213,16 +214,16 @@ def load_data_with_row_indices():
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower()
         df = df[df['Status'].isin(['true', 'false'])].copy()
-        df['Status'] = df['Status'].str.title()
+        df['Status'] = df['Status'].str.title()  # Vai ficar "True" ou "False"
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2
+        df['sheet_row'] = df['index'] + 2  # +2 para compensar cabeçalho e índice zero-based
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# FUNÇÃO DE CALLBACK ATUALIZADA - O RERUN É CHAMADO AQUI
+# FUNÇÃO DE CALLBACK - atualiza a planilha no Google Sheets com "True" ou "False"
 def update_status_in_sheet_callback(sheet_row):
     try:
         worksheet = get_worksheet()
@@ -236,13 +237,13 @@ def update_status_in_sheet_callback(sheet_row):
 
         status_col_index = header.index('Status') + 1
         
-        # Obtém o novo estado do checkbox diretamente de st.session_state
-        new_status = st.session_state[f"conteudo_{sheet_row}"]
+        # Captura o valor atual do checkbox
+        new_status = st.session_state.get(f"conteudo_{sheet_row}", False)
 
-        # Atualiza a célula na planilha com o novo status
+        # Atualiza a célula com string "True" ou "False"
         worksheet.update_cell(sheet_row, status_col_index, "True" if new_status else "False")
-        
-        # Chama o rerun APÓS a atualização bem-sucedida
+
+        # Recarrega a aplicação para refletir a mudança
         st.experimental_rerun()
         
     except APIError as e:
@@ -529,7 +530,7 @@ def chart_peso_ponderado_percentual(df_ed: pd.DataFrame, height=400):
 
     return (chart + text).configure_view(stroke=None)
 
-# FUNÇÃO DE EXIBIÇÃO ATUALIZADA - O RERUN FOI REMOVIDO DAQUI
+# EXIBIÇÃO DOS CONTEÚDOS COM CHECKBOXES, COM CALLBACK PARA ATUALIZAR PLANILHA
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
@@ -568,7 +569,7 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    # Carrega os dados.
+    # Carrega os dados da planilha
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
@@ -588,6 +589,7 @@ def main():
 
     st.markdown("---")
 
+    # Exibe os checkboxes de conteúdos para marcar/desmarcar e atualizar a planilha.
     display_conteudos_com_checkboxes(df)
 
     st.markdown("---")
