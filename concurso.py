@@ -1,6 +1,4 @@
-Com certeza! O seu código completo, com as correções para a atualização dos gráficos e a nova formatação visual dos checkboxes, está aqui.
-As principais mudanças estão nas funções update_status_in_sheet e display_conteudos_com_checkboxes. A primeira agora limpa o cache de dados, e a segunda renderiza os rótulos dos checkboxes com formatação condicional (tachado em verde com ✅) e chama st.rerun() para que a interface inteira se atualize após uma alteração.
-Copie e cole este código para substituir o seu.
+
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
