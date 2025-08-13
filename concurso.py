@@ -222,21 +222,34 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-def update_status_in_sheet(sheet, row_number, new_status):
+# NOVO CÓDIGO - Função de callback para a atualização da planilha
+def update_status_in_sheet_callback(sheet_row):
     try:
-        header = sheet.row_values(1)
+        worksheet = get_worksheet()
+        if worksheet is None:
+            return
+
+        header = worksheet.row_values(1)
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
-            return False
+            return
+
         status_col_index = header.index('Status') + 1
-        sheet.update_cell(row_number, status_col_index, new_status)
-        return True
+        
+        # O estado do checkbox é obtido diretamente de st.session_state,
+        # usando a mesma chave definida no st.checkbox
+        new_status = st.session_state[f"conteudo_{sheet_row}"]
+
+        worksheet.update_cell(sheet_row, status_col_index, "True" if new_status else "False")
+        
+        # Define uma flag no estado da sessão para indicar que uma atualização
+        # bem-sucedida ocorreu e o dashboard precisa ser recarregado.
+        st.session_state['data_updated'] = True
+        
     except APIError as e:
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
-        return False
     except Exception as e:
         st.error(f"❌ Erro inesperado ao atualizar a planilha: {e}")
-        return False
 
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
@@ -517,30 +530,40 @@ def chart_peso_ponderado_percentual(df_ed: pd.DataFrame, height=400):
 
     return (chart + text).configure_view(stroke=None)
 
+# NOVO CÓDIGO - Função que gerencia a exibição dos conteúdos
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
+
+    # Se a flag de atualização está no estado, recarrega o app.
+    # Isso acontece após uma atualização bem-sucedida pelo callback.
+    if st.session_state.get('data_updated'):
+        del st.session_state['data_updated']
+        st.experimental_rerun()
+        
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
-    alterou = False
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
-                key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
+                # A chave agora é uma string única, baseada no número da linha,
+                # que facilita a busca no st.session_state.
+                key = f"conteudo_{row['sheet_row']}"
                 checked = (row['Status'] == 'True')
-                novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
-                if novo_status != checked:
-                    sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
-                    if sucesso:
-                        st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                        alterou = True
-                    else:
-                        st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
-    if alterou:
-        st.session_state['alterou_conteudo'] = True
+
+                # O on_change chama a função de callback, passando o número da linha.
+                # A função de callback vai usar essa linha para buscar o novo estado do checkbox
+                # diretamente de st.session_state.
+                st.checkbox(
+                    label=row['Conteúdos'],
+                    value=checked,
+                    key=key,
+                    on_change=update_status_in_sheet_callback,
+                    args=(row['sheet_row'],)
+                )
 
 def rodape_motivacional():
     st.markdown("""
@@ -557,6 +580,8 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
+    # Carrega os dados. st.cache_data garante que não será recarregado a cada rerun,
+    # a menos que a planilha mude (ttl=600).
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
@@ -576,11 +601,11 @@ def main():
 
     st.markdown("---")
 
+    # Chama a função de exibição dos conteúdos que agora gerencia o próprio rerun
     display_conteudos_com_checkboxes(df)
 
-    if st.session_state.get('alterou_conteudo', False):
-        st.session_state['alterou_conteudo'] = False
-        st.experimental_rerun()
+    # A chamada `st.experimental_rerun()` foi removida daqui, pois
+    # agora é a função `display_conteudos_com_checkboxes` que a gerencia.
 
     st.markdown("---")
 
@@ -601,3 +626,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
