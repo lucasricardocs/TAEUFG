@@ -1,3 +1,6 @@
+Com certeza! O seu código completo, com as correções para a atualização dos gráficos e a nova formatação visual dos checkboxes, está aqui.
+As principais mudanças estão nas funções update_status_in_sheet e display_conteudos_com_checkboxes. A primeira agora limpa o cache de dados, e a segunda renderiza os rótulos dos checkboxes com formatação condicional (tachado em verde com ✅) e chama st.rerun() para que a interface inteira se atualize após uma alteração.
+Copie e cole este código para substituir o seu.
 # -*- coding: utf-8 -*-
 import streamlit as st
 import gspread
@@ -527,21 +530,38 @@ def display_conteudos_com_checkboxes(df):
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
+
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
+
     for disc in disciplinas_ordenadas:
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"{row['Disciplinas']}_{row['Conteúdos']}_{row['sheet_row']}".replace(" ", "_").replace(".", "_")
                 checked = (row['Status'] == 'True')
-                novo_status = st.checkbox(label=row['Conteúdos'], value=checked, key=key)
+
+                # Define o rótulo com base no status
+                if checked:
+                    # Usamos um truque de markdown e HTML para formatar o texto
+                    label_content = f"✅ <span style='color: green; text-decoration: line-through;'>{row['Conteúdos']}</span>"
+                else:
+                    label_content = row['Conteúdos']
+
+                # Adiciona o checkbox e usa um `st.markdown` para o label formatado
+                # Não podemos usar HTML no label do st.checkbox diretamente, então usamos essa abordagem
+                col1, col2 = st.columns([0.05, 0.95])
+                with col1:
+                    novo_status = st.checkbox(label=' ', value=checked, key=key)
+                with col2:
+                    st.markdown(label_content, unsafe_allow_html=True)
+                
+                # Se o status do checkbox mudou, atualize a planilha e force um rerun
                 if novo_status != checked:
                     sucesso = update_status_in_sheet(worksheet, row['sheet_row'], "True" if novo_status else "False")
                     if sucesso:
-                        st.success(f"Status do conteúdo '{row['Conteúdos']}' atualizado com sucesso!")
-                        # The update itself triggers a rerun, so we don't need st.experimental_rerun()
-                        # We also don't need the session state flag
+                        st.cache_data.clear() # Limpa o cache para recarregar os dados
+                        st.rerun() # Força a reexecução do script
                     else:
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
 
@@ -581,11 +601,6 @@ def main():
 
     display_conteudos_com_checkboxes(df)
 
-    # Removed the problematic rerun logic here
-    # if st.session_state.get('alterou_conteudo', False):
-    #     st.session_state['alterou_conteudo'] = False
-    #     st.experimental_rerun()
-
     st.markdown("---")
 
     titulo_com_destaque("📊 Número de Questões por Disciplina", cor_lateral="#8e44ad")
@@ -605,3 +620,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
