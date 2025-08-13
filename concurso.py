@@ -222,7 +222,7 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar dados: {e}")
         return pd.DataFrame()
 
-# NOVO CÓDIGO - Função de callback para a atualização da planilha
+# FUNÇÃO DE CALLBACK ATUALIZADA - O RERUN É CHAMADO AQUI
 def update_status_in_sheet_callback(sheet_row):
     try:
         worksheet = get_worksheet()
@@ -236,15 +236,14 @@ def update_status_in_sheet_callback(sheet_row):
 
         status_col_index = header.index('Status') + 1
         
-        # O estado do checkbox é obtido diretamente de st.session_state,
-        # usando a mesma chave definida no st.checkbox
+        # Obtém o novo estado do checkbox diretamente de st.session_state
         new_status = st.session_state[f"conteudo_{sheet_row}"]
 
+        # Atualiza a célula na planilha com o novo status
         worksheet.update_cell(sheet_row, status_col_index, "True" if new_status else "False")
         
-        # Define uma flag no estado da sessão para indicar que uma atualização
-        # bem-sucedida ocorreu e o dashboard precisa ser recarregado.
-        st.session_state['data_updated'] = True
+        # Chama o rerun APÓS a atualização bem-sucedida
+        st.experimental_rerun()
         
     except APIError as e:
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
@@ -530,18 +529,12 @@ def chart_peso_ponderado_percentual(df_ed: pd.DataFrame, height=400):
 
     return (chart + text).configure_view(stroke=None)
 
-# NOVO CÓDIGO - Função que gerencia a exibição dos conteúdos
+# FUNÇÃO DE EXIBIÇÃO ATUALIZADA - O RERUN FOI REMOVIDO DAQUI
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if df.empty or worksheet is None:
         st.info("Nenhum dado disponível para exibir conteúdos.")
         return
-
-    # Se a flag de atualização está no estado, recarrega o app.
-    # Isso acontece após uma atualização bem-sucedida pelo callback.
-    if st.session_state.get('data_updated'):
-        del st.session_state['data_updated']
-        st.experimental_rerun()
         
     titulo_com_destaque("📚 Conteúdos por Disciplina", cor_lateral="#8e44ad")
     disciplinas_ordenadas = sorted(df['Disciplinas'].unique())
@@ -549,14 +542,9 @@ def display_conteudos_com_checkboxes(df):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         with st.expander(f"{disc} ({len(conteudos_disciplina)} conteúdos)"):
             for _, row in conteudos_disciplina.iterrows():
-                # A chave agora é uma string única, baseada no número da linha,
-                # que facilita a busca no st.session_state.
                 key = f"conteudo_{row['sheet_row']}"
                 checked = (row['Status'] == 'True')
 
-                # O on_change chama a função de callback, passando o número da linha.
-                # A função de callback vai usar essa linha para buscar o novo estado do checkbox
-                # diretamente de st.session_state.
                 st.checkbox(
                     label=row['Conteúdos'],
                     value=checked,
@@ -580,8 +568,7 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    # Carrega os dados. st.cache_data garante que não será recarregado a cada rerun,
-    # a menos que a planilha mude (ttl=600).
+    # Carrega os dados.
     df = load_data_with_row_indices()
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df, df_summary)
@@ -601,11 +588,7 @@ def main():
 
     st.markdown("---")
 
-    # Chama a função de exibição dos conteúdos que agora gerencia o próprio rerun
     display_conteudos_com_checkboxes(df)
-
-    # A chamada `st.experimental_rerun()` foi removida daqui, pois
-    # agora é a função `display_conteudos_com_checkboxes` que a gerencia.
 
     st.markdown("---")
 
@@ -626,4 +609,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
