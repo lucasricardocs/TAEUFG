@@ -243,8 +243,8 @@ def update_status_in_sheet_callback(sheet_row):
         # Atualiza a célula com string "True" ou "False"
         worksheet.update_cell(sheet_row, status_col_index, "True" if new_status else "False")
 
-        # Recarrega a aplicação para refletir a mudança
-        st.experimental_rerun()
+        # Corrigido: usa st.rerun() para recarregar a aplicação
+        st.rerun()
         
     except APIError as e:
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
