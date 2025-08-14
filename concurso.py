@@ -88,13 +88,28 @@ def load_data_with_row_indices():
 # --- Funções de Lógica e Cálculos ---
 
 def update_status_in_sheet(sheet, row_number, new_status):
+    """
+    Função corrigida para encontrar o índice da coluna e atualizar a célula.
+    """
     try:
-        status_col_index = gspread.utils.find_all(sheet, 'Status')[0].col
+        # Retornando ao método original e confiável para encontrar a coluna
+        header = sheet.row_values(1)
+        if 'Status' not in header:
+            st.error("❌ Coluna 'Status' não encontrada na planilha.")
+            return False
+        
+        # .index() é 0-based, colunas do gspread são 1-based, por isso +1
+        status_col_index = header.index('Status') + 1
+        
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
-    except Exception as e:
-        st.error(f"❌ Erro ao atualizar planilha: {e}")
+    except APIError as e:
+        st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
         return False
+    except Exception as e:
+        st.error(f"❌ Erro inesperado ao atualizar planilha: {e}")
+        return False
+
 
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
@@ -116,6 +131,7 @@ def calculate_progress(df):
     return df_merged, round(progresso_total, 1)
 
 def calculate_stats(df_summary):
+    # Usando o fuso horário correto para garantir que o dia seja calculado corretamente
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
@@ -153,7 +169,7 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div style="text-align: right;">
             <p style="color: #e74c3c; font-weight: bold; font-size: 1.5rem; margin: 0;">⏰ Faltam {dias_restantes} dias!</p>
-            <p style="margin:0; font-weight: 500; color: #555; font-size: 0.9rem;">{datetime.now().strftime('%d de %B, %Y')}</p>
+            <p style="margin:0; font-weight: 500; color: #555; font-size: 0.9rem;">{datetime.now().strftime('%d de %B de %Y')}</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
