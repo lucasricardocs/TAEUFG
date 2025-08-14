@@ -10,10 +10,8 @@ import warnings
 import altair as alt
 import random
 
-# Ignora avisos futuros do pandas que não são relevantes aqui
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Configura a localidade para português do Brasil para exibir as datas corretamente
 try:
     import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -49,8 +47,6 @@ def format_date_br(date_obj):
     meses_pt = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
                 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
     return date_obj.strftime(f'%d de {meses_pt[date_obj.month-1]} de %Y')
-
-# --- Funções de Conexão com Google Sheets (com cache) ---
 
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
@@ -113,6 +109,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
+
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -266,13 +263,29 @@ def render_custom_css():
         .st-emotion-cache-1r6ch9e {
             padding: 0px 1rem !important;
         }
+        .no-box-expander {
+            background-color: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .no-box-expander > div {
+            border: none !important;
+            background-color: #ffffff !important;
+        }
+        .no-box-expander > div > div > div {
+            background-color: #ffffff !important;
+            border: none !important;
+        }
+        .no-box-expander .streamlit-expanderContent {
+            border: none !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
-        <h2 style="color: #2c3e50; margin-block-start: 0; margin-block-end: 0;">{texto}</h2>
+    <div class="section-title" style="border-left: 5px solid {cor_lateral};">
+        <h2>{texto}</h2>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
@@ -315,7 +328,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     })
     df_melted['Percentual'] = df_melted.groupby('Disciplinas')['Contagem'].transform(lambda x: x / x.sum())
 
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    color_scale = alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c'])
 
     base = alt.Chart(df_melted).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=alt.Axis(title=None)),
@@ -335,7 +348,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     text = base.mark_text(
         align='center',
         baseline='middle',
-        color='black',
+        color='white',
         fontWeight='bold',
         fontSize=14
     ).encode(
@@ -359,7 +372,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
 
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
-    concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluido'].empty else 0
+    concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
@@ -373,13 +386,13 @@ def create_progress_donut(source_df, title):
 def display_donuts_grid(df_summary, progresso_geral):
     charts_data = []
     prog_geral_df = pd.DataFrame([
-        {'Status': 'Concluído', 'Valor': progresso_geral},
+        {'Status': 'Concluido', 'Valor': progresso_geral},
         {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
     ])
     charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
-            {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
+            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
@@ -395,58 +408,39 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
 
-def update_all_checkboxes():
-    worksheet = get_worksheet()
-    if not worksheet:
-        return
-    
-    df_current = load_data_with_row_indices()
-    
-    updates = []
-    for _, row in df_current.iterrows():
-        key = f"cb_{row['sheet_row']}"
-        novo_status_bool = st.session_state.get(key, bool(row['Status']))
-        novo_status_str = "TRUE" if novo_status_bool else "FALSE"
-        
-        if novo_status_str.lower() != str(bool(row['Status'])).lower():
-            updates.append({
-                'range': f'C{row["sheet_row"]}',
-                'values': [[novo_status_str]]
-            })
-
-    if updates:
-        worksheet.batch_update(updates)
-        st.toast(f"✅ {len(updates)} item(s) atualizado(s) com sucesso!", icon="✅")
+def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
+    novo_status = st.session_state[key]
+    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+        st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
         st.rerun()
     else:
-        st.toast("Nenhuma alteração para salvar.", icon="ℹ️")
-
+        st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
+        st.session_state[key] = not novo_status
 
 def display_conteudos_com_checkboxes(df):
-    if not get_worksheet():
+    worksheet = get_worksheet()
+    if not worksheet:
         return
-    
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
-    with st.form(key="checklist_form"):
-        for disc in sorted(df['Disciplinas'].unique()):
-            conteudos_disciplina = df[df['Disciplinas'] == disc]
-            resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
-            concluidos = resumo_disc['sum'].iloc[0]
-            total = resumo_disc['count'].iloc[0]
+    for disc in sorted(df['Disciplinas'].unique()):
+        conteudos_disciplina = df[df['Disciplinas'] == disc]
+        resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
+        concluidos = resumo_disc['sum'].iloc[0]
+        total = resumo_disc['count'].iloc[0]
 
-            with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
-                for _, row in conteudos_disciplina.iterrows():
-                    key = f"cb_{row['sheet_row']}"
-                    st.checkbox(
-                        label=row['Conteúdos'],
-                        value=bool(row['Status']),
-                        key=key
-                    )
-        
-        st.form_submit_button(label="Salvar Alterações", on_click=update_all_checkboxes)
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
+            for _, row in conteudos_disciplina.iterrows():
+                key = f"cb_{row['sheet_row']}"
+                st.checkbox(
+                    label=row['Conteúdos'],
+                    value=bool(row['Status']),
+                    key=key,
+                    on_change=handle_checkbox_change,
+                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos']}
+                )
 
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
