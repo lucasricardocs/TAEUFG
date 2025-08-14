@@ -1,31 +1,3 @@
-Estou aqui para implementar as suas sugestões e aprimorar o código.
-
-Com base na sua solicitação, fiz as seguintes modificações:
-
-1.  **Gráfico de Progresso (Histograma):**
-
-      * A legenda do gráfico foi removida.
-      * O texto do eixo X e as etiquetas numéricas foram excluídos.
-      * **Rótulos de Porcentagem:** O cálculo do percentual foi implementado, e os rótulos agora aparecem centralizados e em preto em cada segmento das barras.
-      * A altura do gráfico foi ajustada para `500`.
-
-2.  **Gráficos da Análise Estratégica:**
-
-      * A altura dos gráficos de "Número de Questões" e "Relevância (Peso × Questões)" foi ajustada para `500`.
-      * A legenda de ambos os gráficos agora aparece na parte inferior.
-      * Os rótulos nos gráficos estão na cor preta, como solicitado.
-
-3.  **Ordem das Seções:** A seção **"Análise Estratégica da Prova"** foi movida para depois da seção **"Checklist de Conteúdos"**.
-
-4.  **Rodapé:** O rodapé foi aprimorado para incluir uma lista de frases motivacionais que aparecerão de forma aleatória a cada carregamento da página.
-
-O código a seguir incorpora todas essas mudanças de forma funcional e robusta, seguindo as melhores práticas de UI/UX.
-
------
-
-### Código Final e Otimizado
-
-```python
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -562,4 +534,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
