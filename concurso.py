@@ -13,14 +13,7 @@ import random
 # Ignora avisos futuros do pandas que não são relevantes aqui
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Configura a localidade para português do Brasil para exibir as datas corretamente
-try:
-    import locale
-    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except:
-    pass
-
-# --- Constantes de Configuração ---
+# --- Constantes de Configuração e Estilos ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -46,12 +39,16 @@ MOTIVATIONAL_QUOTES = [
 ]
 
 def format_date_br(date_obj):
-    return date_obj.strftime('%d de %B de %Y')
+    # A formatação manual é mais robusta em ambientes sem locale
+    meses_pt = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+    return date_obj.strftime(f'%d de {meses_pt[date_obj.month-1]} de %Y')
+
+# --- Funções de Conexão com Google Sheets (com cache) ---
 
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
-              'https://www.googleapis.com/auth/spreadsheets.readonly']
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         credentials_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
@@ -63,8 +60,7 @@ def get_gspread_client():
 @st.cache_resource(show_spinner=False)
 def get_worksheet():
     client = get_gspread_client()
-    if not client:
-        return None
+    if not client: return None
     try:
         spreadsheet = client.open_by_key(SPREADSHEET_ID)
         return spreadsheet.worksheet(WORKSHEET_NAME)
@@ -77,24 +73,23 @@ def get_worksheet():
 @st.cache_data(ttl=300, show_spinner="Carregando dados dos estudos...")
 def load_data_with_row_indices():
     worksheet = get_worksheet()
-    if not worksheet:
-        return pd.DataFrame()
+    if not worksheet: return pd.DataFrame()
     try:
         data = worksheet.get_all_values()
-        if len(data) < 2:
-            return pd.DataFrame()
-
+        if len(data) < 2: return pd.DataFrame()
+        
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
-
+            
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
-        df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False})
+        df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False, 'TRUE': True, 'FALSE': False})
         df.dropna(subset=['Status'], inplace=True)
+
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
@@ -103,12 +98,16 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
 
+
+# --- Funções de Lógica e Cálculos ---
+
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
+            
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -130,8 +129,9 @@ def calculate_progress(df):
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-
+    
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
+    
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -142,7 +142,7 @@ def calculate_stats(df_summary, df_full):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-
+    
     maior_prioridade = "N/A"
     proximos_conteudos = []
     if pendentes > 0:
@@ -150,19 +150,17 @@ def calculate_stats(df_summary, df_full):
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         prioridade_disc = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
         maior_prioridade = prioridade_disc.title()
-
+        
         proximos_conteudos_df = df_full[(df_full['Disciplinas'] == prioridade_disc) & (df_full['Status'] == False)].head(3)
         proximos_conteudos = proximos_conteudos_df['Conteúdos'].tolist()
-
+        
     return {
-        'dias_restantes': dias_restantes,
-        'concluidos': int(concluidos),
-        'pendentes': int(pendentes),
-        'topicos_por_dia': topicos_por_dia,
-        'maior_prioridade': maior_prioridade,
-        'proximos_conteudos': proximos_conteudos
+        'dias_restantes': dias_restantes, 'concluidos': int(concluidos),
+        'pendentes': int(pendentes), 'topicos_por_dia': topicos_por_dia,
+        'maior_prioridade': maior_prioridade, 'proximos_conteudos': proximos_conteudos
     }
 
+# --- Funções de Interface e Visualização ---
 def render_custom_css():
     st.markdown("""
     <style>
@@ -264,7 +262,7 @@ def render_custom_css():
         }
     </style>
     """, unsafe_allow_html=True)
-
+    
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
@@ -285,7 +283,7 @@ def render_topbar_with_logo(dias_restantes):
             <div class="countdown-box">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
-            <p class="date-text">{datetime.now().strftime('%d de %B de %Y')}</p>
+            <p class="date-text">{format_date_br(datetime.now())}</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -408,13 +406,25 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
+    if 'expanded_expander' not in st.session_state:
+        st.session_state.expanded_expander = None
+
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-        
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
+
+        is_expanded = st.session_state.expanded_expander == disc
+
+        expander_return = st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded)
+        if expander_return:
+             st.session_state.expanded_expander = disc
+        else:
+             if st.session_state.expanded_expander == disc:
+                 st.session_state.expanded_expander = None
+
+        with expander_return:
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -487,24 +497,29 @@ def main():
 
     display_containers_metricas(stats, progresso_geral)
 
-    titulo_com_destaque("📊 Compleção por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_percentual_conclusao_por_disciplina(df_summary), use_container_width=True)
+    tab1, tab2, tab3 = st.tabs(["📊 Dashboard Geral", "📈 Análise e Progresso", "✅ Checklist de Conteúdos"])
 
-    titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
-    display_donuts_grid(df_summary, progresso_geral)
+    with tab1:
+        titulo_com_destaque("📊 Evolução por Disciplina", cor_lateral="#3498db")
+        st.altair_chart(create_percentual_conclusao_por_disciplina(df_summary), use_container_width=True)
 
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
-    display_conteudos_com_checkboxes(df)
+        titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
+        display_donuts_grid(df_summary, progresso_geral)
 
-    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-    colA, colB = st.columns(2, gap="large")
-    with colA:
-        st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
-    with colB:
-        st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
+    with tab2:
+        titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
+        colA, colB = st.columns(2, gap="large")
+        with colA:
+            st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
+        with colB:
+            st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
+        
+        titulo_com_destaque("💡 Sugestão de Estudo para Hoje", cor_lateral="#2ecc71")
+        display_study_suggestion(stats)
 
-    titulo_com_destaque("💡 Sugestão de Estudo para Hoje", cor_lateral="#2ecc71")
-    display_study_suggestion(stats)
+    with tab3:
+        titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
+        display_conteudos_com_checkboxes(df)
 
     rodape_motivacional()
 
