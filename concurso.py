@@ -226,17 +226,25 @@ def render_custom_css():
         .section-title {
             display: flex;
             align-items: center;
-            background-color: #F8F9FE;
-            border: 1px solid #d1d9e6;
-            border-radius: 16px;
-            padding: 0.75rem 2rem;
-            margin: 2.5rem 0 1.5rem 0;
-            box-shadow: 0 4px 12px rgba(90, 97, 125, 0.05);
+            background-color: #F0F2F6;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            border-left: 5px solid #8e44ad;
+            margin: 2rem 0 1.5rem 0;
         }
         .section-title h2 {
             margin: 0;
-            color: #1e2a38;
+            color: #2c3e50;
             font-size: 1.5rem;
+        }
+        .section-title.azul {
+            border-left-color: #3498db;
+        }
+        .section-title.laranja {
+            border-left-color: #e67e22;
+        }
+        .section-title.roxo {
+            border-left-color: #8e44ad;
         }
         .study-suggestion-box {
             background-color: #e8f5e9;
@@ -259,10 +267,13 @@ def render_custom_css():
     </style>
     """, unsafe_allow_html=True)
     
-def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
+def titulo_com_destaque(texto, cor_lateral="roxo"):
+    cor_class = ""
+    if cor_lateral == "#3498db": cor_class = "azul"
+    elif cor_lateral == "#e67e22": cor_class = "laranja"
     st.markdown(f"""
-    <div class="section-title">
-        <h2 style="border-left: 5px solid {cor_lateral}; padding-left: 1rem;">{texto}</h2>
+    <div class="section-title {cor_class}">
+        <h2>{texto}</h2>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
@@ -315,27 +326,36 @@ def create_altair_stacked_bar(df_summary):
     )
     df_melted['Status'] = df_melted['Status'].map({'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
 
-    bars = alt.Chart(df_melted).mark_bar(stroke='#e0e0e0', strokeWidth=1).encode(
+    bars = alt.Chart(df_melted).mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None),
         x=alt.X('sum(Contagem):Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual')),
         color=alt.Color('Status:N', 
                          scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
-                         legend=alt.Legend(title="Legenda", orient="bottom")),
+                         legend=None),
         tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('sum(Contagem):Q', title='Nº de Conteúdos')]
     )
 
-    text = alt.Chart(df_melted).mark_text(align='center', baseline='middle', color='white', fontWeight='bold').encode(
+    text_concluido = alt.Chart(df_melted[df_melted['Status'] == 'Concluído']).mark_text(
+        align='center', baseline='middle', dx=-20, color='white', fontWeight='bold'
+    ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('sum(Contagem):Q', stack='normalize'),
-        text=alt.Text('sum(Contagem):Q', format='.0%'),
-        detail='Status:N'
-    ).transform_filter(
-        alt.datum.Contagem > 0 # Oculta rótulos de barras vazias
+        text=alt.Text('sum(Contagem):Q', format='.0%')
+    )
+
+    text_pendente = alt.Chart(df_melted[df_melted['Status'] == 'Pendente']).mark_text(
+        align='center', baseline='middle', dx=20, color='white', fontWeight='bold'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None),
+        x=alt.X('sum(Contagem):Q', stack='normalize'),
+        text=alt.Text('sum(Contagem):Q', format='.0%')
     )
     
-    return (bars + text).properties(
+    return (bars + text_concluido + text_pendente).properties(
         height=600, 
         title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
+    ).configure_view(
+        strokeWidth=0
     )
 
 def create_progress_donut(source_df, title):
@@ -343,7 +363,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#e0e0e0', strokeWidth=1).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
@@ -408,21 +428,21 @@ def display_conteudos_com_checkboxes(df):
 
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
-    chart = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, stroke='#e0e0e0', strokeWidth=1).encode(
+    chart = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, stroke='#d3d3d3', strokeWidth=1).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=None),
         y=alt.Y('Questões:Q', title=None, axis=None),
         color=alt.Color('Disciplinas:N', legend=alt.Legend(orient="bottom", title="Disciplinas")),
         tooltip=['Disciplinas', 'Questões']
     )
     text = chart.mark_text(align='center', baseline='bottom', dy=-5, color='black').encode(text='Questões:Q')
-    return (chart + text).properties(height=600, title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18))
+    return (chart + text).properties(height=400, title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18))
 
 def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum()) * 100
 
-    base = alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=5, stroke='#e0e0e0', strokeWidth=1).encode(
+    base = alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Relevancia:Q", stack=True),
         color=alt.Color("Disciplinas:N", legend=alt.Legend(
             orient="bottom",
@@ -433,18 +453,18 @@ def create_relevancia_pie_chart(ed_data):
         tooltip=['Disciplinas', 'Peso', 'Questões', alt.Tooltip('Percentual:Q', title='Relevância (%)', format='.2f')]
     )
     
-    text = base.mark_text(radius=105, size=12, color="black", fontWeight='bold').encode(
+    text = base.mark_text(radius=87, size=12, color="black", fontWeight='bold').encode(
         text=alt.Text('Percentual:Q', format='.1f'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
-    
-    text_symbol = base.mark_text(radius=115, size=12, color="black", fontWeight='bold').encode(
+
+    text_symbol = base.mark_text(radius=100, size=12, color="black", fontWeight='bold').encode(
         text=alt.value('%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
 
     return (base + text + text_symbol).properties(
-        height=600, 
+        height=400, 
         title=alt.TitleParams("Relevância (Peso × Questões)", anchor='middle', fontSize=18)
     )
 
@@ -472,8 +492,6 @@ def main():
 
     # Conteúdo da Página Única
     display_containers_metricas(stats, progresso_geral)
-    
-    display_study_suggestion(stats)
 
     titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -497,6 +515,11 @@ def main():
         st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
     with colB:
         st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    titulo_com_destaque("💡 Sugestão de Estudo para Hoje", cor_lateral="#2ecc71")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    display_study_suggestion(stats)
     st.markdown('</div>', unsafe_allow_html=True)
     
     rodape_motivacional()
