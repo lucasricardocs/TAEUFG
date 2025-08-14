@@ -18,7 +18,7 @@ try:
 except:
     pass
 
-# --- Configurações ---
+# --- Constantes de Configuração ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -167,9 +167,11 @@ def render_custom_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
         html, body, [class*="st-"] {
             font-family: 'Roboto', sans-serif;
         }
+        
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -294,17 +296,7 @@ def display_containers_metricas(stats, progresso_geral):
     cols[1].metric("✅ Concluídos", f"{stats['concluidos']}")
     cols[2].metric("⏳ Pendentes", f"{stats['pendentes']}")
     cols[3].metric("🏃 Ritmo Necessário", f"{stats['topicos_por_dia']} tópicos/dia")
-    cols[4].metric("⭐ Foco Principal", stats['maior_prioridade'])
-
-def display_study_suggestion(stats):
-    st.subheader('💡 Sugestão de Estudo para Hoje')
-    if stats['proximos_conteudos']:
-        st.markdown(f"**Disciplina:** **{stats['maior_prioridade']}**")
-        st.markdown("**Próximos Conteúdos Pendentes:**")
-        for item in stats['proximos_conteudos']:
-            st.markdown(f"- {item}")
-    else:
-        st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
+    cols[4].metric("⭐ Foco Principal", stats['maior_prioridade'].title())
 
 def create_percentual_conclusao_por_disciplina(df_summary):
     df_melted = df_summary.melt(
@@ -323,8 +315,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
 
     base = alt.Chart(df_melted).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=alt.Axis(title=None)),
-        color=alt.Color('Status:N', scale=color_scale,
-                        legend=alt.Legend(title=None, orient='top', direction='horizontal', labelFontSize=12)),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N', title='Disciplina'),
             alt.Tooltip('Status:N', title='Status'),
@@ -334,7 +325,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     )
 
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2).encode(
-        x=alt.X('Percentual:Q', stack='normalize', axis=alt.Axis(format='%'))
+        x=alt.X('Percentual:Q', stack='normalize', axis=alt.Axis(format='%', title=None, labels=False))
     )
 
     text = base.mark_text(
@@ -351,8 +342,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     )
 
     chart = (bars + text).properties(
-        height=alt.Step(40),
-        width=700,
+        height=500,
         title=alt.TitleParams(text='Evolução por Disciplina', anchor='middle', fontSize=18)
     ).configure_axis(
         grid=False,
@@ -367,6 +357,7 @@ def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
+    
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), legend=None),
@@ -388,6 +379,7 @@ def display_donuts_grid(df_summary, progresso_geral):
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
+
     for i in range(0, len(charts_data), 3):
         cols = st.columns(3)
         for j in range(3):
@@ -404,6 +396,7 @@ def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
+        st.experimental_rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
@@ -424,12 +417,11 @@ def display_conteudos_com_checkboxes(df):
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
 
-        expanded = st.session_state.expanded_disciplines.get(disc, False)
-        emoji = "🔽" if expanded else "▶️"
-        expander_title = f"{emoji} **{disc.title()}** ({concluidos} / {total} concluídos)"
+        expander_key = f"exp_{disc}"
+        
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=st.session_state.expanded_disciplines.get(disc, False), key=expander_key):
+            st.session_state.expanded_disciplines[disc] = st.session_state[expander_key]
 
-        with st.expander(expander_title, expanded=expanded):
-            st.session_state.expanded_disciplines[disc] = True
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
