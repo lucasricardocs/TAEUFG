@@ -321,9 +321,9 @@ def create_altair_stacked_bar(df_summary):
     )
 
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
-        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual', grid=False)) # Grid removida aqui
+        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual', grid=False))
     )
-
+    
     text = base.mark_text(
         align='center',
         baseline='middle',
@@ -411,12 +411,12 @@ def display_conteudos_com_checkboxes(df):
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-
+        
         is_expanded = st.session_state['last_expanded_disc'] == disc
         
         with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
-            if st.expander.is_expanded:
-                st.session_state['last_expanded_disc'] = disc
+            # A nova lógica para manter o estado do expander é mais robusta
+            st.session_state['last_expanded_disc'] = disc
 
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
@@ -457,7 +457,6 @@ def create_relevancia_pie_chart(ed_data):
     
     pie = base.mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1)
     
-    # Rótulo único com o valor e o símbolo de porcentagem juntos
     text = base.mark_text(radius=85, size=12, color="white", fontWeight='bold').encode(
         text=alt.Text('Percentual:Q', format='.1f%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
