@@ -30,7 +30,12 @@ MOTIVATIONAL_QUOTES = [
     "🎯 O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
     "💡 Acredite em si mesmo, e você já está no meio do caminho.",
     "🏃 A persistência é o caminho do êxito.",
-    "🌟 O futuro pertence àqueles que acreditam na beleza de seus sonhos."
+    "🌟 O futuro pertence àqueles que acreditam na beleza de seus sonhos.",
+    "🏆 A dedicação de hoje é a vitória de amanhã.",
+    "🌱 Pequenos passos, grandes conquistas.",
+    "🔥 Nunca pare de lutar pelo que você quer na vida.",
+    "🧠 Estude com disciplina e vença com facilidade.",
+    "✨ Não espere pela sorte, crie-a com seu esforço."
 ]
 
 def format_date_br(date_obj):
@@ -101,12 +106,6 @@ def update_status_in_sheet(sheet, row_number, new_status):
             
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
-        
-        # Opcional: Adicionar a data de conclusão (para o futuro ciclo de revisão)
-        # if new_status.upper() == "TRUE" and 'DataConclusao' in header:
-        #     date_col_index = header.index('DataConclusao') + 1
-        #     sheet.update_cell(row_number, date_col_index, datetime.now().strftime('%Y-%m-%d'))
-        
         return True
     except APIError as e:
         st.error(f"❌ Erro na API do Google Sheets durante a atualização: {e}")
@@ -161,6 +160,12 @@ def calculate_stats(df_summary, df_full):
 def render_custom_css():
     st.markdown("""
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        
+        html, body, [class*="st-"] {
+            font-family: 'Roboto', sans-serif;
+        }
+        
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -218,42 +223,46 @@ def render_custom_css():
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border: 1px solid #e0e0e0;
         }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 24px;
+        .section-title {
+            display: flex;
+            align-items: center;
+            background-color: #F8F9FE;
+            border: 1px solid #d1d9e6;
+            border-radius: 16px;
+            padding: 0.75rem 2rem;
+            margin: 2.5rem 0 1.5rem 0;
+            box-shadow: 0 4px 12px rgba(90, 97, 125, 0.05);
         }
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: nowrap;
-            border-radius: 10px 10px 0 0;
-            background-color: #f0f2f6;
-            border: 1px solid #e0e0e0;
-            border-bottom: none;
-            padding: 0 20px;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #ffffff;
-            border-bottom: 3px solid #8e44ad;
-            box-shadow: none;
-            font-weight: bold;
-        }
-        .st-emotion-cache-1r6ch9e {
-            padding: 0px 1rem !important;
+        .section-title h2 {
+            margin: 0;
+            color: #1e2a38;
+            font-size: 1.5rem;
         }
         .study-suggestion-box {
-            background-color: #e8f5e9; /* Light green for a positive feel */
-            border-left: 5px solid #2ecc71; /* Success green */
+            background-color: #e8f5e9;
+            border-left: 5px solid #2ecc71;
             padding: 1rem;
             border-radius: 8px;
             margin-top: 1.5rem;
             margin-bottom: 2rem;
+        }
+        .stButton>button {
+            border-radius: 8px;
+            border: 1px solid #d1d9e6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
+        }
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
     """, unsafe_allow_html=True)
     
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
-        <h2 style="color: #2c3e50; margin-block-start: 0; margin-block-end: 0;">{texto}</h2>
+    <div class="section-title">
+        <h2 style="border-left: 5px solid {cor_lateral}; padding-left: 1rem;">{texto}</h2>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
@@ -275,14 +284,15 @@ def render_topbar_with_logo(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-
 def display_containers_metricas(stats, progresso_geral):
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     cols = st.columns(5)
     cols[0].metric("🎯 Progresso Ponderado", f"{progresso_geral:.1f}%")
     cols[1].metric("✅ Concluídos", f"{stats['concluidos']}")
     cols[2].metric("⏳ Pendentes", f"{stats['pendentes']}")
     cols[3].metric("🏃 Ritmo Necessário", f"{stats['topicos_por_dia']} tópicos/dia")
     cols[4].metric("⭐ Foco Principal", stats['maior_prioridade'])
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def display_study_suggestion(stats):
     st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -319,10 +329,12 @@ def create_altair_stacked_bar(df_summary):
         x=alt.X('sum(Contagem):Q', stack='normalize'),
         text=alt.Text('sum(Contagem):Q', format='.0%'),
         detail='Status:N'
+    ).transform_filter(
+        alt.datum.Contagem > 0 # Oculta rótulos de barras vazias
     )
-
+    
     return (bars + text).properties(
-        height=350, 
+        height=600, 
         title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
     )
 
@@ -349,7 +361,7 @@ def display_donuts_grid(df_summary, progresso_geral):
 
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
-            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
+            {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
@@ -397,13 +409,13 @@ def display_conteudos_com_checkboxes(df):
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
     chart = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, stroke='#e0e0e0', strokeWidth=1).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labels=False, ticks=False)),
-        y=alt.Y('Questões:Q', title='Número de Questões'),
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=None),
+        y=alt.Y('Questões:Q', title=None, axis=None),
         color=alt.Color('Disciplinas:N', legend=alt.Legend(orient="bottom", title="Disciplinas")),
         tooltip=['Disciplinas', 'Questões']
     )
     text = chart.mark_text(align='center', baseline='bottom', dy=-5, color='black').encode(text='Questões:Q')
-    return (chart + text).properties(height=400, title=alt.TitleParams("Distribuição de Questões", anchor='middle', fontSize=18))
+    return (chart + text).properties(height=600, title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18))
 
 def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
@@ -421,18 +433,18 @@ def create_relevancia_pie_chart(ed_data):
         tooltip=['Disciplinas', 'Peso', 'Questões', alt.Tooltip('Percentual:Q', title='Relevância (%)', format='.2f')]
     )
     
-    text = base.mark_text(radius=105, size=14, color="black", fontWeight='bold').encode(
+    text = base.mark_text(radius=105, size=12, color="black", fontWeight='bold').encode(
         text=alt.Text('Percentual:Q', format='.1f'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
-
-    text_symbol = base.mark_text(radius=122, size=12, color="black", fontWeight='bold').encode(
+    
+    text_symbol = base.mark_text(radius=115, size=12, color="black", fontWeight='bold').encode(
         text=alt.value('%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
 
     return (base + text + text_symbol).properties(
-        height=400, 
+        height=600, 
         title=alt.TitleParams("Relevância (Peso × Questões)", anchor='middle', fontSize=18)
     )
 
@@ -458,40 +470,34 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary, df)
 
-    tab1, tab2, tab3 = st.tabs(["📊 Dashboard Geral", "✅ Checklist de Estudos", "📝 Análise da Prova"])
+    # Conteúdo da Página Única
+    display_containers_metricas(stats, progresso_geral)
+    
+    display_study_suggestion(stats)
 
-    with tab1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        display_containers_metricas(stats, progresso_geral)
-        st.markdown('</div>', unsafe_allow_html=True)
+    titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
+    display_donuts_grid(df_summary, progresso_geral)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        display_study_suggestion(stats)
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    display_conteudos_com_checkboxes(df)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-        st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
-        display_donuts_grid(df_summary, progresso_geral)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with tab2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
-        display_conteudos_com_checkboxes(df)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with tab3:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-        colA, colB = st.columns(2, gap="large")
-        with colA:
-            st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
-        with colB:
-            st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    colA, colB = st.columns(2, gap="large")
+    with colA:
+        st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
+    with colB:
+        st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     rodape_motivacional()
 
