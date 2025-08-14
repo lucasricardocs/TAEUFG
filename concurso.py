@@ -302,6 +302,7 @@ def display_study_suggestion(stats):
     else:
         st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
 
+# --- Função de gráfico de barras empilhadas revisada ---
 def create_altair_stacked_bar(df_summary):
     df_melted = df_summary.melt(
         id_vars=['Disciplinas'], 
@@ -320,7 +321,7 @@ def create_altair_stacked_bar(df_summary):
     )
 
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
-        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual'))
+        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual', grid=False)) # Grid removida aqui
     )
 
     text = base.mark_text(
@@ -383,27 +384,27 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
 
-# --- Corrigido o erro de key e o comportamento do expander ---
-def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
+def handle_checkbox_change_and_rerun(worksheet, row_number, key, conteudo_nome, expanded_disc_key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
-        # Usamos o `expanded_disc` para manter o estado do expander
-        st.session_state['expanded_disc_key'] = st.session_state.get('expanded_disc_key')
+        st.session_state['last_expanded_disc'] = expanded_disc_key
+        st.cache_data.clear()
+        st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
 
-
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
-    if not worksheet: return
+    if not worksheet:
+        return
 
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
-    if 'expanded_disc_key' not in st.session_state:
-        st.session_state['expanded_disc_key'] = None
+    if 'last_expanded_disc' not in st.session_state:
+        st.session_state['last_expanded_disc'] = None
 
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
@@ -411,51 +412,20 @@ def display_conteudos_com_checkboxes(df):
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
 
-        is_expanded = st.session_state['expanded_disc_key'] == disc
-
+        is_expanded = st.session_state['last_expanded_disc'] == disc
+        
         with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
-            if 'expander_toggle' not in st.session_state:
-                st.session_state['expander_toggle'] = {}
-            st.session_state['expander_toggle'][disc] = st.expander.is_expanded
+            if st.expander.is_expanded:
+                st.session_state['last_expanded_disc'] = disc
 
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
-                    label=row['Conteúdos'], value=bool(row['Status']), key=key,
-                    on_change=handle_checkbox_change,
-                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos']}
-                )
-
-# Corrigido o problema com os expanders fechando após o checkbox
-def update_expander_state(disc_name):
-    st.session_state['expanded_disc_key'] = disc_name
-
-
-def display_conteudos_com_checkboxes_v2(df):
-    worksheet = get_worksheet()
-    if not worksheet: return
-
-    resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
-    resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
-
-    if 'expanded_expander' not in st.session_state:
-        st.session_state.expanded_expander = None
-
-    for disc in sorted(df['Disciplinas'].unique()):
-        conteudos_disciplina = df[df['Disciplinas'] == disc]
-        resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
-        concluidos = resumo_disc['sum'].iloc[0]
-        total = resumo_disc['count'].iloc[0]
-
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=(st.session_state.expanded_expander == disc)):
-            st.session_state.expanded_expander = disc
-            
-            for _, row in conteudos_disciplina.iterrows():
-                key = f"cb_{row['sheet_row']}"
-                st.checkbox(
-                    label=row['Conteúdos'], value=bool(row['Status']), key=key,
-                    on_change=handle_checkbox_change,
-                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos']}
+                    label=row['Conteúdos'],
+                    value=bool(row['Status']),
+                    key=key,
+                    on_change=handle_checkbox_change_and_rerun,
+                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos'], 'expanded_disc_key': disc}
                 )
 
 def create_questoes_bar_chart(ed_data):
@@ -469,7 +439,6 @@ def create_questoes_bar_chart(ed_data):
     text = chart.mark_text(align='center', baseline='bottom', dy=-5, color='black').encode(text='Questões:Q')
     return (chart + text).properties(height=400, title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18))
 
-# --- Corrigido para centralizar os rótulos internos na pizza ---
 def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
@@ -488,17 +457,13 @@ def create_relevancia_pie_chart(ed_data):
     
     pie = base.mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1)
     
-    text = base.mark_text(radius=100, size=12, color="white", fontWeight='bold').encode(
-        text=alt.Text('Percentual:Q', format='.1f'),
+    # Rótulo único com o valor e o símbolo de porcentagem juntos
+    text = base.mark_text(radius=85, size=12, color="white", fontWeight='bold').encode(
+        text=alt.Text('Percentual:Q', format='.1f%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
 
-    text_symbol = base.mark_text(radius=110, size=12, color="white", fontWeight='bold').encode(
-        text=alt.value('%'),
-        theta=alt.Theta("Relevancia:Q", stack=True)
-    )
-
-    return (pie + text + text_symbol).properties(
+    return (pie + text).properties(
         height=400, 
         title=alt.TitleParams("Relevância (Peso × Questões)", anchor='middle', fontSize=18)
     )
@@ -535,7 +500,7 @@ def main():
     display_donuts_grid(df_summary, progresso_geral)
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
-    display_conteudos_com_checkboxes_v2(df)
+    display_conteudos_com_checkboxes(df)
 
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns(2, gap="large")
