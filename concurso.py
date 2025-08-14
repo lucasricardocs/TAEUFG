@@ -74,13 +74,13 @@ def load_data_with_row_indices():
     try:
         data = worksheet.get_all_values()
         if len(data) < 2: return pd.DataFrame()
-        
+
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
-            
+
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
@@ -95,6 +95,7 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
 
+
 # --- Funções de Lógica e Cálculos ---
 
 def update_status_in_sheet(sheet, row_number, new_status):
@@ -103,7 +104,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-            
+
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -125,9 +126,9 @@ def calculate_progress(df):
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    
+
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
-    
+
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -138,7 +139,7 @@ def calculate_stats(df_summary, df_full):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-    
+
     maior_prioridade = "N/A"
     proximos_conteudos = []
     if pendentes > 0:
@@ -146,10 +147,10 @@ def calculate_stats(df_summary, df_full):
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         prioridade_disc = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
         maior_prioridade = prioridade_disc.title()
-        
+
         proximos_conteudos_df = df_full[(df_full['Disciplinas'] == prioridade_disc) & (df_full['Status'] == False)].head(3)
         proximos_conteudos = proximos_conteudos_df['Conteúdos'].tolist()
-        
+
     return {
         'dias_restantes': dias_restantes, 'concluidos': int(concluidos),
         'pendentes': int(pendentes), 'topicos_por_dia': topicos_por_dia,
@@ -161,11 +162,11 @@ def render_custom_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        
+
         html, body, [class*="st-"] {
             font-family: 'Roboto', sans-serif;
         }
-        
+
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -258,7 +259,7 @@ def render_custom_css():
         }
     </style>
     """, unsafe_allow_html=True)
-    
+
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
@@ -383,14 +384,12 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
 
-# --- Refatorando a função de display para evitar a palavra "key" e o fechamento do expansor ---
 def handle_checkbox_change_callback(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
-        # Força a atualização do cache para refletir a mudança
         st.cache_data.clear()
-        # Não precisa de st.rerun(), a alteração do estado já dispara a recarga
+        st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
@@ -403,25 +402,25 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
     
-    # Inicializa um dicionário no session_state para manter o estado de todos os expanders
+    # Dicionário para manter o estado de aberto/fechado de cada expander
     if 'expander_state' not in st.session_state:
-        st.session_state.expander_state = {disc: False for disc in df['Disciplinas'].unique()}
-        
+        st.session_state['expander_state'] = {disc: False for disc in df['Disciplinas'].unique()}
+    
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
         
-        # A chave do expander deve ser única e estática
+        # A chave do expander deve ser uma string simples e única
         expander_key = f"exp_{disc}"
         
-        # A variável de estado para o expander é lida e escrita diretamente
-        is_expanded = st.session_state.expander_state.get(disc, False)
-        
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded, key=expander_key):
-            # A interação do usuário com o expander atualiza seu estado
-            st.session_state.expander_state[disc] = st.session_state[expander_key]
+        # Cria o expander e usa o estado salvo na sessão para definir 'expanded'
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=st.session_state['expander_state'].get(disc, False)):
+            
+            # Se o expander foi aberto, atualiza o estado na sessão
+            if not st.session_state['expander_state'].get(disc):
+                st.session_state['expander_state'][disc] = True
 
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
