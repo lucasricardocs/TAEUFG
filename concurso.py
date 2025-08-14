@@ -332,7 +332,7 @@ def create_altair_stacked_bar(df_summary):
         x=alt.X('Contagem:Q', stack='normalize'),
         text=alt.Text('Contagem:Q', format='.0%')
     ).transform_filter(
-        alt.datum.Contagem > 0 # Oculta rótulos de barras vazias
+        alt.datum.Contagem > 0
     )
     
     return (bars + text).properties(
@@ -380,15 +380,21 @@ def display_donuts_grid(df_summary, progresso_geral):
                     chart_info = charts_data[i+j]
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
+            else:
+                cols[j].empty()
+
 
 def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
-        st.cache_data.clear() # Limpa o cache para recarregar os dados
+        # st.cache_data.clear()
+        # Não precisa recarregar tudo, apenas o dado alterado
+        st.session_state[f"expander_{st.session_state['expanded_disc']}"] = True
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
+
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
@@ -397,13 +403,20 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
+    if 'expanded_disc' not in st.session_state:
+        st.session_state['expanded_disc'] = None
+
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
         
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
+        expander_key = f"expander_{disc}"
+        if expander_key not in st.session_state:
+            st.session_state[expander_key] = False
+
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=st.session_state[expander_key]):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -428,7 +441,7 @@ def create_relevancia_pie_chart(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum()) * 100
 
-    base = alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
+    base = alt.Chart(df).encode(
         theta=alt.Theta("Relevancia:Q", stack=True),
         color=alt.Color("Disciplinas:N", legend=alt.Legend(
             orient="bottom",
@@ -436,20 +449,22 @@ def create_relevancia_pie_chart(ed_data):
             titleFontSize=14, 
             labelFontSize=12
         )),
-        tooltip=['Disciplinas', 'Peso', 'Questões', alt.Tooltip('Percentual:Q', title='Relevância (%)', format='.2f')]
+        order=alt.Order("Relevancia:Q", sort="descending")
     )
     
-    text = base.mark_text(radius=87, size=12, color="black", fontWeight='bold').encode(
+    pie = base.mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1)
+    
+    text = base.mark_text(radius=80, size=12, color="white", fontWeight='bold').encode(
         text=alt.Text('Percentual:Q', format='.1f'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
 
-    text_symbol = base.mark_text(radius=100, size=12, color="black", fontWeight='bold').encode(
+    text_symbol = base.mark_text(radius=92, size=12, color="white", fontWeight='bold').encode(
         text=alt.value('%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
 
-    return (base + text + text_symbol).properties(
+    return (pie + text + text_symbol).properties(
         height=400, 
         title=alt.TitleParams("Relevância (Peso × Questões)", anchor='middle', fontSize=18)
     )
@@ -482,7 +497,7 @@ def main():
     titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
+    titulo_com_aque("📈 Progresso Individual", cor_lateral="#3498db")
     display_donuts_grid(df_summary, progresso_geral)
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
