@@ -75,22 +75,20 @@ def load_data_with_row_indices():
         data = worksheet.get_all_values()
         if len(data) < 2: return pd.DataFrame()
 
-        # O cabeçalho está na primeira linha (índice 0)
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
 
-        df = df.iloc[:, [df.columns.get_loc(col) for col in required_cols]].copy()
-        df.columns = required_cols
+        df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False, 'TRUE': True, 'FALSE': False})
         df.dropna(subset=['Status'], inplace=True)
 
         df.reset_index(inplace=True)
-        df['sheet_row'] = df['index'] + 2 # +2 pois o índice do pandas começa em 0 e a planilha em 1, e pulamos o cabeçalho
+        df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
         return df.reset_index(drop=True)
     except Exception as e:
@@ -305,7 +303,6 @@ def display_study_suggestion(stats):
     else:
         st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
 
-# --- Função de gráfico de barras empilhadas revisada ---
 def create_altair_stacked_bar(df_summary):
     df_melted = df_summary.melt(
         id_vars=['Disciplinas'],
@@ -387,18 +384,17 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
 
-def handle_checkbox_change_and_rerun(worksheet, row_number, key, conteudo_nome, expanded_disc_key):
+# --- Refatorando as funções de callback e display para estabilidade ---
+def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
-        st.session_state['last_expanded_disc'] = expanded_disc_key
         st.cache_data.clear()
-        st.rerun()
+        st.experimental_rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
 
-# --- Refazendo a seção de checkboxes ---
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if not worksheet:
@@ -406,22 +402,25 @@ def display_conteudos_com_checkboxes(df):
 
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
-
-    if 'last_expanded_disc' not in st.session_state:
-        st.session_state['last_expanded_disc'] = None
-
+    
+    # Dicionário no session_state para manter o estado de cada expander
+    if 'expander_state' not in st.session_state:
+        st.session_state.expander_state = {disc: False for disc in df['Disciplinas'].unique()}
+    
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
+
+        # Use o valor do dicionário para definir o estado inicial
+        expanded = st.session_state.expander_state.get(disc, False)
+        expander_key = f"exp_{disc}" # Chave única para o expander
         
-        # A nova lógica usa o retorno do expander para gerenciar o estado
-        is_expanded = st.session_state['last_expanded_disc'] == disc
-        
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
-            # Se o expander for aberto, salva sua chave no estado da sessão
-            st.session_state['last_expanded_disc'] = disc
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=expanded):
+            # Quando o expander for interagido, atualize o estado no session_state
+            if st.session_state.get(expander_key) is not None:
+                st.session_state.expander_state[disc] = st.session_state[expander_key]
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
@@ -429,8 +428,8 @@ def display_conteudos_com_checkboxes(df):
                     label=row['Conteúdos'],
                     value=bool(row['Status']),
                     key=key,
-                    on_change=handle_checkbox_change_and_rerun,
-                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos'], 'expanded_disc_key': disc}
+                    on_change=handle_checkbox_change,
+                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos']}
                 )
 
 def create_questoes_bar_chart(ed_data):
