@@ -494,9 +494,8 @@ def main():
     display_containers_metricas(stats, progresso_geral)
 
     titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("---")
     
     st.markdown('<div class="card">', unsafe_allow_html=True)
     titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
