@@ -311,45 +311,55 @@ def display_study_suggestion(stats):
         st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
 
 def create_altair_stacked_bar(df_summary):
+    # Criar df para o gráfico stacked horizontal
     df_melted = df_summary.melt(
         id_vars=['Disciplinas'],
         value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
         var_name='Status',
         value_name='Contagem'
     )
+    # Mapear Status para nomes legíveis
     df_melted['Status'] = df_melted['Status'].map({'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
+
+    # Calcular percentual para cada barra (normalização em Altair)
     base = alt.Chart(df_melted).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None),
+        y=alt.Y('Disciplinas:N', sort=None, axis=None),  # sem labels no eixo y
         color=alt.Color('Status:N',
-                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                         legend=None),
-        tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('Contagem:Q', title='Nº de Conteúdos')]
+                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        legend=None),
+        tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'), alt.Tooltip('Status:N', title='Status'), alt.Tooltip('Contagem:Q', title='Nº de Conteúdos')]
     )
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
-        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual', grid=False))
+        x=alt.X('Contagem:Q', stack='normalize', axis=None)  # sem labels no eixo x
     )
+
+    # Texto percentual centralizado em cada segmento
     text = base.mark_text(
         align='center',
         baseline='middle',
         color='white',
-        fontWeight='bold'
+        fontWeight='bold',
+        fontSize=12
     ).encode(
         x=alt.X('Contagem:Q', stack='normalize'),
         text=alt.Text('Contagem:Q', format='.0%')
     ).transform_filter(
         alt.datum.Contagem > 0
     )
-    return (bars + text).properties(
+
+    chart = (bars + text).properties(
         height=600,
+        width=600,
         title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
     ).configure_view(
         strokeWidth=0,
         fillOpacity=0
     )
 
+    return chart
+
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
-    # Corrigido para 'Concluído' em ambas as checagens
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
@@ -408,15 +418,22 @@ def display_conteudos_com_checkboxes(df):
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-        expander_key = f"expander_{disc}"
 
-        # Controla o estado do expander via key no st.session_state.expanded_disciplines
+        # Obtém o estado atual do expander para essa disciplina
         expanded = st.session_state.expanded_disciplines.get(disc, False)
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=expanded):
-            # Atualiza o estado no session_state dependendo do estado atual do expander
-            # Não existe método direto para saber se expander abriu ou fechou, então usamos workaround:
-            # Ao carregar os checkboxes, o expander estará aberto
+
+        # Escolhe o emoji conforme o estado
+        emoji = "🔽" if expanded else "▶️"
+
+        # Monta o título com o emoji no início
+        expander_title = f"{emoji} **{disc.title()}** ({concluidos} / {total} concluídos)"
+
+        # Cria o expander com o título e estado
+        with st.expander(expander_title, expanded=expanded):
+            # Atualiza para que seja marcado como aberto
+            # Como não há evento nativo de expand/collapse, assumimos aberto se entramos aqui
             st.session_state.expanded_disciplines[disc] = True
+
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
