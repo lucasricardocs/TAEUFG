@@ -354,7 +354,8 @@ def create_altair_stacked_bar(df_summary):
 
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
-    concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluido'].empty else 0
+    # Corrigido: Usar 'Concluído' com acento
+    concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
 
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
@@ -363,6 +364,7 @@ def create_progress_donut(source_df, title):
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold').encode(text='text:N')
+    # Corrigido: Linha truncada
     return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=16, dy=-10))
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -396,11 +398,11 @@ def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
-        
-        # Não usamos st.rerun() aqui para evitar o problema de "no-op"
-        # O aplicativo será recarregado pelo fluxo normal do Streamlit
+        # st.rerun() é necessário para forçar a atualização da UI após a mudança de estado
+        st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
+        # Reverte o estado do checkbox na sessão se a atualização falhar
         st.session_state[key] = not novo_status
 
 def display_conteudos_com_checkboxes(df):
@@ -411,7 +413,7 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
-    # Use um dicionário simples para armazenar o estado de cada expander
+    # Inicializa o estado dos expanders se não existir
     if 'expanded_disciplines' not in st.session_state:
         st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
 
@@ -423,13 +425,15 @@ def display_conteudos_com_checkboxes(df):
 
         expander_key = f"expander_{disc}"
         
-        # O st.expander agora tem um key para gerenciar seu estado
+        # Usa o estado da sessão para controlar o expander
+        # O on_change é usado para atualizar o estado da sessão quando o expander é clicado
         with st.expander(
             f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-            expanded=st.session_state.expanded_disciplines.get(disc, False)
+            expanded=st.session_state.expanded_disciplines.get(disc, False),
+            key=expander_key
         ):
-            # A chave do expander é definida aqui para gerenciar o estado
-            st.session_state.expanded_disciplines[disc] = st.expander.is_expanded
+            # Atualiza o estado do expander na sessão após a interação do usuário
+            st.session_state.expanded_disciplines[disc] = st.session_state[expander_key]
 
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
@@ -438,7 +442,8 @@ def display_conteudos_com_checkboxes(df):
                     value=bool(row['Status']),
                     key=checkbox_key,
                     on_change=handle_checkbox_change,
-                    kwargs={'worksheet': get_worksheet(), 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos']}
+                    # Passa o worksheet diretamente para a função de callback
+                    args=(worksheet, row['sheet_row'], checkbox_key, row['Conteúdos'])
                 )
 
 def create_questoes_bar_chart(ed_data):
@@ -519,6 +524,7 @@ def main():
     titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
     display_donuts_grid(df_summary, progresso_geral)
 
+    # Ordem das seções alterada conforme solicitado
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
     display_conteudos_com_checkboxes(df)
 
@@ -536,3 +542,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
