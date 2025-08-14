@@ -10,8 +10,10 @@ import warnings
 import altair as alt
 import random
 
+# Ignora avisos futuros do pandas que não são relevantes aqui
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
+# Configura a localidade para português do Brasil para exibir as datas corretamente
 try:
     import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -136,16 +138,18 @@ def calculate_progress(df):
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
-def calculate_stats(df_summary):
+def calculate_stats(df_summary, df_full):
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
+
     maior_prioridade = "N/A"
     if pendentes > 0:
         df_summary['Progresso_Percentual'] = (df_summary['Conteudos_Concluidos'] / df_summary['Total_Conteudos'].replace(0, 1)) * 100
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
+
     return {
         'dias_restantes': dias_restantes,
         'concluidos': int(concluidos),
@@ -322,7 +326,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     text = base.mark_text(
         align='center',
         baseline='middle',
-        color='white',
+        color='black',
         fontWeight='bold',
         fontSize=14
     ).encode(
@@ -404,7 +408,7 @@ def display_conteudos_com_checkboxes(df):
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-
+        
         expander_key = f"exp_{disc}"
         
         is_expanded = st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", key=expander_key)
