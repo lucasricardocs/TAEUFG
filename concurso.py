@@ -401,33 +401,18 @@ def display_conteudos_com_checkboxes(df):
 
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
-
-    # Use um dicionário simples para armazenar o estado de cada expander
-    if 'expander_state' not in st.session_state:
-        st.session_state['expander_state'] = {disc: False for disc in df['Disciplinas'].unique()}
-
+    
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-
+        
+        # A chave do expander deve ser uma string simples e única para evitar problemas
         expander_key = f"exp_{disc}"
         
-        # O expander agora usa um callback para atualizar o estado
-        def update_expander_state(current_disc, key):
-            st.session_state['expander_state'][current_disc] = st.session_state[key]
-
-        # Use o retorno do st.expander para o estado e defina a chave para o widget
-        is_expanded = st.expander(
-            f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-            expanded=st.session_state['expander_state'].get(disc, False),
-            key=expander_key,
-            on_change=update_expander_state,
-            kwargs={'current_disc': disc, 'key': expander_key}
-        )
-
-        with is_expanded:
+        # Cria o expander e usa o key para que o Streamlit gerencie o estado de expansão
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", key=expander_key):
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -441,7 +426,6 @@ def display_conteudos_com_checkboxes(df):
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
     
-    # Adiciona a codificação de cor e legenda ao `mark_bar`
     bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, stroke='#d3d3d3', strokeWidth=1).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=None),
         y=alt.Y('Questões:Q', title=None, axis=None),
@@ -449,12 +433,10 @@ def create_questoes_bar_chart(ed_data):
         tooltip=['Disciplinas', 'Questões']
     )
     
-    # Cria o rótulo de texto para cada barra
     text = bars.mark_text(align='center', baseline='bottom', dy=-5, color='black', fontWeight='bold').encode(
         text='Questões:Q'
     )
     
-    # Combina as barras e os rótulos e define o título
     return (bars + text).properties(
         height=400, 
         title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18)
