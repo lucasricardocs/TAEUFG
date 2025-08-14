@@ -407,7 +407,29 @@ def main():
         layout="wide",
         initial_sidebar_state="collapsed"
     )
-    
+
+    # --- CSS para alterar ícones do expander ---
+    st.markdown("""
+    <style>
+    /* Esconde o ícone padrão */
+    .streamlit-expanderHeader svg {
+        display: none !important;
+    }
+    /* Expander fechado: ícone "+" */
+    .streamlit-expanderHeader:before {
+        content: "+ ";
+        font-weight: bold;
+        color: black;
+    }
+    /* Expander aberto: ícone "–" */
+    .streamlit-expanderHeader[aria-expanded="true"]:before {
+        content: "– ";
+        font-weight: bold;
+        color: black;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     # CSS para fundos transparentes
     st.markdown("""
     <style>
