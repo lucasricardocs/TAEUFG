@@ -215,8 +215,8 @@ def render_custom_css():
             color: #5a677d;
             font-size: 0.9rem;
         }
-        .card {
-            background-color: #ffffff;
+        .metric-container {
+            background: #ffffff;
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
@@ -224,27 +224,16 @@ def render_custom_css():
             border: 1px solid #e0e0e0;
         }
         .section-title {
-            display: flex;
-            align-items: center;
+            border-left: 5px solid #8e44ad;
+            padding: 0.5rem 1rem;
             background-color: #F0F2F6;
             border-radius: 8px;
-            padding: 0.5rem 1rem;
-            border-left: 5px solid #8e44ad;
             margin: 2rem 0 1.5rem 0;
         }
         .section-title h2 {
-            margin: 0;
             color: #2c3e50;
-            font-size: 1.5rem;
-        }
-        .section-title.azul {
-            border-left-color: #3498db;
-        }
-        .section-title.laranja {
-            border-left-color: #e67e22;
-        }
-        .section-title.roxo {
-            border-left-color: #8e44ad;
+            margin-block-start: 0;
+            margin-block-end: 0;
         }
         .study-suggestion-box {
             background-color: #e8f5e9;
@@ -264,16 +253,16 @@ def render_custom_css():
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+        .st-emotion-cache-1r6ch9e {
+            padding: 0px 1rem !important;
+        }
     </style>
     """, unsafe_allow_html=True)
     
-def titulo_com_destaque(texto, cor_lateral="roxo"):
-    cor_class = ""
-    if cor_lateral == "#3498db": cor_class = "azul"
-    elif cor_lateral == "#e67e22": cor_class = "laranja"
+def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div class="section-title {cor_class}">
-        <h2>{texto}</h2>
+    <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
+        <h2 style="color: #2c3e50; margin-block-start: 0; margin-block-end: 0;">{texto}</h2>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
@@ -296,17 +285,14 @@ def render_topbar_with_logo(dias_restantes):
     """, unsafe_allow_html=True)
 
 def display_containers_metricas(stats, progresso_geral):
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     cols = st.columns(5)
     cols[0].metric("🎯 Progresso Ponderado", f"{progresso_geral:.1f}%")
     cols[1].metric("✅ Concluídos", f"{stats['concluidos']}")
     cols[2].metric("⏳ Pendentes", f"{stats['pendentes']}")
     cols[3].metric("🏃 Ritmo Necessário", f"{stats['topicos_por_dia']} tópicos/dia")
     cols[4].metric("⭐ Foco Principal", stats['maior_prioridade'])
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def display_study_suggestion(stats):
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader('💡 Sugestão de Estudo para Hoje')
     if stats['proximos_conteudos']:
         st.markdown(f"**Disciplina:** **{stats['maior_prioridade']}**")
@@ -315,7 +301,6 @@ def display_study_suggestion(stats):
             st.markdown(f"- {item}")
     else:
         st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def create_altair_stacked_bar(df_summary):
     df_melted = df_summary.melt(
@@ -326,37 +311,38 @@ def create_altair_stacked_bar(df_summary):
     )
     df_melted['Status'] = df_melted['Status'].map({'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
 
-    bars = alt.Chart(df_melted).mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
+    base = alt.Chart(df_melted).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None),
-        x=alt.X('sum(Contagem):Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual')),
         color=alt.Color('Status:N', 
                          scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
                          legend=None),
-        tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('sum(Contagem):Q', title='Nº de Conteúdos')]
+        tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('Contagem:Q', title='Nº de Conteúdos')]
     )
 
-    text_concluido = alt.Chart(df_melted[df_melted['Status'] == 'Concluído']).mark_text(
-        align='center', baseline='middle', dx=-20, color='white', fontWeight='bold'
-    ).encode(
-        y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('sum(Contagem):Q', stack='normalize'),
-        text=alt.Text('sum(Contagem):Q', format='.0%')
+    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
+        x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual'))
     )
 
-    text_pendente = alt.Chart(df_melted[df_melted['Status'] == 'Pendente']).mark_text(
-        align='center', baseline='middle', dx=20, color='white', fontWeight='bold'
+    text = base.mark_text(
+        align='center',
+        baseline='middle',
+        color='white',
+        fontWeight='bold'
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('sum(Contagem):Q', stack='normalize'),
-        text=alt.Text('sum(Contagem):Q', format='.0%')
+        x=alt.X('Contagem:Q', stack='normalize'),
+        text=alt.Text('Contagem:Q', format='.0%')
+    ).transform_filter(
+        alt.datum.Contagem > 0 # Oculta rótulos de barras vazias
     )
     
-    return (bars + text_concluido + text_pendente).properties(
+    return (bars + text).properties(
         height=600, 
         title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
     ).configure_view(
-        strokeWidth=0
+        strokeWidth=0,
+        fillOpacity=0
     )
+
 
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
@@ -495,31 +481,22 @@ def main():
 
     titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-    st.markdown("---")
     
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
     display_donuts_grid(df_summary, progresso_geral)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_conteudos_com_checkboxes(df)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     colA, colB = st.columns(2, gap="large")
     with colA:
         st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
     with colB:
         st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     titulo_com_destaque("💡 Sugestão de Estudo para Hoje", cor_lateral="#2ecc71")
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_study_suggestion(stats)
-    st.markdown('</div>', unsafe_allow_html=True)
     
     rodape_motivacional()
 
