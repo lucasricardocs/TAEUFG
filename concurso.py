@@ -10,26 +10,26 @@ import warnings
 import altair as alt
 import random
 
-# Ignora avisos futuros do pandas que não são relevantes aqui
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# Configura a localidade para português do Brasil para exibir as datas corretamente
 try:
     import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except:
     pass
 
-# --- Constantes de Configuração ---
+# --- Configurações ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
+
 ED_DATA = {
     'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [17, 14, 14, 11, 21],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
 }
+
 MOTIVATIONAL_QUOTES = [
     "🚀 O sucesso é a soma de pequenos esforços repetidos dia após dia.",
     "🎯 O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
@@ -46,10 +46,10 @@ MOTIVATIONAL_QUOTES = [
 def format_date_br(date_obj):
     return date_obj.strftime('%d de %B de %Y')
 
-# --- Funções de Conexão com Google Sheets (com cache) ---
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/spreadsheets.readonly']
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
+              'https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         credentials_dict = st.secrets["gcp_service_account"]
         creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
@@ -91,7 +91,7 @@ def load_data_with_row_indices():
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
-        df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False, 'TRUE': True, 'FALSE': False})
+        df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False})
         df.dropna(subset=['Status'], inplace=True)
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
@@ -101,7 +101,6 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
 
-# --- Funções de Lógica e Cálculos ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -125,7 +124,7 @@ def calculate_progress(df):
         df_edital['Conteudos_Concluidos'] = 0
         df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
         return df_edital, 0.0
-    
+
     resumo = df.groupby('Disciplinas', observed=True)['Status'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
@@ -156,24 +155,21 @@ def calculate_stats(df_summary, df_full):
         proximos_conteudos = proximos_conteudos_df['Conteúdos'].tolist()
 
     return {
-        'dias_restantes': dias_restantes, 
+        'dias_restantes': dias_restantes,
         'concluidos': int(concluidos),
-        'pendentes': int(pendentes), 
+        'pendentes': int(pendentes),
         'topicos_por_dia': topicos_por_dia,
-        'maior_prioridade': maior_prioridade, 
+        'maior_prioridade': maior_prioridade,
         'proximos_conteudos': proximos_conteudos
     }
 
-# --- Funções de Interface e Visualização ---
 def render_custom_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-
         html, body, [class*="st-"] {
             font-family: 'Roboto', sans-serif;
         }
-
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -310,52 +306,61 @@ def display_study_suggestion(stats):
     else:
         st.info("Parabéns! Parece que você concluiu todos os conteúdos do edital. Hora de focar em revisões e questões!")
 
-def create_altair_stacked_bar(df_summary):
-    # Criar df para o gráfico stacked horizontal
+def create_percentual_conclusao_por_disciplina(df_summary):
     df_melted = df_summary.melt(
         id_vars=['Disciplinas'],
         value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
         var_name='Status',
         value_name='Contagem'
     )
-    # Mapear Status para nomes legíveis
-    df_melted['Status'] = df_melted['Status'].map({'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
+    df_melted['Status'] = df_melted['Status'].map({
+        'Conteudos_Concluidos': 'Concluído',
+        'Conteudos_Pendentes': 'Pendente'
+    })
+    df_melted['Percentual'] = df_melted.groupby('Disciplinas')['Contagem'].transform(lambda x: x / x.sum())
 
-    # Calcular percentual para cada barra (normalização em Altair)
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+
     base = alt.Chart(df_melted).encode(
-        y=alt.Y('Disciplinas:N', sort=None, axis=None),  # sem labels no eixo y
-        color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                        legend=None),
-        tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'), alt.Tooltip('Status:N', title='Status'), alt.Tooltip('Contagem:Q', title='Nº de Conteúdos')]
-    )
-    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
-        x=alt.X('Contagem:Q', stack='normalize', axis=None)  # sem labels no eixo x
+        y=alt.Y('Disciplinas:N', sort=None, axis=alt.Axis(title=None)),
+        color=alt.Color('Status:N', scale=color_scale,
+                        legend=alt.Legend(title=None, orient='top', direction='horizontal', labelFontSize=12)),
+        tooltip=[
+            alt.Tooltip('Disciplinas:N', title='Disciplina'),
+            alt.Tooltip('Status:N', title='Status'),
+            alt.Tooltip('Percentual:Q', title='Percentual', format='.1%'),
+            alt.Tooltip('Contagem:Q', title='Quantidade')
+        ]
     )
 
-    # Texto percentual centralizado em cada segmento
+    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
+        x=alt.X('Percentual:Q', stack='normalize', axis=alt.Axis(format='%'))
+    )
+
     text = base.mark_text(
         align='center',
         baseline='middle',
         color='white',
         fontWeight='bold',
-        fontSize=12
+        fontSize=14
     ).encode(
-        x=alt.X('Contagem:Q', stack='normalize'),
-        text=alt.Text('Contagem:Q', format='.0%')
+        x=alt.X('Percentual:Q', stack='normalize'),
+        text=alt.Text('Percentual:Q', format='.0%')
     ).transform_filter(
         alt.datum.Contagem > 0
     )
 
     chart = (bars + text).properties(
-        height=600,
-        width=600,
-        title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
+        height=alt.Step(40),
+        width=700,
+        title=alt.TitleParams(text='Compleção por Disciplina', anchor='middle', fontSize=18)
+    ).configure_axis(
+        grid=False,
+        tickSize=0,
+        domain=False
     ).configure_view(
-        strokeWidth=0,
-        fillOpacity=0
+        strokeWidth=0
     )
-
     return chart
 
 def create_progress_donut(source_df, title):
@@ -419,21 +424,12 @@ def display_conteudos_com_checkboxes(df):
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
 
-        # Obtém o estado atual do expander para essa disciplina
         expanded = st.session_state.expanded_disciplines.get(disc, False)
-
-        # Escolhe o emoji conforme o estado
         emoji = "🔽" if expanded else "▶️"
-
-        # Monta o título com o emoji no início
         expander_title = f"{emoji} **{disc.title()}** ({concluidos} / {total} concluídos)"
 
-        # Cria o expander com o título e estado
         with st.expander(expander_title, expanded=expanded):
-            # Atualiza para que seja marcado como aberto
-            # Como não há evento nativo de expand/collapse, assumimos aberto se entramos aqui
             st.session_state.expanded_disciplines[disc] = True
-
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -489,10 +485,10 @@ def rodape_motivacional():
     quote = random.choice(MOTIVATIONAL_QUOTES)
     st.markdown(f"<p style='text-align: center; font-size: 14px; color: #555;'>{quote}</p>", unsafe_allow_html=True)
 
-# --- Função Principal da Aplicação ---
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso TAE", page_icon="📚", layout="wide")
     render_custom_css()
+
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
@@ -504,11 +500,10 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary, df)
 
-    # Conteúdo da Página Única
     display_containers_metricas(stats, progresso_geral)
 
-    titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    titulo_com_destaque("📊 Compleção por Disciplina", cor_lateral="#3498db")
+    st.altair_chart(create_percentual_conclusao_por_disciplina(df_summary), use_container_width=True)
 
     titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
     display_donuts_grid(df_summary, progresso_geral)
