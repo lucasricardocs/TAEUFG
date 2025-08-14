@@ -384,7 +384,7 @@ def display_donuts_grid(df_summary, progresso_geral):
                 cols[j].empty()
 
 # --- Corrigido o erro de key e o comportamento do expander ---
-def handle_checkbox_change(worksheet, row_number, conteudo_nome):
+def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
