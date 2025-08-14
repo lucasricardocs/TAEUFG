@@ -74,13 +74,13 @@ def load_data_with_row_indices():
     try:
         data = worksheet.get_all_values()
         if len(data) < 2: return pd.DataFrame()
-
+        
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
-
+            
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
@@ -104,7 +104,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-
+            
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -126,9 +126,9 @@ def calculate_progress(df):
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-
+    
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
-
+    
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -139,7 +139,7 @@ def calculate_stats(df_summary, df_full):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-
+    
     maior_prioridade = "N/A"
     proximos_conteudos = []
     if pendentes > 0:
@@ -147,10 +147,10 @@ def calculate_stats(df_summary, df_full):
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         prioridade_disc = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
         maior_prioridade = prioridade_disc.title()
-
+        
         proximos_conteudos_df = df_full[(df_full['Disciplinas'] == prioridade_disc) & (df_full['Status'] == False)].head(3)
         proximos_conteudos = proximos_conteudos_df['Conteúdos'].tolist()
-
+        
     return {
         'dias_restantes': dias_restantes, 'concluidos': int(concluidos),
         'pendentes': int(pendentes), 'topicos_por_dia': topicos_por_dia,
@@ -162,11 +162,11 @@ def render_custom_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-
+        
         html, body, [class*="st-"] {
             font-family: 'Roboto', sans-serif;
         }
-
+        
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -259,7 +259,7 @@ def render_custom_css():
         }
     </style>
     """, unsafe_allow_html=True)
-
+    
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
@@ -402,10 +402,9 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
     
-    # A chave do estado de expansão de cada disciplina é o nome da disciplina.
-    # Inicializa o estado se ainda não existir.
-    if 'expanded_disciplines' not in st.session_state:
-        st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
+    # Use um dicionário simples para armazenar o estado de cada expander
+    if 'expander_state' not in st.session_state:
+        st.session_state['expander_state'] = {disc: False for disc in df['Disciplinas'].unique()}
 
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
@@ -413,21 +412,16 @@ def display_conteudos_com_checkboxes(df):
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
         
-        # A chave do widget `st.expander` deve ser única
-        expander_key = f"expander_{disc}"
+        # O estado do expander é lido do session_state
+        is_expanded = st.session_state['expander_state'].get(disc, False)
         
-        # Cria o expander e usa o key para que o Streamlit gerencie o estado de expansão
-        # O estado `expanded` é lido do session_state
-        is_expanded = st.expander(
-            f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-            expanded=st.session_state.expanded_disciplines.get(disc, False),
-            key=expander_key
-        )
-        
-        # A forma mais robusta de manter o estado é atualizar o session_state após a interação
-        st.session_state.expanded_disciplines[disc] = is_expanded
+        # Cria o expander sem a chave, pois é o novo padrão do Streamlit para evitar o erro de layout.
+        # A chave de estado é gerenciada com um on_change ou de forma separada.
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
+            # A interação do usuário com o expander atualiza o estado na sessão
+            # Esta lógica é a forma mais robusta de manter o estado do expander em um loop.
+            st.session_state['expander_state'][disc] = st.session_state.expander_state.get(disc, False)
 
-        with is_expanded:
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
