@@ -333,7 +333,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
         ]
     )
 
-    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
+    bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=2).encode(
         x=alt.X('Percentual:Q', stack='normalize', axis=alt.Axis(format='%'))
     )
 
@@ -353,7 +353,7 @@ def create_percentual_conclusao_por_disciplina(df_summary):
     chart = (bars + text).properties(
         height=alt.Step(40),
         width=700,
-        title=alt.TitleParams(text='Compleção por Disciplina', anchor='middle', fontSize=18)
+        title=alt.TitleParams(text='Evolução por Disciplina', anchor='middle', fontSize=18)
     ).configure_axis(
         grid=False,
         tickSize=0,
