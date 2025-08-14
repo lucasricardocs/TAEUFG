@@ -13,7 +13,14 @@ import random
 # Ignora avisos futuros do pandas que não são relevantes aqui
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
 
-# --- Constantes de Configuração e Estilos ---
+# Configura a localidade para português do Brasil para exibir as datas corretamente
+try:
+    import locale
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+except:
+    pass
+
+# --- Constantes de Configuração ---
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -384,17 +391,11 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
                 
-def handle_checkbox_change_callback(worksheet, row_number, key, conteudo_nome, exp_key):
+def handle_checkbox_change_callback(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
-        
-        # Salva a chave do expander para mantê-lo aberto após a recarga
-        if 'expanded_key' not in st.session_state:
-            st.session_state.expanded_key = exp_key
-        else:
-            st.session_state.expanded_key = exp_key
         st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
@@ -407,24 +408,29 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
     
-    if 'expanded_key' not in st.session_state:
-        st.session_state.expanded_key = None
-        
+    # A chave do estado de expansão de cada disciplina é o nome da disciplina.
+    # Inicializa o estado se ainda não existir.
+    if 'expanded_disciplines' not in st.session_state:
+        st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
+
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
         
+        # A chave do widget `st.expander` deve ser única
         expander_key = f"expander_{disc}"
         
-        is_expanded = st.session_state.expanded_key == expander_key
+        # O estado do expander é lido do session_state
+        is_expanded = st.session_state.expanded_disciplines.get(disc, False)
         
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
+        # Cria o expander e usa o key para que o Streamlit gerencie o estado de expansão
+        # O estado `expanded` é lido do session_state
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded, key=expander_key):
             
-            # Se o expander está aberto, atualizamos a chave de estado para que ele permaneça aberto após a próxima recarga
-            if st.expander.is_expanded:
-                st.session_state.expanded_key = expander_key
+            # A interação do usuário com o expander atualiza o estado na sessão
+            st.session_state.expanded_disciplines[disc] = st.session_state[expander_key]
 
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
@@ -433,7 +439,7 @@ def display_conteudos_com_checkboxes(df):
                     value=bool(row['Status']),
                     key=checkbox_key,
                     on_change=handle_checkbox_change_callback,
-                    kwargs={'worksheet': get_worksheet(), 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos'], 'exp_key': expander_key}
+                    kwargs={'worksheet': get_worksheet(), 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos']}
                 )
 
 def create_questoes_bar_chart(ed_data):
