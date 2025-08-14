@@ -361,14 +361,14 @@ def create_progress_donut(source_df, title):
 def display_donuts_grid(df_summary, progresso_geral):
     charts_data = []
     prog_geral_df = pd.DataFrame([
-        {'Status': 'Concluido', 'Valor': progresso_geral},
+        {'Status': 'Concluído', 'Valor': progresso_geral},
         {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
     ])
     charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
 
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
-            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
+            {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
@@ -384,17 +384,22 @@ def display_donuts_grid(df_summary, progresso_geral):
             else:
                 cols[j].empty()
                 
-def handle_checkbox_change_callback(worksheet, row_number, key, conteudo_nome):
+def handle_checkbox_change_callback(worksheet, row_number, key, conteudo_nome, exp_key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
+        
+        # Salva a chave do expander para mantê-lo aberto após a recarga
+        if 'expanded_key' not in st.session_state:
+            st.session_state.expanded_key = exp_key
+        else:
+            st.session_state.expanded_key = exp_key
         st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
 
-# --- Refatorando a função de display para evitar a palavra "key" e o fechamento do expansor ---
 def display_conteudos_com_checkboxes(df):
     if not get_worksheet():
         return
@@ -402,27 +407,24 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
     
-    # Dicionário para manter o estado de aberto/fechado de cada expander
-    if 'expander_state' not in st.session_state:
-        st.session_state.expander_state = {disc: False for disc in df['Disciplinas'].unique()}
-
+    if 'expanded_key' not in st.session_state:
+        st.session_state.expanded_key = None
+        
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
         
-        # A chave do expander deve ser uma string simples e única para evitar problemas
         expander_key = f"expander_{disc}"
         
-        # O estado do expander é lido do session_state
-        is_expanded = st.session_state.expander_state.get(disc, False)
+        is_expanded = st.session_state.expanded_key == expander_key
         
-        # Cria o expander e usa o key para que o Streamlit gerencie o estado de expansão
-        # O estado `expanded` é lido do session_state
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded, key=expander_key):
-            # A interação do usuário com o expander atualiza o estado na sessão
-            st.session_state.expander_state[disc] = st.session_state[expander_key]
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=is_expanded):
+            
+            # Se o expander está aberto, atualizamos a chave de estado para que ele permaneça aberto após a próxima recarga
+            if st.expander.is_expanded:
+                st.session_state.expanded_key = expander_key
 
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
@@ -431,7 +433,7 @@ def display_conteudos_com_checkboxes(df):
                     value=bool(row['Status']),
                     key=checkbox_key,
                     on_change=handle_checkbox_change_callback,
-                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos']}
+                    kwargs={'worksheet': get_worksheet(), 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos'], 'exp_key': expander_key}
                 )
 
 def create_questoes_bar_chart(ed_data):
@@ -513,58 +515,7 @@ def main():
     display_donuts_grid(df_summary, progresso_geral)
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
-    
-    worksheet = get_worksheet()
-    if not worksheet:
-        return
-
-    resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
-    resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
-    
-    # A chave do estado de expansão de cada disciplina é o nome da disciplina.
-    # Inicializa o estado se ainda não existir.
-    if 'expanded_disciplines' not in st.session_state:
-        st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
-
-    for disc in sorted(df['Disciplinas'].unique()):
-        conteudos_disciplina = df[df['Disciplinas'] == disc]
-        resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
-        concluidos = resumo_disc['sum'].iloc[0]
-        total = resumo_disc['count'].iloc[0]
-        
-        expander_key = f"expander_{disc}"
-        
-        # O expander agora usa uma função de callback para gerenciar o estado sem o parâmetro `expanded`
-        def update_expander_state_callback(key):
-            for d in st.session_state.expanded_disciplines:
-                st.session_state.expanded_disciplines[d] = False
-            st.session_state.expanded_disciplines[disc] = st.session_state[key]
-            
-        is_expanded = st.expander(
-            f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-            expanded=st.session_state.expanded_disciplines.get(disc, False),
-            key=expander_key
-        )
-        
-        with is_expanded:
-            for _, row in conteudos_disciplina.iterrows():
-                checkbox_key = f"cb_{row['sheet_row']}"
-                novo_status = st.checkbox(
-                    label=row['Conteúdos'],
-                    value=bool(row['Status']),
-                    key=checkbox_key
-                )
-                
-                # Salva automaticamente ao detectar uma mudança no checkbox
-                if novo_status != bool(row['Status']):
-                    if update_status_in_sheet(worksheet, row['sheet_row'], "TRUE" if novo_status else "FALSE"):
-                        st.toast(f"✅ Status de '{row['Conteúdos']}' atualizado!", icon="✅")
-                        st.cache_data.clear()
-                        st.rerun()
-                    else:
-                        st.toast(f"❌ Falha ao atualizar '{row['Conteúdos']}'.", icon="❌")
-                        st.session_state[checkbox_key] = not novo_status
-
+    display_conteudos_com_checkboxes(df)
 
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns(2, gap="large")
