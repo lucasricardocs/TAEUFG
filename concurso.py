@@ -8,7 +8,6 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
-import plotly.graph_objects as go
 import altair as alt
 
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -328,125 +327,110 @@ def display_containers_metricas(stats, progresso_geral):
             )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- Funções dos gráficos ---
-def create_animated_histogram_horizontal(df):
-    """
-    Histograma horizontal animado percentual 1400x600 (plotly)
-    """
-    disciplinas = df['Disciplinas'].tolist()
-    concluidos = df['Conteudos_Concluidos'].tolist()
-    pendentes = df['Conteudos_Pendentes'].tolist()
-    total = np.array(concluidos) + np.array(pendentes)
-    pct_concluidos = np.divide(concluidos, total, out=np.zeros_like(concluidos, dtype=float), where=total != 0) * 100
-    pct_pendentes = 100 - pct_concluidos
+# --- Gráficos em Altair ---
 
-    num_frames = 30
-    frames = []
-    for i in range(num_frames + 1):
-        fator = i / num_frames
-        x_concluidos = [val * fator for val in pct_concluidos]
-        x_pendentes = [val * fator for val in pct_pendentes]
-
-        frame = go.Frame(
-            data=[
-                go.Bar(
-                    y=disciplinas,
-                    x=x_concluidos,
-                    name='Concluídos',
-                    marker_color='#2ecc71',
-                    text=[f"{val:.1f}%" if i == num_frames else "" for val in x_concluidos],
-                    textposition='inside',
-                    orientation='h',
-                    textfont=dict(color='white', size=12)
-                ),
-                go.Bar(
-                    y=disciplinas,
-                    x=x_pendentes,
-                    name='Pendentes',
-                    marker_color='#e74c3c',
-                    text=[f"{val:.1f}%" if i == num_frames else "" for val in x_pendentes],
-                    textposition='inside',
-                    orientation='h',
-                    textfont=dict(color='white', size=12)
-                )
-            ],
-            name=str(i)
-        )
-        frames.append(frame)
-
-    fig = go.Figure(
-        data=[
-            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Concluídos', marker_color='#2ecc71', orientation='h'),
-            go.Bar(y=disciplinas, x=[0]*len(disciplinas), name='Pendentes', marker_color='#e74c3c', orientation='h')
-        ], 
-        frames=frames
+def create_altair_donut(row):
+    concluido = int(row['Conteudos_Concluidos'])
+    pendente = int(row['Conteudos_Pendentes'])
+    total = max(concluido + pendente, 1)
+    concluido_pct = round((concluido / total) * 100, 1)
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [concluido, pendente],
+    })
+    source_label = pd.DataFrame({'text': [f'{concluido_pct:.1f}%']})
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+    base_chart = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None),
+        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
     )
-    fig.update_layout(
-        title={
-            'text': 'Percentual de Conteúdos Concluídos e Pendentes por Disciplina',
-            'x': 0.5, 'xanchor': 'center',
-            'font': {'size': 20, 'color': '#2c3e50'}
-        },
-        yaxis_title='Disciplinas',
-        xaxis_title='Percentual (%)',
-        barmode='stack',
-        height=600, width=1400,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        font=dict(family="Inter, sans-serif"),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(range=[0,100], tickformat=".0f%")
-    )
-    fig.update_yaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
-    fig.update_xaxes(tickfont=dict(size=12), gridcolor='rgba(128,128,128,0.2)')
-    return fig
+    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    text = alt.Chart(source_label).mark_text(
+        size=22, fontWeight='bold', color='#2ecc71'
+    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
+    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
 
-def display_animated_histogram(fig):
-    fig_json = fig.to_json()
-    html = f"""
-    <div id="histogram-container" style="width:1400px; height:600px; margin:0 auto;">
-        <div id="histogram-plot" style="width:100%; height:100%;"></div>
-    </div>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-    (function(){{
-        const figure = {fig_json};
-        let plot = null;
-        let isAnimating = false;
-        function createPlot(){{
-            Plotly.newPlot('histogram-plot', figure.data, figure.layout).then(function(newPlot){{
-                plot = newPlot;
-                if(figure.frames && figure.frames.length > 0){{
-                    Plotly.addFrames(plot, figure.frames);
-                }}
-            }});
-        }}
-        function animateHistogram(){{
-            if(!plot || isAnimating) return;
-            isAnimating = true;
-            const animOpts = {{
-                frame: {{duration:50, redraw:true}},
-                transition: {{duration:30}},
-                mode:'immediate'
-            }};
-            Plotly.animate(plot, null, animOpts).then(function(){{
-                setTimeout(function(){{ isAnimating = false;}}, 100);
-            }});
-        }}
-        createPlot();
-        const observer = new IntersectionObserver(function(entries){{
-            entries.forEach(function(entry){{
-                if(entry.isIntersecting){{
-                    setTimeout(animateHistogram, 200);
-                }}
-            }});
-        }}, {{threshold:0.3}});
-        observer.observe(document.getElementById('histogram-container'));
-    }})();
-    </script>
+def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
+    total_charts = len(df_summary) + 1
+    rows = (total_charts + max_cols - 1) // max_cols
+    donuts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
+
+    source = pd.DataFrame({
+        'Status': ['Concluído', 'Pendente'],
+        'Valor': [progresso_geral, 100 - progresso_geral]
+    })
+    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
+
+    base = alt.Chart(source).encode(
+        theta=alt.Theta(field='Valor', type='quantitative'),
+        color=alt.Color('Status:N', scale=color_scale, legend=None)
+    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
+    text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
+        size=22, fontWeight='bold', color='#2ecc71'
+    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
+
+    donut_geral = (base + text).properties(width=280, height=280)
+    donuts.append(donut_geral)
+
+    chart_idx = 0
+    for _ in range(rows):
+        cols = st.columns(max_cols, gap="medium")
+        for c in range(max_cols):
+            if chart_idx >= total_charts:
+                break
+            with cols[c]:
+                nome = "Progresso Geral" if chart_idx == len(df_summary) else df_summary.iloc[chart_idx]['Disciplinas'].title()
+                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
+                st.altair_chart(donuts[chart_idx], use_container_width=True)
+            chart_idx += 1
+
+def create_altair_histograma_peso_questoes_empilhado(ed_data):
     """
-    st.components.v1.html(html, height=650, width=1400, scrolling=False)
+    Cria histograma de colunas empilhadas em percentual do peso em relação ao número de questões,
+    com rótulos percentuais e legenda com cores e nomes das disciplinas.
+    """
+    df = pd.DataFrame(ed_data)
+    # Cálculo da parte "Peso" e "Questões" percentual para empilhamento
+    total_peso = df['Peso'].sum()
+    total_questoes = df['Questões'].sum()
+
+    # Normaliza valores para % do total em cada categoria
+    df_long = pd.melt(df, id_vars=['Disciplinas'], value_vars=['Peso', 'Questões'],
+                      var_name='Tipo', value_name='Valor')
+
+    # Agrupa por Tipo para cálculo percentual relativo ao tipo
+    df_long['Percentual'] = df_long.groupby('Tipo')['Valor'].apply(lambda x: x / x.sum() * 100)
+
+    color_scale = alt.Scale(domain=df['Disciplinas'].tolist(),
+                            range=['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'])
+
+    chart = alt.Chart(df_long).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3).encode(
+        x=alt.X('Tipo:N', title=''),
+        y=alt.Y('Percentual:Q', stack='normalize', axis=alt.Axis(format='%'), title='Percentual (%)'),
+        color=alt.Color('Disciplinas:N', scale=color_scale, legend=alt.Legend(title="Disciplina")),
+        order=alt.Order('Disciplinas', sort='ascending'),
+        tooltip=[alt.Tooltip('Disciplinas:N', title='Disciplina'),
+                 alt.Tooltip('Tipo:N', title='Tipo'),
+                 alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')]
+    ).properties(
+        title='Distribuição Percentual Empilhada de Peso e Número de Questões por Disciplina',
+        width=600,
+        height=350
+    )
+
+    # Adiciona texto de rótulo percentual nas colunas empilhadas
+    text = chart.mark_text(dx=0, dy=-7, size=12, color='black').encode(
+        text=alt.Text('Percentual:Q', format='.1f')
+    ).transform_filter(
+        alt.datum.Percentual > 5  # Mostrar rótulos apenas se maior que 5% para evitar poluição visual
+    )
+
+    return (chart + text).configure_axis(
+        grid=False
+    ).configure_view(
+        strokeWidth=0
+    )
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
@@ -474,34 +458,6 @@ def display_conteudos_com_checkboxes(df):
     if alterou:
         load_data_with_row_indices.clear()
         st.experimental_rerun()
-
-# Função nova para o histograma Altair substituindo o gráfico de pizza
-def histograma_peso_questoes_altair(ed_data):
-    df = pd.DataFrame(ed_data)
-    df['Peso_Questoes'] = df['Peso'] * df['Questões']
-    total = df['Peso_Questoes'].sum()
-    df['Percentual'] = df['Peso_Questoes'] / total * 100
-    df_plot = df[['Disciplinas', 'Percentual']].rename(columns={'Disciplinas': 'Disciplina', 'Percentual': 'Percentual (%)'})
-
-    chart = alt.Chart(df_plot).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3).encode(
-        x=alt.X('Percentual (%):Q', title='Percentual (%)'),
-        y=alt.Y('Disciplina:N', sort='-x', title=''),
-        color=alt.Color('Disciplina:N', legend=alt.Legend(title='Disciplina')),
-        tooltip=[
-            alt.Tooltip('Disciplina:N'),
-            alt.Tooltip('Percentual (%):Q', format='.1f')
-        ]
-    ).properties(
-        title='Distribuição Percentual por Disciplina (Peso x Questões)',
-        width=600,
-        height=300
-    ).configure_axis(
-        grid=False
-    ).configure_view(
-        strokeWidth=0
-    )
-
-    return chart
 
 def display_lista_numero_questoes(ed_data):
     df = pd.DataFrame(ed_data)
@@ -538,63 +494,6 @@ def rodape_motivacional():
     </footer>
     """, unsafe_allow_html=True)
 
-# Funções restantes para gráficos com Altair e exibição que você já tinha (não alteradas):
-def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
-    total_charts = len(df_summary) + 1
-    rows = (total_charts + max_cols - 1) // max_cols
-    donuts = [create_altair_donut(df_summary.iloc[i]) for i in range(len(df_summary))]
-
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [progresso_geral, 100 - progresso_geral]
-    })
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-
-    base = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None)
-    ).mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
-    text = alt.Chart(pd.DataFrame({'text': [f'{progresso_geral:.1f}%']})).mark_text(
-        size=22, fontWeight='bold', color='#2ecc71'
-    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-
-    donut_geral = (base + text).properties(width=280, height=280)
-    donuts.append(donut_geral)
-
-    chart_idx = 0
-    for _ in range(rows):
-        cols = st.columns(max_cols, gap="medium")
-        for c in range(max_cols):
-            if chart_idx >= total_charts:
-                break
-            with cols[c]:
-                nome = "Progresso Geral" if chart_idx == len(df_summary) else df_summary.iloc[chart_idx]['Disciplinas'].title()
-                st.markdown(f'<h3 style="text-align:center;">{nome}</h3>', unsafe_allow_html=True)
-                st.altair_chart(donuts[chart_idx], use_container_width=True)
-            chart_idx += 1
-
-def create_altair_donut(row):
-    concluido = int(row['Conteudos_Concluidos'])
-    pendente = int(row['Conteudos_Pendentes'])
-    total = max(concluido + pendente, 1)
-    concluido_pct = round((concluido / total) * 100, 1)
-    source = pd.DataFrame({
-        'Status': ['Concluído', 'Pendente'],
-        'Valor': [concluido, pendente],
-    })
-    source_label = pd.DataFrame({'text': [f'{concluido_pct:.1f}%']})
-    color_scale = alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c'])
-    base_chart = alt.Chart(source).encode(
-        theta=alt.Theta(field='Valor', type='quantitative'),
-        color=alt.Color('Status:N', scale=color_scale, legend=None),
-        tooltip=[alt.Tooltip('Status:N'), alt.Tooltip('Valor:Q', format='d')]
-    )
-    donut = base_chart.mark_arc(innerRadius=70, stroke='#d3d3d3', strokeWidth=2)
-    text = alt.Chart(source_label).mark_text(
-        size=22, fontWeight='bold', color='#2ecc71'
-    ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
-    return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
-
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso 2025",
@@ -621,8 +520,35 @@ def main():
     st.markdown("---")
 
     titulo_com_destaque("📈 Percentual de Conteúdos Concluídos e Pendentes por Disciplina", cor_lateral="#2980b9")
-    fig_hist = create_animated_histogram_horizontal(df_summary)
-    display_animated_histogram(fig_hist)
+    # Aqui mantemos o gráfico de barras horizontal, adaptando para Altair (sem animação)
+    # Só para cumprir o pedido de usar Altair em todos os gráficos
+    # Vamos criar um gráfico de barras horizontal que mostra % concluídos e pendentes por disciplina
+
+    df_summary_long = pd.melt(df_summary, id_vars=['Disciplinas'], value_vars=['Conteudos_Concluidos', 'Conteudos_Pendentes'],
+                              var_name='Status', value_name='Quantidade')
+    total_conteudos = df_summary['Total_Conteudos'].sum()
+    df_summary_long['Percentual'] = df_summary_long.apply(
+        lambda row: (row['Quantidade'] / df_summary.loc[df_summary['Disciplinas'] == row['Disciplinas'], 'Total_Conteudos'].values[0]) * 100, axis=1)
+    color_scale = alt.Scale(domain=['Conteudos_Concluidos', 'Conteudos_Pendentes'], range=['#2ecc71', '#e74c3c'])
+    status_labels = {'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'}
+    df_summary_long['Status_Label'] = df_summary_long['Status'].map(status_labels)
+
+    bar_chart = alt.Chart(df_summary_long).mark_bar().encode(
+        y=alt.Y('Disciplinas:N', sort='-x'),
+        x=alt.X('Percentual:Q', title='Percentual (%)'),
+        color=alt.Color('Status_Label:N', scale=color_scale, legend=alt.Legend(title='Status')),
+        tooltip=[
+            alt.Tooltip('Disciplinas:N', title='Disciplina'),
+            alt.Tooltip('Status_Label:N', title='Status'),
+            alt.Tooltip('Percentual:Q', format='.1f')
+        ]
+    ).properties(
+        width=700,
+        height=350,
+        title='Percentual de Conteúdos Concluídos e Pendentes por Disciplina'
+    )
+
+    st.altair_chart(bar_chart, use_container_width=True)
 
     st.markdown("---")
 
@@ -631,16 +557,9 @@ def main():
 
     st.markdown("---")
 
-    titulo_com_destaque("📊 Número de Questões e Peso por Disciplina", cor_lateral="#8e44ad")
-    col1, col2 = st.columns([1, 1], gap='small')
-
-    with col1:
-        display_lista_numero_questoes(ED_DATA)
-
-    with col2:
-        # Exibição do histograma Altair substituindo o gráfico de pizza
-        hist = histograma_peso_questoes_altair(ED_DATA)
-        st.altair_chart(hist, use_container_width=True)
+    titulo_com_destaque("📊 Distribuição Percentual Empilhada de Peso e Número de Questões", cor_lateral="#8e44ad")
+    hist_empilhado = create_altair_histograma_peso_questoes_empilhado(ED_DATA)
+    st.altair_chart(hist_empilhado, use_container_width=True)
 
     st.markdown("---")
 
