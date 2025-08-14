@@ -24,14 +24,12 @@ except:
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
-
 ED_DATA = {
     'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [17, 14, 14, 11, 21],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
 }
-
 MOTIVATIONAL_QUOTES = [
     "🚀 O sucesso é a soma de pequenos esforços repetidos dia após dia.",
     "🎯 O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
@@ -49,7 +47,6 @@ def format_date_br(date_obj):
     return date_obj.strftime('%d de %B de %Y')
 
 # --- Funções de Conexão com Google Sheets (com cache) ---
-
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -64,7 +61,8 @@ def get_gspread_client():
 @st.cache_resource(show_spinner=False)
 def get_worksheet():
     client = get_gspread_client()
-    if not client: return None
+    if not client:
+        return None
     try:
         spreadsheet = client.open_by_key(SPREADSHEET_ID)
         return spreadsheet.worksheet(WORKSHEET_NAME)
@@ -77,23 +75,24 @@ def get_worksheet():
 @st.cache_data(ttl=300, show_spinner="Carregando dados dos estudos...")
 def load_data_with_row_indices():
     worksheet = get_worksheet()
-    if not worksheet: return pd.DataFrame()
+    if not worksheet:
+        return pd.DataFrame()
     try:
         data = worksheet.get_all_values()
-        if len(data) < 2: return pd.DataFrame()
-        
+        if len(data) < 2:
+            return pd.DataFrame()
+
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
-            
+
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
         df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False, 'TRUE': True, 'FALSE': False})
         df.dropna(subset=['Status'], inplace=True)
-
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
         df.drop('index', axis=1, inplace=True)
@@ -102,16 +101,14 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
 
-
 # --- Funções de Lógica e Cálculos ---
-
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-            
+
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -128,14 +125,14 @@ def calculate_progress(df):
         df_edital['Conteudos_Concluidos'] = 0
         df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
         return df_edital, 0.0
-
+    
     resumo = df.groupby('Disciplinas', observed=True)['Status'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    
+
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
-    
+
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -146,7 +143,7 @@ def calculate_stats(df_summary, df_full):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-    
+
     maior_prioridade = "N/A"
     proximos_conteudos = []
     if pendentes > 0:
@@ -154,14 +151,17 @@ def calculate_stats(df_summary, df_full):
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         prioridade_disc = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
         maior_prioridade = prioridade_disc.title()
-        
+
         proximos_conteudos_df = df_full[(df_full['Disciplinas'] == prioridade_disc) & (df_full['Status'] == False)].head(3)
         proximos_conteudos = proximos_conteudos_df['Conteúdos'].tolist()
-        
+
     return {
-        'dias_restantes': dias_restantes, 'concluidos': int(concluidos),
-        'pendentes': int(pendentes), 'topicos_por_dia': topicos_por_dia,
-        'maior_prioridade': maior_prioridade, 'proximos_conteudos': proximos_conteudos
+        'dias_restantes': dias_restantes, 
+        'concluidos': int(concluidos),
+        'pendentes': int(pendentes), 
+        'topicos_por_dia': topicos_por_dia,
+        'maior_prioridade': maior_prioridade, 
+        'proximos_conteudos': proximos_conteudos
     }
 
 # --- Funções de Interface e Visualização ---
@@ -169,11 +169,11 @@ def render_custom_css():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-        
+
         html, body, [class*="st-"] {
             font-family: 'Roboto', sans-serif;
         }
-        
+
         .top-bar-container {
             display: flex;
             align-items: center;
@@ -266,7 +266,7 @@ def render_custom_css():
         }
     </style>
     """, unsafe_allow_html=True)
-    
+
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="border-left: 5px solid {cor_lateral}; padding: 0.5rem 1rem; background-color: #F0F2F6; border-radius: 8px; margin: 2rem 0 1.5rem 0;">
@@ -318,7 +318,6 @@ def create_altair_stacked_bar(df_summary):
         value_name='Contagem'
     )
     df_melted['Status'] = df_melted['Status'].map({'Conteudos_Concluidos': 'Concluído', 'Conteudos_Pendentes': 'Pendente'})
-
     base = alt.Chart(df_melted).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None),
         color=alt.Color('Status:N',
@@ -326,11 +325,9 @@ def create_altair_stacked_bar(df_summary):
                          legend=None),
         tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('Contagem:Q', title='Nº de Conteúdos')]
     )
-
     bars = base.mark_bar(stroke='#d3d3d3', strokeWidth=1).encode(
         x=alt.X('Contagem:Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual', grid=False))
     )
-
     text = base.mark_text(
         align='center',
         baseline='middle',
@@ -342,7 +339,6 @@ def create_altair_stacked_bar(df_summary):
     ).transform_filter(
         alt.datum.Contagem > 0
     )
-
     return (bars + text).properties(
         height=600,
         title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18)
@@ -351,20 +347,17 @@ def create_altair_stacked_bar(df_summary):
         fillOpacity=0
     )
 
-
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
-    # Corrigido: Usar 'Concluído' com acento
+    # Corrigido para 'Concluído' em ambas as checagens
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0] if not source_df[source_df['Status'] == 'Concluído'].empty else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
-
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold').encode(text='text:N')
-    # Corrigido: Linha truncada
     return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=16, dy=-10))
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -374,20 +367,18 @@ def display_donuts_grid(df_summary, progresso_geral):
         {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
     ])
     charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
-
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
             {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
-
     for i in range(0, len(charts_data), 3):
         cols = st.columns(3)
         for j in range(3):
             if i + j < len(charts_data):
                 with cols[j]:
-                    chart_info = charts_data[i+j]
+                    chart_info = charts_data[i + j]
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
             else:
@@ -398,22 +389,17 @@ def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
-        # st.rerun() é necessário para forçar a atualização da UI após a mudança de estado
-        st.rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
-        # Reverte o estado do checkbox na sessão se a atualização falhar
         st.session_state[key] = not novo_status
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if not worksheet:
         return
-
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
-    # Inicializa o estado dos expanders se não existir
     if 'expanded_disciplines' not in st.session_state:
         st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
 
@@ -422,19 +408,15 @@ def display_conteudos_com_checkboxes(df):
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
-
         expander_key = f"expander_{disc}"
-        
-        # Usa o estado da sessão para controlar o expander
-        # O on_change é usado para atualizar o estado da sessão quando o expander é clicado
-        with st.expander(
-            f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-            expanded=st.session_state.expanded_disciplines.get(disc, False),
-            key=expander_key
-        ):
-            # Atualiza o estado do expander na sessão após a interação do usuário
-            st.session_state.expanded_disciplines[disc] = st.session_state[expander_key]
 
+        # Controla o estado do expander via key no st.session_state.expanded_disciplines
+        expanded = st.session_state.expanded_disciplines.get(disc, False)
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=expanded):
+            # Atualiza o estado no session_state dependendo do estado atual do expander
+            # Não existe método direto para saber se expander abriu ou fechou, então usamos workaround:
+            # Ao carregar os checkboxes, o expander estará aberto
+            st.session_state.expanded_disciplines[disc] = True
             for _, row in conteudos_disciplina.iterrows():
                 checkbox_key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -442,26 +424,22 @@ def display_conteudos_com_checkboxes(df):
                     value=bool(row['Status']),
                     key=checkbox_key,
                     on_change=handle_checkbox_change,
-                    # Passa o worksheet diretamente para a função de callback
-                    args=(worksheet, row['sheet_row'], checkbox_key, row['Conteúdos'])
+                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos']}
                 )
 
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
-    
     bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, stroke='#d3d3d3', strokeWidth=1).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=None),
         y=alt.Y('Questões:Q', title=None, axis=None),
         color=alt.Color('Disciplinas:N', legend=alt.Legend(title="Disciplinas", orient="bottom")),
         tooltip=['Disciplinas', 'Questões']
     )
-    
     text = bars.mark_text(align='center', baseline='bottom', dy=-5, color='black', fontWeight='bold').encode(
         text='Questões:Q'
     )
-    
     return (bars + text).properties(
-        height=500, 
+        height=500,
         title=alt.TitleParams("Número de Questões", anchor='middle', fontSize=18)
     )
 
@@ -469,27 +447,23 @@ def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum()) * 100
-
     base = alt.Chart(df).encode(
         theta=alt.Theta("Relevancia:Q", stack=True),
         color=alt.Color("Disciplinas:N", legend=alt.Legend(
             orient="bottom",
-            title="Disciplinas", 
-            titleFontSize=14, 
+            title="Disciplinas",
+            titleFontSize=14,
             labelFontSize=12
         )),
         order=alt.Order("Relevancia:Q", sort="descending")
     )
-    
     pie = base.mark_arc(innerRadius=70, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1)
-    
     text = base.mark_text(radius=85, size=12, color="white", fontWeight='bold').encode(
         text=alt.Text('Percentual:Q', format='.1f%'),
         theta=alt.Theta("Relevancia:Q", stack=True)
     )
-    
     return (pie + text).properties(
-        height=500, 
+        height=500,
         title=alt.TitleParams("Relevância (Peso × Questões)", anchor='middle', fontSize=18)
     )
 
@@ -502,16 +476,14 @@ def rodape_motivacional():
 def main():
     st.set_page_config(page_title="📚 Dashboard de Estudos - Concurso TAE", page_icon="📚", layout="wide")
     render_custom_css()
-
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
-    
-    df = load_data_with_row_indices()
 
+    df = load_data_with_row_indices()
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
-        
+
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary, df)
 
@@ -520,11 +492,10 @@ def main():
 
     titulo_com_destaque("📊 Progresso Geral por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-    
+
     titulo_com_destaque("📈 Progresso Individual", cor_lateral="#3498db")
     display_donuts_grid(df_summary, progresso_geral)
 
-    # Ordem das seções alterada conforme solicitado
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#8e44ad")
     display_conteudos_com_checkboxes(df)
 
@@ -537,9 +508,8 @@ def main():
 
     titulo_com_destaque("💡 Sugestão de Estudo para Hoje", cor_lateral="#2ecc71")
     display_study_suggestion(stats)
-    
+
     rodape_motivacional()
 
 if __name__ == "__main__":
     main()
-
