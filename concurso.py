@@ -423,29 +423,13 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
     
     with st.form("checklist_form"):
-        # Dicionário para manter o estado de aberto/fechado de cada expander
-        if 'expander_state' not in st.session_state:
-            st.session_state.expander_state = {disc: False for disc in df['Disciplinas'].unique()}
-
         for disc in sorted(df['Disciplinas'].unique()):
             conteudos_disciplina = df[df['Disciplinas'] == disc]
             resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
             concluidos = resumo_disc['sum'].iloc[0]
             total = resumo_disc['count'].iloc[0]
             
-            expander_key = f"expander_{disc}"
-            
-            # O estado do expander é gerenciado pelo session_state e o key do widget
-            is_expanded = st.expander(
-                f"**{disc.title()}** ({concluidos} / {total} concluídos)",
-                expanded=st.session_state.expander_state.get(disc, False),
-                key=expander_key
-            )
-            
-            # Atualiza o estado do expander no session_state após a interação
-            st.session_state.expander_state[disc] = is_expanded
-            
-            with is_expanded:
+            with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
                 for _, row in conteudos_disciplina.iterrows():
                     checkbox_key = f"cb_{row['sheet_row']}"
                     st.checkbox(
@@ -455,6 +439,7 @@ def display_conteudos_com_checkboxes(df):
                     )
         
         st.form_submit_button(label='Salvar Alterações', on_click=update_sheet_from_form_callback)
+
 
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
