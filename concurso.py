@@ -189,7 +189,7 @@ def create_altair_stacked_bar(df_summary):
     return alt.Chart(df_melted).mark_bar().encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None),
         x=alt.X('sum(Contagem):Q', stack='normalize', axis=alt.Axis(format='%', title='Percentual')),
-        color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), legend=alt.Legend(title='Status')),
+        color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), legend=alt.Legend(title=None)),
         tooltip=[alt.Tooltip('Disciplinas:N'), alt.Tooltip('Status:N'), alt.Tooltip('sum(Contagem):Q', title='Nº de Conteúdos')]
     ).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18))
 
