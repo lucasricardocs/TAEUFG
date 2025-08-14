@@ -339,7 +339,7 @@ def create_relevancia_pie_chart(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum()) * 100
 
-    base = alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=20, stroke="gray", strokeWidth=2).encode(
+    base = alt.Chart(df).mark_arc(innerRadius=30, cornerRadius=5, stroke="gray", strokeWidth=2).encode(
         theta=alt.Theta("Relevancia:Q", stack=True),
         color=alt.Color("Disciplinas:N", legend=alt.Legend(
             orient="bottom",
