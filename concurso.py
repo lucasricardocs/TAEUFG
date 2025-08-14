@@ -396,7 +396,6 @@ def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"✅ Status de '{conteudo_nome}' atualizado!", icon="✅")
         st.cache_data.clear()
-        st.experimental_rerun()
     else:
         st.toast(f"❌ Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
@@ -408,28 +407,21 @@ def display_conteudos_com_checkboxes(df):
     resumo_disciplina = df.groupby('Disciplinas')['Status'].agg(['sum', 'count']).reset_index()
     resumo_disciplina['sum'] = resumo_disciplina['sum'].astype(int)
 
-    if 'expanded_disciplines' not in st.session_state:
-        st.session_state.expanded_disciplines = {disc: False for disc in df['Disciplinas'].unique()}
-
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         resumo_disc = resumo_disciplina[resumo_disciplina['Disciplinas'] == disc]
         concluidos = resumo_disc['sum'].iloc[0]
         total = resumo_disc['count'].iloc[0]
 
-        expander_key = f"exp_{disc}"
-        
-        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)", expanded=st.session_state.expanded_disciplines.get(disc, False), key=expander_key):
-            st.session_state.expanded_disciplines[disc] = st.session_state[expander_key]
-
+        with st.expander(f"**{disc.title()}** ({concluidos} / {total} concluídos)"):
             for _, row in conteudos_disciplina.iterrows():
-                checkbox_key = f"cb_{row['sheet_row']}"
+                key = f"cb_{row['sheet_row']}"
                 st.checkbox(
                     label=row['Conteúdos'],
                     value=bool(row['Status']),
-                    key=checkbox_key,
+                    key=key,
                     on_change=handle_checkbox_change,
-                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': checkbox_key, 'conteudo_nome': row['Conteúdos']}
+                    kwargs={'worksheet': worksheet, 'row_number': row['sheet_row'], 'key': key, 'conteudo_nome': row['Conteúdos']}
                 )
 
 def create_questoes_bar_chart(ed_data):
