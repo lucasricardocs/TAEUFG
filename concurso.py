@@ -331,7 +331,7 @@ def display_containers_metricas(stats, progresso_geral):
 # --- Funções dos gráficos ---
 def create_animated_histogram_horizontal(df):
     """
-    Histograma horizontal animado percentual 1400x600
+    Histograma horizontal animado percentual 1400x600 (plotly)
     """
     disciplinas = df['Disciplinas'].tolist()
     concluidos = df['Conteudos_Concluidos'].tolist()
@@ -473,104 +473,72 @@ def display_conteudos_com_checkboxes(df):
                         st.error(f"Falha ao atualizar status do conteúdo '{row['Conteúdos']}'.")
     if alterou:
         load_data_with_row_indices.clear()
-        st.rerun()
+        st.experimental_rerun()
 
-def pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA):
-    df = pd.DataFrame(ED_DATA)
-    df['Peso_vezes_Questoes'] = df['Peso'] * df['Questões']
-    total = df['Peso_vezes_Questoes'].sum()
-    df['Percentual'] = df['Peso_vezes_Questoes'] / total
-    df = df.sort_values('Peso_vezes_Questoes', ascending=False).reset_index(drop=True)
+# Função nova para o histograma Altair substituindo o gráfico de pizza
+def histograma_peso_questoes_altair(ed_data):
+    df = pd.DataFrame(ed_data)
+    df['Peso_Questoes'] = df['Peso'] * df['Questões']
+    total = df['Peso_Questoes'].sum()
+    df['Percentual'] = df['Peso_Questoes'] / total * 100
+    df_plot = df[['Disciplinas', 'Percentual']].rename(columns={'Disciplinas': 'Disciplina', 'Percentual': 'Percentual (%)'})
 
-    cores = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6']
-
-    num_frames = 40
-    labels_final = df.apply(lambda r: f"{r['Disciplinas']}<br>({r['Percentual']:.1%})", axis=1).tolist()
-
-    frames = []
-    for i in range(num_frames):
-        progress = (i + 1) / num_frames
-        animated_values = []
-        for idx, val in enumerate(df['Peso_vezes_Questoes']):
-            slice_start_frame = idx * (num_frames // len(df))
-            if i >= slice_start_frame:
-                slice_progress = min(1.0, (i - slice_start_frame) / (num_frames // len(df)))
-                animated_values.append(val * slice_progress)
-            else:
-                animated_values.append(0)
-
-        texts = labels_final if i >= (num_frames - 5) else [""] * len(df)
-
-        frame = go.Frame(
-            data=[go.Pie(
-                labels=df['Disciplinas'],
-                values=animated_values,
-                hole=0.3,
-                text=texts,
-                textinfo='text',
-                textposition=None,
-                textfont=dict(size=14, color='black', family='sans-serif'),
-                marker=dict(colors=cores[:len(df)], line=dict(color='#d3d3d3', width=3)),
-                hovertemplate='<b>%{label}</b><br>Valor: %{value}<br>Percentual: %{percent}<extra></extra>',
-                rotation=90
-            )],
-            name=str(i)
-        )
-        frames.append(frame)
-
-    fig = go.Figure(data=frames[0].data, frames=frames)
-    fig.update_layout(
-        title={
-            'text': 'Número de Questões e Peso por Disciplina',
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 16, 'color': '#2c3e50', 'family': 'sans-serif', 'weight': 'bold'}
-        },
-        showlegend=True,
-        legend=dict(
-            orientation="v",
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.05,
-            font=dict(color='black', size=12, family='sans-serif'),
-            traceorder='normal'
-        ),
-        height=700,
-        width=700,
-        margin=dict(t=20, b=20, l=20, r=20),
-        font=dict(family="sans-serif"),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
+    chart = alt.Chart(df_plot).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3).encode(
+        x=alt.X('Percentual (%):Q', title='Percentual (%)'),
+        y=alt.Y('Disciplina:N', sort='-x', title=''),
+        color=alt.Color('Disciplina:N', legend=alt.Legend(title='Disciplina')),
+        tooltip=[
+            alt.Tooltip('Disciplina:N'),
+            alt.Tooltip('Percentual (%):Q', format='.1f')
+        ]
+    ).properties(
+        title='Distribuição Percentual por Disciplina (Peso x Questões)',
+        width=600,
+        height=300
+    ).configure_axis(
+        grid=False
+    ).configure_view(
+        strokeWidth=0
     )
-    return fig
-def streamlit_plotly_autoplay_once(fig, height=700, width=700, frame_duration=80):
-    fig_json = fig.to_json()
-    html = f"""
-    <div id="plotly-div" style="width:{width}px; height:{height}px;"></div>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script>
-    (function() {{
-        const figure = JSON.parse(`{fig_json}`);
-        let plot = null;
 
-        Plotly.newPlot('plotly-div', figure.data, figure.layout).then(function(p) {{
-            plot = p;
-            if (figure.frames && figure.frames.length > 0) {{
-                Plotly.addFrames(plot, figure.frames);
-                const animOpts = {{
-                    frame: {{duration: {frame_duration}, redraw: true}},
-                    transition: {{duration: 50}},
-                    mode: 'immediate'
-                }};
-                Plotly.animate(plot, figure.frames, animOpts);
-            }}
-        }});
-    }})();
-    </script>
+    return chart
+
+def display_lista_numero_questoes(ed_data):
+    df = pd.DataFrame(ed_data)
+    css = """
+    <style>
+    .questao-item {
+        margin: 5px 0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: background-color 0.3s, color 0.3s;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1.05rem;
+        user-select: none;
+        font-family: 'Inter', sans-serif;
+    }
+    .questao-item:hover {
+        background-color: #d0e4ff;
+        color: #064270;
+    }
+    </style>
     """
-    st.components.v1.html(html, height=height, width=width, scrolling=False)
+    st.markdown(css, unsafe_allow_html=True)
+    for _, row in df.iterrows():
+        st.markdown(
+            f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>',
+            unsafe_allow_html=True,
+        )
 
+def rodape_motivacional():
+    st.markdown("""
+    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
+        🚀 Feito com muito amor, coragem e motivação para você! ✨
+    </footer>
+    """, unsafe_allow_html=True)
+
+# Funções restantes para gráficos com Altair e exibição que você já tinha (não alteradas):
 def display_6_charts_responsive_with_titles(df_summary, progresso_geral, max_cols=3):
     total_charts = len(df_summary) + 1
     rows = (total_charts + max_cols - 1) // max_cols
@@ -627,41 +595,6 @@ def create_altair_donut(row):
     ).encode(text=alt.Text('text:N')).properties(width=280, height=280)
     return (donut + text).properties(width=280, height=280).configure_view(stroke='#d3d3d3', strokeWidth=2)
 
-def display_lista_numero_questoes(ed_data):
-    df = pd.DataFrame(ed_data)
-    css = """
-    <style>
-    .questao-item {
-        margin: 5px 0;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: background-color 0.3s, color 0.3s;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 1.05rem;
-        user-select: none;
-        font-family: 'Inter', sans-serif;
-    }
-    .questao-item:hover {
-        background-color: #d0e4ff;
-        color: #064270;
-    }
-    </style>
-    """
-    st.markdown(css, unsafe_allow_html=True)
-    for _, row in df.iterrows():
-        st.markdown(
-            f'<div class="questao-item"><strong>{row["Disciplinas"].title()}</strong>: {row["Questões"]} questões</div>',
-            unsafe_allow_html=True,
-        )
-
-def rodape_motivacional():
-    st.markdown("""
-    <footer style='font-size: 11px; color: #064820; font-weight: 600; margin-top: 12px; text-align: center; user-select: none; font-family: Inter, sans-serif;'>
-        🚀 Feito com muito amor, coragem e motivação para você! ✨
-    </footer>
-    """, unsafe_allow_html=True)
-
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso 2025",
@@ -705,8 +638,9 @@ def main():
         display_lista_numero_questoes(ED_DATA)
 
     with col2:
-        fig_pie = pie_chart_peso_vezes_questoes_com_labels_animado(ED_DATA)
-        streamlit_plotly_autoplay_once(fig_pie)
+        # Exibição do histograma Altair substituindo o gráfico de pizza
+        hist = histograma_peso_questoes_altair(ED_DATA)
+        st.altair_chart(hist, use_container_width=True)
 
     st.markdown("---")
 
