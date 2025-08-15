@@ -232,7 +232,10 @@ def create_altair_stacked_bar(df_summary):
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
-    bars = alt.Chart(df_melted).mark_bar().encode(
+    bars = alt.Chart(df_melted).mark_bar(
+        stroke='#d3d3d3',
+        strokeWidth=1
+    ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
@@ -272,7 +275,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", 
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
@@ -350,7 +353,7 @@ def display_conteudos_com_checkboxes(df):
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
         with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
-                         expanded=st.session_state['expander_states'][disc]):
+                         expanded=st.session_state['expander_states'].get(disc, False)):
             
             # Ao expandir, salva o estado como True
             st.session_state['expander_states'][disc] = True
@@ -378,9 +381,11 @@ def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
     
     chart = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=4,
-        cornerRadiusTopRight=4,
-        size=60
+        cornerRadiusTopLeft=8,
+        cornerRadiusTopRight=8,
+        size=60,
+        stroke='#d3d3d3',
+        strokeWidth=1
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
                  axis=alt.Axis(labelColor='#2c3e50', labelAngle=0, labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
@@ -486,14 +491,14 @@ def main():
     <style>
         /* Estilos gerais */
         .stApp {
-            background-color: #f0f2f6;
+            background-color: #ffffff;
             color: #333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
-
-        .block-container {
-            border: none !important;
-            box-shadow: none !important;
+        
+        /* Oculta o fundo padrão dos gráficos */
+        .stApp [data-testid="stVegaLiteChart"] > div {
+            background-color: transparent !important;
         }
 
         /* ==================================== */
@@ -503,8 +508,13 @@ def main():
             background-color: #ffffff !important;
             border-radius: 12px !important;
             padding: 1.5rem 2.5rem !important;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05) !important;
-            margin-bottom: 1rem !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+            margin-bottom: 2rem !important;
+            border: 1px solid #d3d3d3; /* Stroke fino */
+        }
+        
+        .top-container h1, .top-container p {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
 
         /* ==================================== */
@@ -517,6 +527,7 @@ def main():
             border-radius: 8px !important;
             margin: 1.5rem 0 1rem 0 !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
+            border: 1px solid #d3d3d3; /* Stroke fino */
         }
         
         .title-container h2 {
@@ -524,48 +535,91 @@ def main():
             font-size: 1.5rem !important;
         }
 
-/* ========================= */
-/*   CHECKBOX TOTALMENTE NEUTRO   */
-/* ========================= */
-.stCheckbox > label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 1rem;
-    font-weight: normal;
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin-bottom: 0rem;
-    cursor: pointer;
-}
+        /* ==================================== */
+        /* ======== CHECKBOXES MELHORADO ======== */
+        /* ==================================== */
+        .stCheckbox > label {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.3rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: 1px solid #d3d3d3; /* Stroke fino */
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        /* Remove o efeito de hover */
+        .stCheckbox > label:hover {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-.stCheckbox > label:hover {
-    background: none !important;
-    border: none !important;
-}
+        .stCheckbox > label > div:first-child {
+            width: 1.25rem !important;
+            height: 1.25rem !important;
+            border: 2px solid #3498db !important;
+            border-radius: 4px !important;
+            background-color: white !important;
+            transition: background-color 0.2s, border-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .stCheckbox > label > div > svg {
+            display: none;
+        }
 
-/* A caixinha mantém o padrão do navegador/Streamlit */
-.stCheckbox > label > div:first-child {
-    width: auto !important;
-    height: auto !important;
-    border: none !important;
-    background: none !important;
-    padding: 0 !important;
-}
+        .stCheckbox > label > input[type="checkbox"]:checked + div {
+            background-color: #2ecc71 !important;
+            border-color: #2ecc71 !important;
+        }
 
-.stCheckbox > label > div > svg {
-    display: none !important;
-}
+        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-check' viewBox='0 0 16 16'%3E%3Cpath d='M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.235.235 0 0 1 .02-.022z'/%3E%3C/svg%3E");
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            top: 2px;
+        }
 
-.stCheckbox > label > input[type="checkbox"]:checked + div {
-    background: none !important;
-    border: none !important;
-}
+        .stCheckbox > label > div:last-child {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+            transition: color 0.2s;
+        }
 
-.stCheckbox > label > input[type="checkbox"]:checked + div::after {
-    content: none !important;
-}
+        .stCheckbox > label > input[type="checkbox"]:checked + div + div {
+            color: #888;
+            text-decoration: line-through;
+            font-weight: 400;
+        }
+        
+        /* ==================================== */
+        /* ======== EXPANDERS MELHORADO ======== */
+        /* ==================================== */
+        .stExpander {
+            border: 1px solid #d3d3d3 !important; /* Stroke fino */
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+            margin-bottom: 1rem !important;
+            overflow: hidden;
+        }
+
+        .stExpander > div:first-child {
+            padding: 1.2rem 1.5rem !important;
+            background-color: #ffffff !important;
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #2c3e50 !important;
+            border-bottom: 2px solid #3498db !important;
+            cursor: pointer;
+        }
     </style>
     """, unsafe_allow_html=True)
     
