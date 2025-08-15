@@ -233,15 +233,14 @@ def create_altair_stacked_bar_clean(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Determinar quais barras devem aparecer
+    # Determinar quais barras devem aparecer (se uma for ~100%, a outra some)
     df_melted['Mostrar'] = 1
     for disc in df_melted['Disciplinas'].unique():
         temp = df_melted[df_melted['Disciplinas'] == disc]
         if any(temp['Percentual'] >= 99.9):
-            # Apenas a barra com ~100% é mostrada
             df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Mostrar'] = 0
 
-    # Normalizar para 0-1 (para o stacking)
+    # Normalizar para 0-1 (stacking)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
@@ -269,11 +268,9 @@ def create_altair_stacked_bar_clean(df_summary):
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual:Q', format='.0f')
-    ).transform_calculate(
-        PercentLabel="datum.Percentual + '%'"
-    ).encode(
         text='PercentLabel:N'
+    ).transform_calculate(
+        PercentLabel="datum.Percentual.toFixed(0) + '%'"
     )
 
     return (bars + labels).properties(
@@ -562,10 +559,7 @@ def main():
     # Métricas simplificadas
     display_simple_metrics(stats)
 
-    # Mostrar título destacado
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    
-    # Mostrar gráfico de barras sem título interno
     st.altair_chart(create_altair_stacked_bar_clean(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
