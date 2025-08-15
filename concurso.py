@@ -582,7 +582,7 @@ def main():
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia_padronizado(ED_DATA), use_container_width=True)
+        st.altair_chart(treemap_relevancia_vertical_com_rotulos(ED_DATA), use_container_width=True)
     
     rodape_motivacional()
 
