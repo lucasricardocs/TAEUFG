@@ -504,7 +504,7 @@ def main():
             border-radius: 12px !important;
             padding: 1.5rem 2.5rem !important;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.05) !important;
-            margin-bottom: 2rem !important;
+            margin-bottom: 1rem !important;
         }
 
         /* ==================================== */
@@ -536,7 +536,7 @@ def main():
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    margin-bottom: 0.1rem;
+    margin-bottom: 0rem;
     cursor: pointer;
 }
 
