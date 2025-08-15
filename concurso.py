@@ -257,11 +257,13 @@ def create_altair_stacked_bar(df_summary):
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Helvetica Neue')),
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None, labelFont='Helvetica Neue')),
-        color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                        legend=None)
+    y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Helvetica Neue')),
+    x=alt.X('Percentual_norm:Q', 
+            stack="normalize", 
+            axis=alt.Axis(title=None, labels=False)),  # remove título e valores do eixo X
+    color=alt.Color('Status:N',
+                    scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                    legend=None)
     )
 
     # Rótulos centralizados
