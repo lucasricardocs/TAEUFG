@@ -440,59 +440,42 @@ def create_questoes_bar_chart(ed_data):
         strokeOpacity=0  # Remove a borda do gráfico
     )
 
-def create_relevancia_pie_chart(ed_data):
+def pizza_relevancia(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['Percentual'] = df['Percentual'].astype(float)
 
-    # Gráfico de pizza
-    base = alt.Chart(df).mark_arc(
-        innerRadius=70,
-        cornerRadius=5,
-        stroke='white',
-        strokeWidth=1
-    ).encode(
-        theta=alt.Theta('Percentual:Q'),
+    # Base do gráfico
+    base = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
+        theta=alt.Theta('Relevancia:Q'),
         color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
             alt.Tooltip('Questões:Q'),
-            alt.Tooltip('Relevancia:Q', title='Relevância'),
+            alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     )
 
-    # Rótulos fora do arco
-    labels = alt.Chart(df).mark_text(
-        radius=120,        # distância do centro
-        radiusOffset=10,   # desloca um pouco mais para fora
-        size=14,
-        fontWeight='bold',
-        color='black'      # legível fora do arco
-    ).encode(
-        theta=alt.Theta('Percentual:Q'),
-        text=alt.Text('Percentual:Q', format='.1f')
+    # Calcular posição dos rótulos fora da fatia
+    df['angle'] = df['Relevancia'].cumsum() - df['Relevancia']/2
+    df['angle_rad'] = 2 * np.pi * df['angle'] / df['Relevancia'].sum()
+    df['x'] = np.sin(df['angle_rad']) * 1.2
+    df['y'] = -np.cos(df['angle_rad']) * 1.2
+    df['label'] = df['Disciplinas'] + " (" + df['Percentual'].round(1).astype(str) + "%)"
+
+    labels = alt.Chart(df).mark_text(fontWeight='bold', align='center').encode(
+        x='x:Q',
+        y='y:Q',
+        text='label:N'
     )
 
-    chart = (base + labels).properties(
+    return (base + labels).properties(
         height=350,
-        title=alt.TitleParams(
-            "Relevância (Peso × Questões)",
-            anchor='middle',
-            fontSize=18,
-            color='black'
-        )
-    ).configure_view(
-        strokeOpacity=0
-    ).configure_title(
-        font='sans-serif',
-        fontWeight='bold',
-        anchor='middle'
+        width=350,
+        title='Relevância das Disciplinas (Peso × Questões)'
     )
-
-    return chart
     
 def rodape_motivacional():
     st.markdown("---")
@@ -598,7 +581,7 @@ def main():
     with colA:
         st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
+        st.altair_chart(pizza_relevancia(ED_DATA) , use_container_width=True)
 
     rodape_motivacional()
 
