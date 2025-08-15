@@ -432,20 +432,20 @@ def bar_questoes_padronizado(ed_data):
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
 
 # --- Treemap Relevância ---
-def treemap_relevancia_vertical_centralizado(ed_data):
+def treemap_relevancia_vertical_rotulo_fora(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']}\n{row['Percentual']:.1f}%", axis=1)
+    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
     # Escala de cores: azul claro → azul escuro
     color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()],
                             range=['#cce6ff', '#004c99'])
 
     # Treemap vertical
-    base = alt.Chart(df).mark_bar(stroke='d3d3d3', strokeWidth=1).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
-        x=alt.X('Relevancia:Q', title=None, axis=None),
+    base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
+        y=alt.Y('Disciplinas:N', sort=None, title='Disciplina'),
+        x=alt.X('Relevancia:Q', title='Relevância'),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
@@ -464,16 +464,17 @@ def treemap_relevancia_vertical_centralizado(ed_data):
         )
     )
 
-    # Texto centralizado dentro da barra
+    # Texto à frente da barra
     labels = alt.Chart(df).mark_text(
-        align='center',
+        align='left',
         baseline='middle',
-        color='gray',
+        dx=5,   # deslocamento horizontal à frente da barra
+        color='black',
         fontWeight='bold',
-        fontSize=14
+        fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Relevancia:Q', stack='center'),  # stack='center' centraliza dentro do retângulo
+        x=alt.X('Relevancia:Q'),
         text='custom_text:N'
     )
 
@@ -583,7 +584,7 @@ def main():
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia_vertical_centralizado(ED_DATA), use_container_width=True)
+        st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA), use_container_width=True)
     
     rodape_motivacional()
 
