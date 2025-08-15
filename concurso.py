@@ -220,7 +220,7 @@ def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
-    
+
     # Dados em formato longo
     df_melted = df_percent.melt(
         id_vars=['Disciplinas'], 
@@ -233,15 +233,30 @@ def create_altair_stacked_bar(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Calcular posição central normalizada (0-1)
+    # Normalizar percentuais para posição
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Criar coluna de texto formatada
+    # Criar coluna de texto em %
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
-    # Coluna para mostrar rótulo: sempre mostra se barra <100%, ou se barra=100%
-    df_melted['Mostrar_Rotulo'] = True  # agora sempre mostra o rótulo
+    # Condicional para cor do rótulo
+    def label_color(row, df_row):
+        # Se esta barra for Concluído
+        if row['Status'] == 'Concluído' and df_row['Concluído (%)'] == 100:
+            return 'white'
+        elif row['Status'] == 'Concluído' and df_row['Pendente (%)'] == 100:
+            return 'transparent'
+        # Se esta barra for Pendente
+        elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
+            return 'white'
+        elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
+            return 'transparent'
+        else:
+            return 'white'
+
+    # Mapear cada linha do melted para a cor
+    df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
@@ -256,21 +271,19 @@ def create_altair_stacked_bar(df_summary):
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
-        color='white',
         fontWeight='bold',
         fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('PercentText:N')
-    ).transform_filter(
-        alt.datum.Mostrar_Rotulo
+        text=alt.Text('PercentText:N'),
+        color=alt.Color('LabelColor:N', scale=None)  # Usa a cor calculada
     )
 
     return (bars + labels).properties(
         height=350,
         title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina", 
+            text="Percentual de Conclusão por Disciplina",
             anchor='middle',
             fontSize=18,
             color='black'
