@@ -524,24 +524,25 @@ def main():
             margin: 1rem 0 1.5rem 0;
         }
         
-        /* Expanders */
+        /* Expanders mais compactos */
         .stExpander {
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 8px !important;
-            margin-bottom: 1rem !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            margin-bottom: 0.5rem !important; /* Menos espaço entre eles */
         }
         
-        .st-emotion-cache-1q7spjk { /* Header do expander */
-            font-size: 1.1rem !important;
+        /* Cabeçalho do expander mais enxuto */
+        .st-emotion-cache-1q7spjk {
+            font-size: 1rem !important;
             font-weight: 600 !important;
-            padding: 0.8rem 1rem !important;
+            padding: 0.4rem 0.6rem !important; /* Metade do tamanho anterior */
         }
         
-        /* Checkboxes */
+        /* Checkboxes mais próximas */
         .stCheckbox > label {
-            font-size: 1rem;
-            padding: 0.7rem 0;
-            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.95rem;
+            padding: 0.3rem 0; /* Menos espaço */
+            border-bottom: 1px solid #f5f5f5;
         }
         
         .stCheckbox > label:last-child {
