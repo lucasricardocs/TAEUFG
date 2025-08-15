@@ -525,7 +525,7 @@ def main():
         }
 
 /* ========================= */
-/*   CHECKBOX SIMPLES        */
+/*   CHECKBOX TOTALMENTE NEUTRO   */
 /* ========================= */
 .stCheckbox > label {
     display: flex;
@@ -545,15 +545,13 @@ def main():
     border: none !important;
 }
 
+/* A caixinha mantém o padrão do navegador/Streamlit */
 .stCheckbox > label > div:first-child {
-    width: 1rem !important;
-    height: 1rem !important;
-    border: 1px solid #555 !important;
-    border-radius: 3px !important;
-    background: white !important;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: auto !important;
+    height: auto !important;
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
 }
 
 .stCheckbox > label > div > svg {
@@ -561,38 +559,12 @@ def main():
 }
 
 .stCheckbox > label > input[type="checkbox"]:checked + div {
-    background: #555 !important;
-    border-color: #555 !important;
+    background: none !important;
+    border: none !important;
 }
 
 .stCheckbox > label > input[type="checkbox"]:checked + div::after {
-    content: "✓";
-    color: white;
-    font-size: 0.8rem;
-}
-
-/* ========================= */
-/*   EXPANDER MINIMALISTA    */
-/* ========================= */
-.stExpander {
-    border: 1px solid #ddd !important;
-    border-radius: 8px !important;
-    margin-bottom: 0.8rem !important;
-    overflow: hidden;
-}
-
-.stExpander > div:first-child {
-    padding: 0.9rem 1.2rem !important;
-    background-color: #fafafa !important;
-    font-size: 1.05rem !important;
-    font-weight: 600 !important;
-    color: #2c3e50 !important;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.stExpander > div:first-child:hover {
-    background-color: #f0f0f0 !important;
+    content: none !important;
 }
     </style>
     """, unsafe_allow_html=True)
