@@ -397,9 +397,6 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
-import pandas as pd
-import altair as alt
-
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
     
@@ -446,50 +443,30 @@ def create_questoes_bar_chart(ed_data):
         anchor='middle'
     )
 
-def pizza_relevancia(ed_data):
+def treemap_relevancia(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
-    df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
+    df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum() * 100).round(1)
 
-    # Base do gráfico (pizza)
-    pie = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
-        theta=alt.Theta('Relevancia:Q', stack=True),
-        color=alt.Color('Disciplinas:N',
-                        legend=alt.Legend(
-                            orient='bottom', title=None,
-                            labelFontSize=12, labelColor='black',
-                            direction='horizontal',
-                            padding=10
-                        )),
+    chart = alt.Chart(df).mark_rect().encode(
+        x=alt.X('Relevancia:Q', stack='zero', title=None),
+        y=alt.Y('Relevancia:Q', stack='zero', title=None),
+        color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[
-            alt.Tooltip('Disciplinas:N'),
+            alt.Tooltip('Disciplinas:N', title='Disciplina'),
             alt.Tooltip('Peso:Q'),
             alt.Tooltip('Questões:Q'),
             alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
-            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
+            alt.Tooltip('Percentual:Q', title='Percentual (%)')
         ]
-    )
-
-    # Rótulos dentro das fatias (percentual)
-    labels = alt.Chart(df).mark_text(
-        radius=120,
-        fontWeight='bold',
-        color='black',
-        fontSize=14
-    ).encode(
-        theta=alt.Theta('Relevancia:Q', stack=True),
-        text=alt.Text('Percentual:Q', format='.1f')
-    )
-
-    chart = (pie + labels).properties(
-        width=450,
-        height=450,
+    ).properties(
+        width=400,
+        height=400,
         title=alt.TitleParams(
             text='Relevância das Disciplinas (Peso × Questões)',
             anchor='middle',
-            fontSize=20,
-            color='black',
-            dy=-10  # Ajusta a altura do título igual ao gráfico de barras
+            fontSize=18,
+            color='black'
         )
     ).configure_view(
         strokeOpacity=0
@@ -499,7 +476,20 @@ def pizza_relevancia(ed_data):
         anchor='middle'
     )
 
-    return chart
+    # Adiciona rótulos com percentuais dentro de cada retângulo
+    labels = alt.Chart(df).mark_text(
+        fontSize=14,
+        fontWeight='bold',
+        color='black',
+        align='center',
+        baseline='middle'
+    ).encode(
+        x=alt.X('Relevancia:Q', stack='zero'),
+        y=alt.Y('Relevancia:Q', stack='zero'),
+        text=alt.Text('Percentual:Q', format='.1f')
+    )
+
+    return chart + labels
     
 def rodape_motivacional():
     st.markdown("---")
