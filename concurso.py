@@ -94,7 +94,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-        
+            
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -148,17 +148,17 @@ def calculate_stats(df_summary):
 
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div style="border-left: 4px solid {cor_lateral}; 
-                padding: 0.5rem 1rem; 
-                background: #f8f9fa;
-                border-radius: 4px; 
-                margin: 1.2rem 0 0.8rem 0;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="border-left: 6px solid {cor_lateral}; 
+                padding: 0.8rem 1.2rem; 
+                background: #fdfdfe;
+                border-radius: 8px; 
+                margin: 1.5rem 0 1rem 0;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
         <h2 style="color: #2c3e50; 
-                   margin-block-start: 0; 
-                   margin-block-end: 0;
-                   font-weight: 600;
-                   font-size: 1.35rem;">
+                    margin-block-start: 0; 
+                    margin-block-end: 0;
+                    font-weight: 700;
+                    font-size: 1.5rem;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
@@ -168,21 +168,20 @@ def render_topbar_with_logo(dias_restantes):
     <div style="display: flex; 
                 align-items: center; 
                 justify-content: space-between; 
-                background-color: white;
-                border: 1px solid #e0e0e0;
-                border-radius: 8px; 
-                padding: 1.2rem 2rem; 
-                box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
-                margin-bottom: 1.5rem;">
+                background: linear-gradient(to right, #ffffff, #f9f9f9);
+                border-radius: 12px; 
+                padding: 1.5rem 2.5rem; 
+                box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
+                margin-bottom: 2rem;">
         <div style="display: flex; align-items: center;">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 65px; margin-right: 2rem;"/>
             <div>
-                <h1 style="color: #2c3e50; margin: 0; font-size: 1.7rem; font-weight: 700;">Dashboard de Estudos</h1>
+                <h1 style="color: #2c3e50; margin: 0; font-size: 1.9rem; font-weight: 800;">Dashboard de Estudos</h1>
                 <p style="color: #555; margin: 0; font-size: 1rem;">Concurso TAE UFG 2025</p>
             </div>
         </div>
         <div style="text-align: right;">
-            <p style="color: #e74c3c; font-weight: bold; font-size: 1.4rem; margin: 0;">
+            <p style="color: #e74c3c; font-weight: bold; font-size: 1.6rem; margin: 0;">
                 ⏰ Faltam {dias_restantes} dias!
             </p>
             <p style="margin:0; color: #555; font-size: 0.9rem;">
@@ -262,8 +261,8 @@ def create_altair_stacked_bar(df_summary):
             stack="normalize", 
             axis=alt.Axis(title=None, labels=False)),  # remove título e valores do eixo X
     color=alt.Color('Status:N',
-                    scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                    legend=None)
+                     scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                     legend=None)
     )
 
     # Rótulos centralizados
@@ -299,8 +298,8 @@ def create_progress_donut(source_df, title):
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", 
-                       scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
-                       legend=None),
+                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
+                        legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
@@ -345,41 +344,38 @@ def display_donuts_grid(df_summary, progresso_geral):
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
 
-def handle_checkbox_change(worksheet, row_number, key, conteudo_nome, disciplina):
-    # Salvar estado atual do expander antes da atualização
-    estado_atual = st.session_state.get(f'expander_{disciplina}', False)
-    
+# Lógica de manuseio do checkbox aprimorada
+def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-        st.toast(f"Status de '{conteudo_nome}' atualizado!", icon="✅")
+        st.toast("Status atualizado!", icon="✅")
         load_data_with_row_indices.clear()
-        
-        # Restaurar estado do expander após atualização
-        st.session_state[f'expander_{disciplina}'] = estado_atual
     else:
         st.toast(f"Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
-    if not worksheet: return
+    if not worksheet:
+        return
+
+    # Usar st.session_state para agrupar o estado dos expanders
+    if 'expander_states' not in st.session_state:
+        st.session_state['expander_states'] = {}
 
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         
-        # Calcula progresso da disciplina
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        # Usar estado da sessão para controlar expanders
-        expander_key = f'expander_{disc}'
-        if expander_key not in st.session_state:
-            st.session_state[expander_key] = False
+        # Define o estado inicial se não existir
+        if disc not in st.session_state['expander_states']:
+            st.session_state['expander_states'][disc] = False
             
         with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
-                         expanded=st.session_state[expander_key]):
-            st.session_state[expander_key] = False  # Manter expandido
+                         expanded=st.session_state['expander_states'][disc]):
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
@@ -392,8 +388,7 @@ def display_conteudos_com_checkboxes(df):
                         'worksheet': worksheet, 
                         'row_number': row['sheet_row'], 
                         'key': key, 
-                        'conteudo_nome': row['Conteúdos'],
-                        'disciplina': disc
+                        'conteudo_nome': row['Conteúdos']
                     }
                 )
 
@@ -410,7 +405,7 @@ def bar_questoes_padronizado(ed_data):
         size=60
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
-                axis=alt.Axis(labelColor='black', labelAngle=0)),
+                 axis=alt.Axis(labelColor='black', labelAngle=0)),
         y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='black')),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     ).properties(
@@ -422,7 +417,7 @@ def bar_questoes_padronizado(ed_data):
     labels = chart.mark_text(
         align='center',
         baseline='bottom',  # fora da barra
-        dy=-5,               # posiciona acima da barra
+        dy=-5,              # posiciona acima da barra
         color='black',
         fontWeight='bold'
     ).encode(
@@ -499,70 +494,145 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # CSS customizado
+    # CSS customizado - Versão melhorada
     st.markdown("""
     <style>
         /* Estilos gerais */
         .stApp {
+            background-color: #f0f2f6; /* Fundo mais suave */
+            color: #333;
+        }
+
+        /* Removendo bordas e sombras do contêiner principal */
+        .block-container {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ==================================== */
+        /* ======== CONTAINER DO TOPO APRIMORADO ======== */
+        /* ==================================== */
+        .top-container {
+            background: linear-gradient(to right, #ffffff, #f9f9f9) !important;
+            border-radius: 12px !important;
+            padding: 1.5rem 2.5rem !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
+            margin-bottom: 2rem !important;
+        }
+
+        /* ==================================== */
+        /* ======== TÍTULOS MELHORADOS ======== */
+        /* ==================================== */
+        .title-container {
+            border-left: 6px solid #8e44ad !important;
+            padding: 0.8rem 1.2rem !important;
+            background: #fdfdfe !important;
+            border-radius: 8px !important;
+            margin: 1.5rem 0 1rem 0 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        .title-container:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
+        }
+        
+        .title-container h2 {
+            font-weight: 700 !important;
+            font-size: 1.5rem !important;
+        }
+
+        /* ==================================== */
+        /* ======== CHECKBOXES MELHORADO ======== */
+        /* ==================================== */
+        .stCheckbox > label {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.3rem; /* Espaço entre os itens */
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            border: 1px solid #e0e0e0; /* Borda suave */
             background-color: white;
         }
         
-        /* Container do topo */
-        .top-container {
-            border: 1px solid #e0e0e0 !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
-        }
-        
-        /* Títulos com destaque */
-        .title-container {
-            padding: 0.5rem 1rem !important;
-            margin: 1.2rem 0 0.8rem 0 !important;
-        }
-        
-        /* Barra de progresso */
-        .progress-container {
-            margin: 1rem 0 1.5rem 0;
-        }
-        
-        /* ======== EXPANDERS ======== */
-        .stExpander {
-            border: 1px solid #ddd !important;  /* Borda leve */
-            border-radius: 6px !important;      /* Cantos arredondados */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; /* Sombra suave */
-            margin-bottom: 0.6rem !important;   /* Espaço menor entre expanders */
-        }
-        
-        .stExpander > div:first-child {
-            padding: 0.5rem 0.8rem !important;  /* Espaço interno reduzido */
-            background-color: #f9f9f9 !important;
-            font-size: 1rem !important;         /* Tamanho de texto equilibrado */
-            font-weight: 600 !important;        /* Negrito */
-            color: #333 !important;
-        }
-        
-        /* ======== CHECKBOXES ======== */
-        .stCheckbox > label {
-            font-size: 0.95rem !important;      /* Um pouco menor que antes */
-            padding: 0.4rem 0 !important;       /* Menos espaçamento */
-            display: flex;
-            align-items: center;                /* Alinha verticalmente */
-            gap: 0.4rem;                         /* Espaço entre caixa e texto */
-            border-bottom: 1px solid #eee;      /* Linha divisória sutil */
-        }
-        
-        .stCheckbox > label:last-child {
-            border-bottom: none !important;     /* Remove a última linha */
-        }
-        
-        /* ======== CORES AO PASSAR O MOUSE ======== */
-        .stExpander:hover {
-            border-color: #bbb !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.08) !important;
-        }
-        
         .stCheckbox > label:hover {
-            background-color: #f4f4f4 !important;
-            border-radius: 4px;
+            background-color: #e9ecef;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        /* Estilo do checkbox customizado */
+        .stCheckbox > label > div:first-child {
+            width: 1.25rem !important;
+            height: 1.25rem !important;
+            border: 2px solid #3498db !important;
+            border-radius: 4px !important;
+            background-color: white !important;
+            transition: background-color 0.2s, border-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Oculta o ícone de 'X' padrão */
+        .stCheckbox > label > div > svg {
+            display: none;
+        }
+
+        /* Adiciona o ícone de check SVG */
+        .stCheckbox > label > input[type="checkbox"]:checked + div {
+            background-color: #2ecc71 !important; /* Cor de sucesso */
+            border-color: #2ecc71 !important;
+        }
+
+        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-check' viewBox='0 0 16 16'%3E%3Cpath d='M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.235.235 0 0 1 .02-.022z'/%3E%3C/svg%3E");
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            top: 2px;
+        }
+
+        /* Estilo do texto do checkbox */
+        .stCheckbox > label > div:last-child {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-left: 0.5rem; /* Espaço entre o ícone e o texto */
+            transition: color 0.2s;
+        }
+
+        /* Estilo para itens concluídos */
+        .stCheckbox > label > input[type="checkbox"]:checked + div + div {
+            color: #888;
+            text-decoration: line-through;
+            font-weight: 400;
+        }
+        
+        /* ==================================== */
+        /* ======== EXPANDERS MELHORADO ======== */
+        /* ==================================== */
+        .stExpander {
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+            margin-bottom: 1rem !important;
+            overflow: hidden; /* Garante que o conteúdo não vaze */
+        }
+
+        .stExpander > div:first-child {
+            padding: 1.2rem 1.5rem !important;
+            background-color: #ffffff !important;
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #2c3e50 !important;
+            border-bottom: 2px solid #3498db !important; /* Destaque azul */
+            cursor: pointer;
+        }
+        
+        .stExpander > div:first-child:hover {
+            background-color: #fdfdfd !important;
         }
     </style>
     """, unsafe_allow_html=True)
