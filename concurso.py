@@ -443,7 +443,7 @@ def treemap_relevancia_vertical_centralizado(ed_data):
                             range=['#cce6ff', '#004c99'])
 
     # Treemap vertical
-    base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
+    base = alt.Chart(df).mark_bar(stroke='d3d3d3', strokeWidth=1).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
         x=alt.X('Relevancia:Q', title=None, axis=None),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
@@ -468,7 +468,7 @@ def treemap_relevancia_vertical_centralizado(ed_data):
     labels = alt.Chart(df).mark_text(
         align='center',
         baseline='middle',
-        color='white',
+        color='gray',
         fontWeight='bold',
         fontSize=14
     ).encode(
