@@ -423,13 +423,12 @@ def bar_questoes_padronizado(ed_data):
     chart = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
-        size=60,
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, axis=None),
-        x=alt.X('Relevancia:Q', axis=None),
-        color=alt.Color('Disciplinas:N', scale=color_scale)  # aplica cores por disciplina
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue')),
+        y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        color=alt.Color('Disciplinas:N', scale=color_scale, legend=None)
     ).properties(
         width=500,
         height=500,
@@ -442,7 +441,7 @@ def bar_questoes_padronizado(ed_data):
         )
     )
 
-    # --- Labels ---
+    # --- Labels acima das barras ---
     labels = chart.mark_text(
         align='center',
         baseline='bottom',
@@ -451,10 +450,11 @@ def bar_questoes_padronizado(ed_data):
         fontWeight='bold',
         font='Helvetica Neue'
     ).encode(
+        x='Disciplinas:N',
+        y='Questões:Q',
         text='Questões:Q'
     )
 
-    # --- Combina barras e labels ---
     return alt.layer(chart, labels).configure_view(
         strokeOpacity=0,
         fillOpacity=0
