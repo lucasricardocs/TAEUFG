@@ -432,19 +432,20 @@ def bar_questoes_padronizado(ed_data):
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
 
 # --- Treemap Relevância ---
-def treemap_relevancia_padronizado(ed_data):
+def treemap_relevancia_vertical_com_rotulos(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    # Usar um tom único de azul com intensidade variável
+    # Escala de cores: azul claro → azul escuro
     color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()],
-                            range=['#cce6ff', '#004c99'])  # claro → escuro
+                            range=['#cce6ff', '#004c99'])
 
+    # Treemap vertical
     chart = alt.Chart(df).mark_rect(stroke='white', strokeWidth=1).encode(
-        x=alt.X('Disciplinas:N', title=None, axis=None),
-        y=alt.Y('Relevancia:Q', title=None, axis=None),
-        color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
+        x=alt.X('Relevancia:Q', title=None, axis=None),
+        color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
@@ -455,18 +456,25 @@ def treemap_relevancia_padronizado(ed_data):
     ).properties(
         width=500,
         height=500,
-        title=alt.TitleParams(text='Relevância das Disciplinas (Peso × Questões)',
-                              anchor='middle', fontSize=18)
+        title=alt.TitleParams(
+            text='Relevância das Disciplinas (Peso × Questões)',
+            anchor='middle',
+            fontSize=18
+        )
     )
 
+    # Rótulos centralizados com nome e percentual
     labels = chart.mark_text(
         align='center',
         baseline='middle',
         color='white',
         fontWeight='bold'
     ).encode(
-        text=alt.Text('Percentual:Q', format='.1f')
+        text=alt.Text('custom_text:N')
     )
+
+    # Criar coluna customizada para rótulos
+    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']}\n{row['Percentual']:.1f}%", axis=1)
 
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
     
