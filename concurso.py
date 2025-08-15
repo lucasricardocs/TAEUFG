@@ -149,8 +149,11 @@ def calculate_stats(df_summary):
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
     <div style="border-left: 5px solid {cor_lateral}; 
-                padding: 0.5rem 1rem; 
-                margin: 1.5rem 0 1rem 0;">
+                padding: 0.75rem 1.5rem; 
+                background: #f8f9fa;
+                border-radius: 8px; 
+                margin: 2rem 0 1.5rem 0;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <h2 style="color: #2c3e50; 
                    margin-block-start: 0; 
                    margin-block-end: 0;
@@ -164,40 +167,44 @@ def render_topbar_with_logo(dias_restantes):
     <div style="display: flex; 
                 align-items: center; 
                 justify-content: space-between; 
-                background-color: white;
-                padding: 1rem 2rem; 
-                margin-bottom: 1.5rem;
-                border-bottom: 1px solid #eee;">
+                background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+                border-radius: 12px; 
+                padding: 1.5rem 2.5rem; 
+                box-shadow: 0 6px 18px rgba(0,0,0,0.15); 
+                margin-bottom: 2.5rem;
+                color: white;">
         <div style="display: flex; align-items: center;">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem; background: white; padding: 5px; border-radius: 8px;"/>
             <div>
-                <h1 style="color: #2c3e50; margin: 0; font-size: 1.8rem; font-weight: 700;">Dashboard de Estudos</h1>
-                <p style="color: #555; margin: 0;">Concurso TAE UFG 2025</p>
+                <h1 style="color: white; margin: 0; font-size: 1.9rem; font-weight: 700;">Dashboard de Estudos</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 1.05rem;">Concurso TAE UFG 2025</p>
             </div>
         </div>
-        <div style="text-align: right;">
-            <p style="color: #e74c3c; font-weight: bold; font-size: 1.4rem; margin: 0;">
+        <div style="text-align: right; 
+                    background: rgba(255,255,255,0.15); 
+                    padding: 0.8rem 1.5rem;
+                    border-radius: 10px;
+                    backdrop-filter: blur(4px);">
+            <p style="color: white; font-weight: bold; font-size: 1.7rem; margin: 0;">
                 ⏰ Faltam {dias_restantes} dias!
             </p>
-            <p style="margin:0; color: #555; font-size: 0.9rem;">
-                {datetime.now().strftime('%d de %B de %Y')}
+            <p style="margin:0; font-weight: 500; color: rgba(255,255,255,0.85); font-size: 0.95rem;">
+                {datetime.now().strftime('%d de %B de %Y').title()}
             </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 def display_simple_metrics(stats, progresso_geral):
-    st.markdown("### 📈 Progresso Geral")
-    st.progress(progresso_geral / 100)
-    
-    cols = st.columns(4)
-    cols[0].metric("✅ Concluídos", f"{stats['concluidos']}")
-    cols[1].metric("⏳ Pendentes", f"{stats['pendentes']}")
-    cols[2].metric("🏃 Ritmo Necessário", f"{stats['topicos_por_dia']} tópicos/dia")
-    cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
+    cols = st.columns(5)
+    cols[0].metric("🎯 Progresso", f"{progresso_geral:.1f}%")
+    cols[1].metric("✅ Concluídos", f"{stats['concluidos']}")
+    cols[2].metric("⏳ Pendentes", f"{stats['pendentes']}")
+    cols[3].metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
+    cols[4].metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
 def create_altair_stacked_bar(df_summary):
-    # Calcular percentuais como nos donuts
+    # Calcular percentuais
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
@@ -209,23 +216,43 @@ def create_altair_stacked_bar(df_summary):
                                 value_name='Percentual')
     
     # Mapear nomes
-    df_melted['Status'] = df_melted['Status'].map({
-        'Concluído (%)': 'Concluído', 
-        'Pendente (%)': 'Pendente'
-    })
+    status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
+    df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    return alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
-        x=alt.X('Percentual:Q', axis=alt.Axis(format='%', title='Percentual', labelColor='black', titleColor='black')),
+    # Calcular posição para rótulos
+    df_melted['Posicao'] = df_melted.groupby('Disciplinas')['Percentual'].cumsum() - (df_melted['Percentual'] / 2)
+    
+    # Criar gráfico de barras
+    bars = alt.Chart(df_melted).mark_bar().encode(
+        y=alt.Y('Disciplinas:N', 
+                sort=None, 
+                title=None, 
+                axis=alt.Axis(labelColor='black', titleFontSize=14)),
+        x=alt.X('Percentual:Q', 
+                stack="normalize", 
+                axis=alt.Axis(format='%', title='Percentual', labelColor='black', titleColor='black'),
+                scale=alt.Scale(domain=[0, 1])),  # Fixar eixo X até 100%
         color=alt.Color('Status:N', 
-                       scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
-                       legend=alt.Legend(title=None, labelColor='black')),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N'), 
-            alt.Tooltip('Status:N'), 
-            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual')
-        ]
-    ).properties(
+                       scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                       legend=None),  # Remover legenda
+        order=alt.Order('color_Status_sort_index:Q')
+    )
+    
+    # Adicionar rótulos dentro das barras
+    labels = alt.Chart(df_melted).mark_text(
+        align='center',
+        baseline='middle',
+        dx=0,
+        color='white',
+        fontWeight='bold',
+        fontSize=12
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None),
+        x=alt.X('Posicao:Q', stack='zero', axis=None),
+        text=alt.Text('Percentual:Q', format='.1f')
+    )
+    
+    return (bars + labels).properties(
         height=350, 
         title=alt.TitleParams(
             text="Percentual de Conclusão por Disciplina", 
@@ -307,11 +334,17 @@ def display_conteudos_com_checkboxes(df):
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         
-        with st.expander(f"📚 {disc.title()}", expanded=False):
+        # Calcula progresso da disciplina
+        concluidos = conteudos_disciplina['Status'].sum()
+        total = len(conteudos_disciplina)
+        progresso = (concluidos / total) * 100 if total > 0 else 0
+        
+        with st.expander(f"📚 {disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", expanded=False):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
+                status_emoji = "✅" if row['Status'] else "⏳"
                 st.checkbox(
-                    label=row['Conteúdos'], 
+                    label=f"{status_emoji} {row['Conteúdos']}", 
                     value=bool(row['Status']), 
                     key=key,
                     on_change=handle_checkbox_change,
@@ -328,7 +361,7 @@ def create_questoes_bar_chart(ed_data):
     chart = alt.Chart(df).mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
         y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='black', titleColor='black')),
-        color=alt.Color('Disciplinas:N', legend=None),
+        color=alt.Color('Disciplinas:N', legend=alt.Legend(title="Disciplinas", orient="bottom")),
         tooltip=['Disciplinas', 'Questões']
     )
     text = chart.mark_text(
@@ -348,6 +381,9 @@ def create_questoes_bar_chart(ed_data):
             fontSize=18,
             color='black'
         )
+    ).configure_legend(
+        titleFontSize=14,
+        labelFontSize=12
     ).configure_view(
         strokeOpacity=0  # Remove a borda do gráfico
     )
@@ -358,13 +394,17 @@ def create_relevancia_pie_chart(ed_data):
     total_relevancia = df['Relevancia'].sum()
     df['Percentual'] = (df['Relevancia'] / total_relevancia) * 100
     
-    return alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=5).encode(
+    # Calcular posição para rótulos
+    df['angulo'] = df['Percentual'].cumsum() - (df['Percentual'] / 2)
+    df['angulo_rad'] = df['angulo'] * 2 * 3.14159 / 100
+    
+    base = alt.Chart(df).mark_arc(innerRadius=70, cornerRadius=5).encode(
         theta=alt.Theta("Percentual:Q"),
         color=alt.Color(
             "Disciplinas:N", 
             legend=alt.Legend(
                 title="Disciplinas", 
-                orient="top", 
+                orient="bottom", 
                 titleFontSize=14, 
                 labelFontSize=12,
                 labelColor='black',
@@ -378,7 +418,19 @@ def create_relevancia_pie_chart(ed_data):
             alt.Tooltip('Relevancia:Q', title='Relevância'),
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
-    ).properties(
+    )
+    
+    # Adicionar rótulos com percentuais
+    labels = alt.Chart(df).mark_text(
+        radius=140,
+        size=12,
+        fontWeight='bold',
+        color='black'
+    ).encode(
+        text=alt.Text('Percentual:Q', format='.1f'),
+        angle=alt.value(0)
+    
+    return (base + labels).properties(
         height=350, 
         title=alt.TitleParams(
             "Relevância (Peso × Questões)", 
@@ -391,10 +443,11 @@ def create_relevancia_pie_chart(ed_data):
     )
 
 def rodape_motivacional():
+    st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; margin-top: 2rem; padding: 1rem; color: #555;">
+    <div style="text-align: center; margin-top: 1rem; padding: 1rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0;'>
-            🚀 Cada tópico estudado é um passo mais perto da sua aprovação! ✨
+            🚀 Cada tópico estudado é um passo mais perto da sua aprovação! Mantenha o foco! ✨
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -468,6 +521,9 @@ def main():
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
+
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
+    display_conteudos_com_checkboxes(df)
     
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns(2, gap="large")
@@ -476,8 +532,6 @@ def main():
     with colB:
         st.altair_chart(create_relevancia_pie_chart(ED_DATA), use_container_width=True)
 
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-    display_conteudos_com_checkboxes(df)
 
     rodape_motivacional()
 
