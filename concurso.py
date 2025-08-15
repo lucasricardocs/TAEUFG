@@ -219,7 +219,7 @@ def create_altair_stacked_bar(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
-    df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
     
     # Dados em formato longo
     df_melted = df_percent.melt(
@@ -233,6 +233,9 @@ def create_altair_stacked_bar(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
+    # Criar coluna de texto com %
+    df_melted['Percentual_str'] = df_melted['Percentual'].round(1).astype(str) + '%'
+
     # Calcular posição central normalizada (0-1)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
@@ -240,13 +243,13 @@ def create_altair_stacked_bar(df_summary):
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title='Percentual')),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None)
     )
 
-    # Rótulos centralizados
+    # Rótulos centralizados dentro das barras
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
@@ -255,8 +258,8 @@ def create_altair_stacked_bar(df_summary):
         fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Posicao_norm:Q'),  # posição já normalizada
-        text=alt.Text('Percentual:Q', format='%.1f')
+        x=alt.X('Posicao_norm:Q'),
+        text=alt.Text('Percentual_str:N')  # usar coluna com '%' incluído
     )
 
     return (bars + labels).properties(
