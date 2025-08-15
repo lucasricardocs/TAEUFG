@@ -432,17 +432,18 @@ def bar_questoes_padronizado(ed_data):
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
 
 # --- Treemap Relevância ---
-def treemap_relevancia_vertical_com_rotulos(ed_data):
+def treemap_relevancia_vertical_centralizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
+    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']}\n{row['Percentual']:.1f}%", axis=1)
 
     # Escala de cores: azul claro → azul escuro
     color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()],
                             range=['#cce6ff', '#004c99'])
 
     # Treemap vertical
-    chart = alt.Chart(df).mark_rect(stroke='white', strokeWidth=1).encode(
+    base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
         x=alt.X('Relevancia:Q', title=None, axis=None),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
@@ -463,22 +464,20 @@ def treemap_relevancia_vertical_com_rotulos(ed_data):
         )
     )
 
-    # Criar coluna customizada para rótulos
-    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']}\n{row['Percentual']:.1f}%", axis=1)
-
-    # Rótulos centralizados, cor branca fixa
+    # Texto centralizado dentro da barra
     labels = alt.Chart(df).mark_text(
         align='center',
         baseline='middle',
-        color='white',  # Cor fixa
-        fontWeight='bold'
+        color='white',
+        fontWeight='bold',
+        fontSize=14
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Relevancia:Q', stack='zero'),
+        x=alt.X('Relevancia:Q', stack='center'),  # stack='center' centraliza dentro do retângulo
         text='custom_text:N'
     )
 
-    return alt.layer(chart, labels).configure_view(strokeOpacity=0)
+    return alt.layer(base, labels).configure_view(strokeOpacity=0)
     
 def rodape_motivacional():
     st.markdown("---")
@@ -584,7 +583,7 @@ def main():
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia_vertical_com_rotulos(ED_DATA), use_container_width=True)
+        st.altair_chart(treemap_relevancia_vertical_centralizado(ED_DATA), use_container_width=True)
     
     rodape_motivacional()
 
