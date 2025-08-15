@@ -446,18 +446,24 @@ def bar_questoes_padronizado(ed_data):
 
 # --- Treemap Relevância ---
 def treemap_relevancia_vertical_rotulo_fora(ed_data):
+    import pandas as pd
+    import altair as alt
+
     # --- Preparação dos dados ---
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    # Escala de cores
+    # Escala de cores azul claro → azul escuro
     color_scale = alt.Scale(
         domain=[df['Relevancia'].min(), df['Relevancia'].max()],
         range=['#cce6ff', '#004c99']
     )
 
-    # --- Camada 1: Barras ---
+    # Ordena as disciplinas pela relevância para plotagem vertical
+    df = df.sort_values('Relevancia', ascending=True)
+
+    # --- Barras mais largas e arredondadas à direita ---
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=8,
         cornerRadiusBottomRight=8,
@@ -466,59 +472,45 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
     ).encode(
         y=alt.Y(
             'Disciplinas:N',
-            sort='-x', # Adiciona sort para ordenar as barras
+            sort=df['Disciplinas'].tolist(),
             title=None,
-            axis=None # Remove o eixo Y aqui, o rótulo será adicionado por uma camada de texto
+            axis=None
         ),
-        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
-        color=alt.Color(
-            'Relevancia:Q',
-            scale=color_scale,
-            legend=alt.Legend(title="Relevância", titleFont='Helvetica Neue', labelFont='Helvetica Neue')
-        ),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N'),
-            alt.Tooltip('Peso:Q'),
-            alt.Tooltip('Questões:Q'),
-            alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
-            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
-        ]
-    )
+        x=alt.X('Relevancia:Q', title=None, axis=None),
+        color=alt.Color('Relevancia:Q', scale=color_scale)
+    ).properties(height=40*len(df))  # Ajusta altura para barras mais largas
 
-    # --- Camada 2: Rótulos de Percentual (dentro ou fora) ---
+    # --- Labels de percentual (à direita da barra) ---
     percentage_labels = alt.Chart(df).mark_text(
         align='left',
         baseline='middle',
-        dx=3, # Deslocamento para fora da barra
+        dx=5,
         color='#2c3e50',
         fontWeight='bold',
-        fontSize=12,
-        font='Helvetica Neue'
+        fontSize=12
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', axis=None),
+        y=alt.Y('Disciplinas:N', sort=df['Disciplinas'].tolist(), axis=None),
         x=alt.X('Relevancia:Q'),
-        text=alt.Text('Percentual:Q', format='.1f', title='Percentual')
+        text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    # --- Camada 3: Rótulos de Disciplinas (ao lado esquerdo) ---
+    # --- Labels de disciplina (à esquerda da barra) ---
     discipline_labels = alt.Chart(df).mark_text(
         align='right',
         baseline='middle',
-        dx=-5, # Deslocamento para a esquerda do início da barra
+        dx=-5,
         color='#2c3e50',
         fontWeight='bold',
-        fontSize=12,
-        font='Helvetica Neue'
+        fontSize=12
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', axis=None),
-        x=alt.value(0), # Posição 0 do eixo X
+        y=alt.Y('Disciplinas:N', sort=df['Disciplinas'].tolist(), axis=None),
+        x=alt.value(0),
         text='Disciplinas:N'
     )
 
-    # --- Combina todas as camadas e configura o gráfico ---
-    final_chart = (bars + percentage_labels + discipline_labels).properties(
+    # --- Combina camadas ---
+    final_chart = alt.layer(bars, percentage_labels, discipline_labels).properties(
         width=500,
-        height=500,
         title=alt.TitleParams(
             text='Relevância das Disciplinas',
             anchor='middle',
@@ -530,7 +522,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         strokeOpacity=0,
         fillOpacity=0
     )
-    
+
     return final_chart
     
 def rodape_motivacional():
