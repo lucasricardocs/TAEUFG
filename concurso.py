@@ -547,7 +547,7 @@ def main():
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0rem;
     cursor: pointer;
 }
 
