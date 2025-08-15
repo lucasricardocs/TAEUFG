@@ -450,7 +450,6 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
     # Escala de cores
     color_scale = alt.Scale(
@@ -458,21 +457,20 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         range=['#cce6ff', '#004c99']
     )
 
-    # --- Barras ---
-    base = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=8,      # canto superior direito arredondado
-        cornerRadiusBottomRight=8,   # canto inferior direito arredondado
-        stroke='d3d3d3',             # cor da borda
-        strokeWidth=2                 # espessura da borda
+    # --- Camada 1: Barras ---
+    bars = alt.Chart(df).mark_bar(
+        cornerRadiusTopRight=8,
+        cornerRadiusBottomRight=8,
+        stroke='#d3d3d3',
+        strokeWidth=2
     ).encode(
         y=alt.Y(
             'Disciplinas:N',
-            sort=None,
+            sort='-x', # Adiciona sort para ordenar as barras
             title=None,
-            axis=alt.Axis(labelFont='Helvetica Neue'),
-            bandSize=40  # grossura da barra
+            axis=None # Remove o eixo Y aqui, o rótulo será adicionado por uma camada de texto
         ),
-        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color(
             'Relevancia:Q',
             scale=color_scale,
@@ -485,7 +483,40 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
             alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
-    ).properties(
+    )
+
+    # --- Camada 2: Rótulos de Percentual (dentro ou fora) ---
+    percentage_labels = alt.Chart(df).mark_text(
+        align='left',
+        baseline='middle',
+        dx=3, # Deslocamento para fora da barra
+        color='#2c3e50',
+        fontWeight='bold',
+        fontSize=12,
+        font='Helvetica Neue'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort='-x', axis=None),
+        x=alt.X('Relevancia:Q'),
+        text=alt.Text('Percentual:Q', format='.1f', title='Percentual')
+    )
+
+    # --- Camada 3: Rótulos de Disciplinas (ao lado esquerdo) ---
+    discipline_labels = alt.Chart(df).mark_text(
+        align='right',
+        baseline='middle',
+        dx=-5, # Deslocamento para a esquerda do início da barra
+        color='#2c3e50',
+        fontWeight='bold',
+        fontSize=12,
+        font='Helvetica Neue'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort='-x', axis=None),
+        x=alt.value(0), # Posição 0 do eixo X
+        text='Disciplinas:N'
+    )
+
+    # --- Combina todas as camadas e configura o gráfico ---
+    final_chart = (bars + percentage_labels + discipline_labels).properties(
         width=500,
         height=500,
         title=alt.TitleParams(
@@ -495,28 +526,12 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    )
-
-    # --- Labels à frente da barra ---
-    labels = alt.Chart(df).mark_text(
-        align='left',
-        baseline='middle',
-        dx=5,
-        color='#2c3e50',
-        fontWeight='bold',
-        fontSize=12,
-        font='Helvetica Neue'
-    ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, axis=None),
-        x=alt.X('Relevancia:Q'),
-        text='custom_text:N'
-    )
-
-    # --- Combina barras e labels ---
-    return alt.layer(base, labels).configure_view(
+    ).configure_view(
         strokeOpacity=0,
         fillOpacity=0
     )
+    
+    return final_chart
     
 def rodape_motivacional():
     st.markdown("---")
