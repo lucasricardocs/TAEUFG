@@ -282,13 +282,7 @@ def create_altair_stacked_bar(df_summary):
 
     return (bars + labels).properties(
         height=350,
-        title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina",
-            anchor='middle',
-            fontSize=18,
-            font='Helvetica Neue',
-            color='black'
-        )
+        title=None)
     ).configure_view(strokeOpacity=0)
     
 def create_progress_donut(source_df, title):
