@@ -462,11 +462,11 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
 
     # --- Barras com cantos arredondados à direita e stroke ---
     bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=3,
-        cornerRadiusBottomRight=3,
+        cornerRadiusTopRight=2,
+        cornerRadiusBottomRight=2,
         stroke='#d3d3d3',
-        strokeWidth=2,
-        size=60  # grossura da barra
+        strokeWidth=1,
+        size=80  # grossura da barra
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=None),
         x=alt.X('Relevancia:Q', axis=None),
@@ -479,8 +479,8 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     ).properties(
-        width=500,
-        height=500,
+        width=400,
+        height=400,
         title=alt.TitleParams(
             text='Relevância das Disciplinas',
             anchor='middle',
