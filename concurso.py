@@ -570,9 +570,9 @@ def main():
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns(2, gap="large")
     with colA:
-        st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
+        st.altair_chart(bar_questoes_padronizado(ed_data), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia(ED_DATA) , use_container_width=True)
+        st.altair_chart(treemap_relevancia_padronizado(ed_data) , use_container_width=True)
 
     rodape_motivacional()
 
