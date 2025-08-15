@@ -479,8 +479,8 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     ).properties(
-        width=400,
-        height=400,
+        width=500,
+        height=500,
         title=alt.TitleParams(
             text='Relevância das Disciplinas',
             anchor='middle',
