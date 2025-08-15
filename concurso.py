@@ -468,8 +468,8 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         strokeWidth=2,
         size=30  # grossura da barra
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title='Disciplinas', axis=alt.Axis(labelFont='Helvetica Neue')),
-        x=alt.X('Relevancia:Q', title='Relevância', axis=alt.Axis(labelFont='Helvetica Neue', grid=True)),
+        y=alt.Y('Disciplinas:N', sort=None, axis=None),
+        x=alt.X('Relevancia:Q', axis=None),
         color=alt.Color('Relevancia:Q', scale=color_scale),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
@@ -480,7 +480,14 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         ]
     ).properties(
         width=500,
-        height=500  # altura total do gráfico
+        height=500,
+        title=alt.TitleParams(
+            text='Relevância das Disciplinas',
+            anchor='middle',
+            fontSize=18,
+            font='Helvetica Neue',
+            color='#2c3e50'
+        )
     )
 
     # --- Rótulos de percentual à frente da barra ---
@@ -503,7 +510,6 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         strokeOpacity=0,
         fillOpacity=0
     )
-    
 def rodape_motivacional():
     st.markdown("---")
     st.markdown("""
