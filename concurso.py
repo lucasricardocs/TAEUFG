@@ -306,7 +306,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", 
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
@@ -456,7 +456,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
                             range=['#cce6ff', '#004c99'])
 
     # Treemap vertical
-    base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
+    base = alt.Chart(df).mark_bar(cornerRadiusTopLeft=8, cornerRadiusTopRight=8, stroke='d3d3d3', strokeWidth=2).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância", titleFont='Helvetica Neue', labelFont='Helvetica Neue')),
