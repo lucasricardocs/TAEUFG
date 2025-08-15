@@ -557,8 +557,8 @@ def main():
             border-radius: 8px !important;
             margin: 1.5rem 0 1rem 0 !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
-            border: 1px solid #d3d3d3; /* Stroke fino */
-            background: linear-gradient(to right, #fdfdfe, #f9f9f9) !important;
+            border: 0.1px solid #d3d3d3; /* Stroke fino */
+            background: linear-gradient(to right, #fff, #f9f9f9) !important;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
