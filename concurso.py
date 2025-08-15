@@ -444,8 +444,8 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
 
     # Treemap vertical
     base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title='Disciplina'),
-        x=alt.X('Relevancia:Q', title='Relevância'),
+        y=alt.Y('Disciplinas:N', sort=None, title=None),
+        x=alt.X('Relevancia:Q', title=None),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
