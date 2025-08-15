@@ -445,10 +445,15 @@ def pizza_relevancia(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    # Base do gráfico
-    base = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
+    # Gráfico de pizza
+    pie = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
         theta=alt.Theta('Relevancia:Q'),
-        color=alt.Color('Disciplinas:N', legend=None),
+        color=alt.Color('Disciplinas:N',
+                        legend=alt.Legend(
+                            orient='bottom', title=None,
+                            labelFontSize=12, labelColor='black',
+                            titleFontSize=14
+                        )),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
@@ -458,24 +463,30 @@ def pizza_relevancia(ed_data):
         ]
     )
 
-    # Calcular posição dos rótulos fora da fatia
-    df['angle'] = df['Relevancia'].cumsum() - df['Relevancia']/2
-    df['angle_rad'] = 2 * np.pi * df['angle'] / df['Relevancia'].sum()
-    df['x'] = np.sin(df['angle_rad']) * 1.2
-    df['y'] = -np.cos(df['angle_rad']) * 1.2
-    df['label'] = df['Disciplinas'] + " (" + df['Percentual'].round(1).astype(str) + "%)"
-
-    labels = alt.Chart(df).mark_text(fontWeight='bold', align='center').encode(
-        x='x:Q',
-        y='y:Q',
-        text='label:N'
+    # Rótulos dentro das fatias
+    labels = alt.Chart(df).mark_text(radiusOffset=20, fontWeight='bold', color='white').encode(
+        theta=alt.Theta('Relevancia:Q'),
+        text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    return (base + labels).properties(
-        height=350,
-        width=350,
-        title='Relevância das Disciplinas (Peso × Questões)'
+    chart = (pie + labels).properties(
+        width=400,
+        height=400,
+        title=alt.TitleParams(
+            text='Relevância das Disciplinas (Peso × Questões)',
+            anchor='middle',
+            fontSize=18,
+            color='black'
+        )
+    ).configure_view(
+        strokeOpacity=0  # Remove bordas do gráfico
+    ).configure_title(
+        font='sans-serif',
+        fontWeight='bold',
+        anchor='middle'
     )
+
+    return chart
     
 def rodape_motivacional():
     st.markdown("---")
