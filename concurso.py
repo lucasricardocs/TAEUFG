@@ -427,7 +427,7 @@ def bar_questoes_padronizado(ed_data):
         strokeWidth=1
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue')),
-        y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        y=alt.Y('Questões:Q', sort=None, title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
         color=alt.Color('Disciplinas:N', scale=color_scale, legend=None)
     ).properties(
         width=500,
