@@ -597,11 +597,11 @@ def main():
     display_conteudos_com_checkboxes(df)
     
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-    colA, colB = st.columns(1,3)
+    colA, colB = st.columns([1, 3])
     with colA:
-        st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
+    st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA), use_container_width=True)
+    st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA), use_container_width=True)
     
     rodape_motivacional()
 
