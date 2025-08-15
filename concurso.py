@@ -233,20 +233,22 @@ def create_altair_stacked_bar(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Calcular posição central normalizada (0-1)
+    # Normalizar percentuais para 0-1
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Criar condicional para rótulos: se um for 100%, o outro fica transparente
-    df_melted['Label'] = df_melted.apply(
-        lambda row: f"{row['Percentual']:.0f}%" if row['Percentual'] < 100 else "",
-        axis=1
+    # Tornar rótulo transparente se a outra categoria for 100%
+    df_melted['Opacity'] = df_melted.apply(
+        lambda row: 0 if row['Percentual'] < 100 and df_melted.loc[
+            (df_melted['Disciplinas'] == row['Disciplinas']) & 
+            (df_melted['Status'] != row['Status']), 'Percentual'
+        ].values[0] == 100 else 1, axis=1
     )
 
-    # Gráfico de barras
+    # Gráfico de barras empilhadas
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(labels=False, ticks=False, title=None)),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=None),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None)
@@ -258,19 +260,17 @@ def create_altair_stacked_bar(df_summary):
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
-        color='white',
-        font='sans-serif',
+        font='Arial',
         fontWeight='bold',
         fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text='Label:N'
+        text=alt.Text('Percentual:Q', format='.0f'),  # Mostrar em %
+        opacity='Opacity:Q'
     )
 
-    return (bars + labels).properties(
-        height=350
-    )
+    return (bars + labels).properties(height=350)
     
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
@@ -553,7 +553,7 @@ def main():
     display_simple_metrics(stats)
 
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar(df_summary))
+    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
