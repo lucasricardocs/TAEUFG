@@ -379,7 +379,7 @@ def display_conteudos_com_checkboxes(df):
             
         with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
                          expanded=st.session_state[expander_key]):
-            st.session_state[expander_key] = True  # Manter expandido
+            st.session_state[expander_key] = False  # Manter expandido
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
