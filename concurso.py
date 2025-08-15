@@ -444,16 +444,16 @@ def create_relevancia_pie_chart(ed_data):
 
     # Labels centralizados nas fatias
     labels = alt.Chart(df).mark_text(
-        radius=95,  # controla a posição dentro do arco
+        radius=95,  # posição dentro do arco
         size=14,
         fontWeight='bold',
         color='white'
     ).encode(
-        theta=alt.Theta('Percentual:Q'),  # garante posição angular correta
+        theta=alt.Theta('Percentual:Q'),  # garante ângulo correto
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    # Combinar e formatar
+    # Combinar gráfico e labels
     chart = (base + labels).properties(
         height=350,
         title=alt.TitleParams(
