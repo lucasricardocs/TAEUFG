@@ -608,8 +608,8 @@ def main():
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
-    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-    colA, colB = st.columns([1, 3], gap="large")
+   titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
+   colA, colB = st.columns([1, 3], gap="large")
 	with colA:
     st.altair_chart(
         bar_questoes_padronizado(ED_DATA).properties(height=400),
