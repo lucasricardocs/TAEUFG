@@ -219,13 +219,13 @@ def create_altair_stacked_bar(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
-    df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
-    
+    df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
+
     # Dados em formato longo
     df_melted = df_percent.melt(
-        id_vars=['Disciplinas'], 
-        value_vars=['Concluído (%)', 'Pendente (%)'], 
-        var_name='Status', 
+        id_vars=['Disciplinas'],
+        value_vars=['Concluído (%)', 'Pendente (%)'],
+        var_name='Status',
         value_name='Percentual'
     )
 
@@ -233,14 +233,11 @@ def create_altair_stacked_bar(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Criar coluna de texto com %
-    df_melted['Percentual_str'] = df_melted['Percentual'].round(1).astype(str) + '%'
-
-    # Calcular posição central normalizada (0-1)
+    # Calcular posição central dentro da barra (0 a 1)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Gráfico de barras
+    # Criar gráfico de barras empilhadas
     bars = alt.Chart(df_melted).mark_bar().encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None)),
@@ -249,7 +246,7 @@ def create_altair_stacked_bar(df_summary):
                         legend=None)
     )
 
-    # Rótulos centralizados dentro das barras
+    # Adicionar rótulos centralizados dentro das barras
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
@@ -259,13 +256,14 @@ def create_altair_stacked_bar(df_summary):
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual_str:N')  # usar coluna com '%' incluído
+        text=alt.Text('Percentual:Q', format='.1f', title='Percentual (%)')  # mostra em %
     )
 
+    # Combinar barras e rótulos
     return (bars + labels).properties(
         height=350,
         title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina", 
+            text="Percentual de Conclusão por Disciplina",
             anchor='middle',
             fontSize=18,
             color='black'
