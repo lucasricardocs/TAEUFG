@@ -215,13 +215,11 @@ def display_simple_metrics(stats):
     cols[2].metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
-def create_altair_stacked_bar_clean(df_summary):
-    # Calcular percentuais absolutos
+def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
-    df_percent['Concluído (%)'] = (df_percent['Conteúdos_Concluídos'] / df_percent['Total_Conteudos']) * 100
-    df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
-    # Transformar em formato longo
     df_melted = df_percent.melt(
         id_vars=['Disciplinas'],
         value_vars=['Concluído (%)', 'Pendente (%)'],
@@ -229,58 +227,38 @@ def create_altair_stacked_bar_clean(df_summary):
         value_name='Percentual'
     )
 
-    # Mapear nomes
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
-
-    # Determinar quais barras devem aparecer
-    df_melted['Mostrar'] = 1
-    for disc in df_melted['Disciplinas'].unique():
-        temp = df_melted[df_melted['Disciplinas'] == disc]
-        if any(temp['Percentual'] >= 99.9):
-            # Apenas a barra com ~100% é mostrada
-            df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Mostrar'] = 0
-
-    # Normalizar para 0-1 (para o stacking)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
-    df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Filtrar apenas barras a serem mostradas
-    df_melted = df_melted[df_melted['Mostrar'] == 1]
+    # Transparência condicional
+    df_melted['Opacity'] = df_melted.groupby('Disciplinas')['Percentual'].transform(
+        lambda x: [0 if v < 100 and x.max() == 100 else 1 for v in x]
+    )
 
-    # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None,
-                axis=alt.Axis(labels=True, labelFont='Helvetica Neue', grid=False)),
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(labels=False, title=None, grid=False)),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=None),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=None),
         color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        scale=alt.Scale(domain=['Concluído', 'Pendente'],
+                                        range=['#2ecc71', '#e74c3c']),
                         legend=None)
     )
 
-    # Rótulos centralizados com %
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
-        color='white',
-        font='Helvetica Neue',
+        font='Arial',
         fontWeight='bold',
         fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual:Q', format='.0f')
-    ).transform_calculate(
-        PercentLabel="datum.Percentual + '%'"
-    ).encode(
-        text='PercentLabel:N'
+        x=alt.X('Percentual_norm:Q', stack='zero'),
+        text=alt.Text('Percentual:Q', format='.0f'),
+        opacity='Opacity:Q'
     )
 
-    return (bars + labels).properties(
-        height=350
-    ).configure_view(
-        strokeOpacity=0
-    )
+    return (bars + labels).properties(height=350).configure_view(strokeOpacity=0)
     
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
