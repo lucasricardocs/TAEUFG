@@ -456,59 +456,64 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
                             range=['#cce6ff', '#004c99'])
 
     # Treemap vertical aprimorado
-base = alt.Chart(df).mark_bar(
-    cornerRadiusTopRight=8,       # Arredonda canto superior direito
-    cornerRadiusBottomRight=8,    # Arredonda canto inferior direito
-    stroke='d3d3d3',              # Cor da borda
-    strokeWidth=2,                 # Espessura da borda
-    size=30                        # "Grossura" da barra
-).encode(
-    y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
-    x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
-    color=alt.Color(
-        'Relevancia:Q',
-        scale=color_scale,
-        legend=alt.Legend(title="Relevância", titleFont='Helvetica Neue', labelFont='Helvetica Neue')
-    ),
-    tooltip=[
-        alt.Tooltip('Disciplinas:N'),
-        alt.Tooltip('Peso:Q'),
-        alt.Tooltip('Questões:Q'),
-        alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
-        alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
-    ]
-).properties(
-    width=500,
-    height=500,
-    title=alt.TitleParams(
-        text='Relevância das Disciplinas',
-        anchor='middle',
-        fontSize=18,
-        font='Helvetica Neue',
-        color='#2c3e50'
+    base = alt.Chart(df).mark_bar(
+        cornerRadiusTopRight=8,       # Arredonda canto superior direito
+        cornerRadiusBottomRight=8,    # Arredonda canto inferior direito
+        stroke='d3d3d3',              # Cor da borda
+        strokeWidth=2                  # Espessura da borda
+    ).encode(
+        y=alt.Y(
+            'Disciplinas:N', 
+            sort=None, 
+            title=None, 
+            axis=alt.Axis(labelFont='Helvetica Neue'),
+            bandSize=40  # <- deixa as barras mais grossas
+        ),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        color=alt.Color(
+            'Relevancia:Q',
+            scale=color_scale,
+            legend=alt.Legend(title="Relevância", titleFont='Helvetica Neue', labelFont='Helvetica Neue')
+        ),
+        tooltip=[
+            alt.Tooltip('Disciplinas:N'),
+            alt.Tooltip('Peso:Q'),
+            alt.Tooltip('Questões:Q'),
+            alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
+            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
+        ]
+    ).properties(
+        width=500,
+        height=500,
+        title=alt.TitleParams(
+            text='Relevância das Disciplinas',
+            anchor='middle',
+            fontSize=18,
+            font='Helvetica Neue',
+            color='#2c3e50'
+        )
     )
-)
 
-# Texto à frente da barra
-labels = alt.Chart(df).mark_text(
-    align='left',     
-    baseline='middle',
-    dx=5,             
-    color='#2c3e50',
-    fontWeight='bold',
-    fontSize=12,
-    font='Helvetica Neue'
-).encode(
-    y=alt.Y('Disciplinas:N', sort=None, axis=None),
-    x=alt.X('Relevancia:Q'),
-    text='custom_text:N'
-)
+    # Texto à frente da barra
+    labels = alt.Chart(df).mark_text(
+        align='left',
+        baseline='middle',
+        dx=5,
+        color='#2c3e50',
+        fontWeight='bold',
+        fontSize=12,
+        font='Helvetica Neue'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None, axis=None),
+        x=alt.X('Relevancia:Q'),
+        text='custom_text:N'
+    )
 
-# Combina barras + labels
-return alt.layer(base, labels).configure_view(
-    strokeOpacity=0,
-    fillOpacity=0
-)
+    # Combina barras + labels
+    return alt.layer(base, labels).configure_view(
+        strokeOpacity=0,
+        fillOpacity=0
+    )
     
 def rodape_motivacional():
     st.markdown("---")
