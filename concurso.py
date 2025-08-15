@@ -265,7 +265,7 @@ def create_altair_stacked_bar(df_summary):
 
     bars = alt.Chart(df_melted).mark_bar(
         stroke='#d3d3d3',
-        strokeWidth=2
+        strokeWidth=1
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
@@ -306,7 +306,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
     
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", 
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
@@ -412,16 +412,14 @@ def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
     
     chart = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=8,
-        cornerRadiusTopRight=8,
+        cornerRadiusTopLeft=2,
+        cornerRadiusTopRight=2,
         size=60,
         stroke='#d3d3d3',
-        strokeWidth=2
+        strokeWidth=1
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
-                 axis=alt.Axis(labelColor='#2c3e50', labelAngle=0, labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
-        y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
-        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
+        y=alt.Y('Disciplinas:N', sort=None, axis=None),
+        x=alt.X('Relevancia:Q', axis=None),
     ).properties(
         width=500,
         height=500,
