@@ -240,8 +240,8 @@ def create_altair_stacked_bar(df_summary):
     # Criar coluna de texto formatada
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
-    # Criar coluna para mostrar rótulo somente quando a barra não for 100%
-    df_melted['Mostrar_Rotulo'] = df_melted['Percentual'] < 100
+    # Coluna para mostrar rótulo: sempre mostra se barra <100%, ou se barra=100%
+    df_melted['Mostrar_Rotulo'] = True  # agora sempre mostra o rótulo
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
