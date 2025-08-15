@@ -168,7 +168,7 @@ def render_topbar_with_logo(dias_restantes):
                     color: #2c3e50;
                     margin: 0;
                     font-size: 1.95rem;
-                    font-weight: 800;
+                    font-weight: 500;
                     line-height: 1.2;
                     font-family: 'Helvetica Neue', sans-serif;
                 ">
