@@ -448,48 +448,38 @@ def treemap_relevancia(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum() * 100).round(1)
 
-    chart = alt.Chart(df).mark_rect().encode(
-        x=alt.X('Relevancia:Q', stack='zero', title=None),
-        y=alt.Y('Relevancia:Q', stack='zero', title=None),
-        color=alt.Color('Disciplinas:N', legend=None),
+    chart = alt.Chart(df).mark_rect(stroke='white').encode(
+        x=alt.X('sum(Relevancia):Q', stack='zero', title=None),
+        y=alt.Y('Disciplinas:N', title=None, axis=None),
+        color=alt.Color('Relevancia:Q', scale=alt.Scale(scheme='blues')),
         tooltip=[
-            alt.Tooltip('Disciplinas:N', title='Disciplina'),
+            alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
             alt.Tooltip('Questões:Q'),
             alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
             alt.Tooltip('Percentual:Q', title='Percentual (%)')
         ]
     ).properties(
-        width=400,
+        width=500,
         height=400,
         title=alt.TitleParams(
             text='Relevância das Disciplinas (Peso × Questões)',
             anchor='middle',
-            fontSize=18,
-            color='black'
+            fontSize=18
         )
-    ).configure_view(
-        strokeOpacity=0
-    ).configure_title(
-        font='sans-serif',
-        fontWeight='bold',
-        anchor='middle'
     )
 
-    # Adiciona rótulos com percentuais dentro de cada retângulo
-    labels = alt.Chart(df).mark_text(
-        fontSize=14,
-        fontWeight='bold',
-        color='black',
+    # Adicionar rótulos no centro dos retângulos
+    text = chart.mark_text(
         align='center',
-        baseline='middle'
+        baseline='middle',
+        color='black',
+        fontWeight='bold'
     ).encode(
-        x=alt.X('Relevancia:Q', stack='zero'),
-        y=alt.Y('Relevancia:Q', stack='zero'),
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    return chart + labels
+    return alt.layer(chart, text).configure_view(strokeOpacity=0)
     
 def rodape_motivacional():
     st.markdown("---")
