@@ -25,7 +25,7 @@ WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 
 ED_DATA = {
-    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
+    'Disciplinas': ['PORTUGUES', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'ESPECÍFICOS'],
     'Total_Conteudos': [17, 14, 14, 11, 21],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
@@ -256,7 +256,7 @@ def create_altair_stacked_bar(df_summary):
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),  # posição já normalizada
-        text=alt.Text('Percentual:Q', format='.1f')
+        text=alt.Text('Percentual:Q', format='%.1f')
     )
 
     return (bars + labels).properties(
