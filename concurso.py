@@ -553,8 +553,7 @@ def main():
     display_simple_metrics(stats)
 
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar_streamlit(df_summary))
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.altair_chart(create_altair_stacked_bar(df_summary))
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
