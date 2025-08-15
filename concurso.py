@@ -237,6 +237,9 @@ def create_altair_stacked_bar(df_summary):
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
+    # Criar coluna de texto formatada
+    df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
+
     # Criar coluna para mostrar rótulo somente quando a barra não for 100%
     df_melted['Mostrar_Rotulo'] = df_melted['Percentual'] < 100
 
@@ -256,14 +259,12 @@ def create_altair_stacked_bar(df_summary):
         color='white',
         fontWeight='bold',
         fontSize=12
-    ).transform_filter(
-        alt.datum.Mostrar_Rotulo  # mostra só se True
-    ).transform_calculate(
-        PercentText="datum.Percentual.toFixed(1) + '%'"
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text='PercentText:N'
+        text=alt.Text('PercentText:N')
+    ).transform_filter(
+        alt.datum.Mostrar_Rotulo
     )
 
     return (bars + labels).properties(
