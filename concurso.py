@@ -524,91 +524,76 @@ def main():
             font-size: 1.5rem !important;
         }
 
-        /* ==================================== */
-        /* ======== CHECKBOXES MELHORADO ======== */
-        /* ==================================== */
-        .stCheckbox > label {
-            display: flex;
-            align-items: center;
-            padding: 0.6rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.3rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            border: 1px solid #e0e0e0;
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        /* Remove o efeito de hover */
-        .stCheckbox > label:hover {
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+/* ========================= */
+/*   CHECKBOX SIMPLES        */
+/* ========================= */
+.stCheckbox > label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 1rem;
+    font-weight: normal;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+}
 
-        .stCheckbox > label > div:first-child {
-            width: 1.25rem !important;
-            height: 1.25rem !important;
-            border: 2px solid #3498db !important;
-            border-radius: 4px !important;
-            background-color: white !important;
-            transition: background-color 0.2s, border-color 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .stCheckbox > label > div > svg {
-            display: none;
-        }
+.stCheckbox > label:hover {
+    background: none !important;
+    border: none !important;
+}
 
-        .stCheckbox > label > input[type="checkbox"]:checked + div {
-            background-color: #2ecc71 !important;
-            border-color: #2ecc71 !important;
-        }
+.stCheckbox > label > div:first-child {
+    width: 1rem !important;
+    height: 1rem !important;
+    border: 1px solid #555 !important;
+    border-radius: 3px !important;
+    background: white !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
-            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' class='bi bi-check' viewBox='0 0 16 16'%3E%3Cpath d='M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.235.235 0 0 1 .02-.022z'/%3E%3C/svg%3E");
-            display: block;
-            width: 100%;
-            height: 100%;
-            position: relative;
-            top: 2px;
-        }
+.stCheckbox > label > div > svg {
+    display: none !important;
+}
 
-        .stCheckbox > label > div:last-child {
-            font-size: 1rem;
-            font-weight: 500;
-            margin-left: 0.5rem;
-            transition: color 0.2s;
-        }
+.stCheckbox > label > input[type="checkbox"]:checked + div {
+    background: #555 !important;
+    border-color: #555 !important;
+}
 
-        .stCheckbox > label > input[type="checkbox"]:checked + div + div {
-            color: #888;
-            text-decoration: line-through;
-            font-weight: 400;
-        }
-        
-        /* ==================================== */
-        /* ======== EXPANDERS MELHORADO ======== */
-        /* ==================================== */
-        .stExpander {
-            border: none !important;
-            border-radius: 12px !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
-            margin-bottom: 1rem !important;
-            overflow: hidden;
-        }
+.stCheckbox > label > input[type="checkbox"]:checked + div::after {
+    content: "✓";
+    color: white;
+    font-size: 0.8rem;
+}
 
-        .stExpander > div:first-child {
-            padding: 1.2rem 1.5rem !important;
-            background-color: #ffffff !important;
-            font-size: 1.1rem !important;
-            font-weight: 700 !important;
-            color: #2c3e50 !important;
-            border-bottom: 2px solid #3498db !important;
-            cursor: pointer;
-        }
+/* ========================= */
+/*   EXPANDER MINIMALISTA    */
+/* ========================= */
+.stExpander {
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    margin-bottom: 0.8rem !important;
+    overflow: hidden;
+}
+
+.stExpander > div:first-child {
+    padding: 0.9rem 1.2rem !important;
+    background-color: #fafafa !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.stExpander > div:first-child:hover {
+    background-color: #f0f0f0 !important;
+}
     </style>
     """, unsafe_allow_html=True)
     
