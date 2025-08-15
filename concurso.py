@@ -446,28 +446,31 @@ def bar_questoes_padronizado(ed_data):
 
 # --- Treemap Relevância ---
 def treemap_relevancia_vertical_rotulo_fora(ed_data):
+    # --- Preparação dos dados ---
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
     df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
-    # Escala de cores: azul claro → azul escuro
-    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()],
-                            range=['#cce6ff', '#004c99'])
+    # Escala de cores
+    color_scale = alt.Scale(
+        domain=[df['Relevancia'].min(), df['Relevancia'].max()],
+        range=['#cce6ff', '#004c99']
+    )
 
-    # Treemap vertical aprimorado
+    # --- Barras ---
     base = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=8,       # Arredonda canto superior direito
-        cornerRadiusBottomRight=8,    # Arredonda canto inferior direito
-        stroke='d3d3d3',              # Cor da borda
-        strokeWidth=2                  # Espessura da borda
+        cornerRadiusTopRight=8,      # canto superior direito arredondado
+        cornerRadiusBottomRight=8,   # canto inferior direito arredondado
+        stroke='d3d3d3',             # cor da borda
+        strokeWidth=2                 # espessura da borda
     ).encode(
         y=alt.Y(
-            'Disciplinas:N', 
-            sort=None, 
-            title=None, 
+            'Disciplinas:N',
+            sort=None,
+            title=None,
             axis=alt.Axis(labelFont='Helvetica Neue'),
-            bandSize=40  # <- deixa as barras mais grossas
+            bandSize=40  # grossura da barra
         ),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
         color=alt.Color(
@@ -494,7 +497,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         )
     )
 
-    # Texto à frente da barra
+    # --- Labels à frente da barra ---
     labels = alt.Chart(df).mark_text(
         align='left',
         baseline='middle',
@@ -509,7 +512,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         text='custom_text:N'
     )
 
-    # Combina barras + labels
+    # --- Combina barras e labels ---
     return alt.layer(base, labels).configure_view(
         strokeOpacity=0,
         fillOpacity=0
