@@ -562,8 +562,11 @@ def main():
     # Métricas simplificadas
     display_simple_metrics(stats)
 
+    # Mostrar título destacado
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    
+    # Mostrar gráfico de barras sem título interno
+    st.altair_chart(create_altair_stacked_bar_clean(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
