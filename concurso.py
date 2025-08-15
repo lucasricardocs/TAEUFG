@@ -324,7 +324,7 @@ def create_progress_donut(source_df, title):
         title=alt.TitleParams(
             text=title, 
             anchor='middle', 
-            fontSize=16, 
+            fontSize=26, 
             dy=-10,
             color='#2c3e50'
         )
