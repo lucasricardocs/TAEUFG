@@ -469,7 +469,7 @@ def pizza_relevancia(ed_data):
     labels = alt.Chart(df).mark_text(
         radius=120,  # distância do centro
         fontWeight='bold',
-        color='white'
+        color='black'
     ).encode(
         theta=alt.Theta('Relevancia:Q', stack=True),
         text=alt.Text('Percentual:Q', format='.1f')
