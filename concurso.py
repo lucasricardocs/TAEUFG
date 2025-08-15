@@ -397,21 +397,21 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
-# Paleta de cores padronizada
-PALETA_CORES = ['#3498db', '#1abc9c', '#f1c40f', '#e74c3c', '#9b59b6']
+# --- Paleta de cores base ---
+PALETA_CORES = ['#4c9ed9', '#3b7bbf', '#2a5ca4', '#1b3d89', '#0a1f6e']  # tons de azul
 
-# Gráfico de barras padronizado
+# --- Gráfico de Colunas (Questões) ---
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
-
+    
     chart = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=4,
         cornerRadiusTopRight=4,
         size=60
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None,
+        x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
                 axis=alt.Axis(labelColor='black', labelAngle=0)),
-        y=alt.Y('Questões:Q', title=None, axis=None),
+        y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='black')),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     ).properties(
         width=500,
@@ -421,9 +421,9 @@ def bar_questoes_padronizado(ed_data):
 
     labels = chart.mark_text(
         align='center',
-        baseline='middle',
-        dy=0,
-        color='white',
+        baseline='bottom',  # fora da barra
+        dy=-5,               # posiciona acima da barra
+        color='black',
         fontWeight='bold'
     ).encode(
         text='Questões:Q'
@@ -431,18 +431,20 @@ def bar_questoes_padronizado(ed_data):
 
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
 
-
-# Treemap de relevância padronizado
+# --- Treemap Relevância ---
 def treemap_relevancia_padronizado(ed_data):
-    import altair as alt
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    chart = alt.Chart(df).mark_rect().encode(
+    # Usar um tom único de azul com intensidade variável
+    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()],
+                            range=['#cce6ff', '#004c99'])  # claro → escuro
+
+    chart = alt.Chart(df).mark_rect(stroke='white', strokeWidth=1).encode(
         x=alt.X('Disciplinas:N', title=None, axis=None),
         y=alt.Y('Relevancia:Q', title=None, axis=None),
-        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None),
+        color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
