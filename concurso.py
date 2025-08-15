@@ -265,7 +265,7 @@ def create_altair_stacked_bar(df_summary):
 
     bars = alt.Chart(df_melted).mark_bar(
         stroke='#d3d3d3',
-        strokeWidth=1
+        strokeWidth=2
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
@@ -416,7 +416,7 @@ def bar_questoes_padronizado(ed_data):
         cornerRadiusTopRight=8,
         size=60,
         stroke='#d3d3d3',
-        strokeWidth=1
+        strokeWidth=2
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
                  axis=alt.Axis(labelColor='#2c3e50', labelAngle=0, labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
@@ -471,7 +471,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         width=500,
         height=500,
         title=alt.TitleParams(
-            text='Relevância das Disciplinas (Peso × Questões)',
+            text='Relevância das Disciplinas',
             anchor='middle',
             fontSize=18,
             font='Helvetica Neue',
