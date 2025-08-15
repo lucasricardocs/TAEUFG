@@ -148,27 +148,83 @@ def calculate_stats(df_summary):
 
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div class="title-container" style="border-left: 6px solid {cor_lateral};">
-        <h2 style="color: #2c3e50;">
+    <div style="
+        position: relative;
+        border-left: 6px solid {cor_lateral};
+        background-color: #fcfcfc;
+        padding: 0.7rem 1.2rem;
+        margin: 1rem 0 1.5rem 0;
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.06)';">
+        <h2 style="
+            color: #2c3e50;
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.45rem;
+            line-height: 1.3;
+            font-family: 'Helvetica Neue', sans-serif;
+        ">
             {texto}
         </h2>
-    </div>""", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
+
 
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
-    <div class="top-container">
+    <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.2rem 2rem;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.1)';"
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.07)';">
         <div style="display: flex; align-items: center;">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 65px; margin-right: 2rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 65px; margin-right: 1.8rem;"/>
             <div>
-                <h1 style="color: #2c3e50; margin: 0; font-size: 1.9rem; font-weight: 800;">Dashboard de Estudos</h1>
-                <p style="color: #555; margin: 0; font-size: 1rem;">Concurso TAE UFG 2025</p>
+                <h1 style="
+                    color: #2c3e50;
+                    margin: 0;
+                    font-size: 1.95rem;
+                    font-weight: 800;
+                    line-height: 1.2;
+                    font-family: 'Helvetica Neue', sans-serif;
+                ">
+                    Dashboard de Estudos
+                </h1>
+                <p style="
+                    color: #555;
+                    margin: 0;
+                    font-size: 1rem;
+                    font-weight: 500;
+                ">
+                    Concurso TAE UFG 2025
+                </p>
             </div>
         </div>
         <div style="text-align: right;">
-            <p style="color: #e74c3c; font-weight: bold; font-size: 1.6rem; margin: 0;">
+            <p style="
+                color: #e74c3c;
+                font-weight: 700;
+                font-size: 1.65rem;
+                margin: 0;
+                font-family: 'Helvetica Neue', sans-serif;
+            ">
                 ⏰ Faltam {dias_restantes} dias!
             </p>
-            <p style="margin:0; color: #555; font-size: 0.9rem;">
+            <p style="
+                margin: 0;
+                color: #777;
+                font-size: 0.9rem;
+                font-weight: 400;
+            ">
                 {datetime.now().strftime('%d de %B de %Y')}
             </p>
         </div>
