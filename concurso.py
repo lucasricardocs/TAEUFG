@@ -400,44 +400,46 @@ def display_conteudos_com_checkboxes(df):
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
     
-    # Criar gráfico de barras
+    # Gráfico de barras
     chart = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=4, 
         cornerRadiusTopRight=4,
-        size=40,  # Largura das barras
-        color='#3498db'  # Cor azul
+        size=40,
+        color='#3498db'
     ).encode(
-        x=alt.X('Disciplinas:N', 
-                sort=None, 
-                title=None, 
+        x=alt.X('Disciplinas:N', sort=None, title=None,
                 axis=alt.Axis(labelColor='black', labelAngle=0)),
-        y=alt.Y('Questões:Q', 
-                title='Número de Questões', 
+        y=alt.Y('Questões:Q', title='Número de Questões',
                 axis=alt.Axis(labelColor='black', titleColor='black'))
     )
-    
-    # Adicionar rótulos dentro das barras
+
+    # Rótulos dentro das barras
     labels = chart.mark_text(
         align='center',
-        baseline='bottom',
-        dy=-10,  # Posicionar dentro da barra
-        color='white',
+        baseline='middle',
+        dy=-10,
+        color='black',
         fontWeight='bold',
         fontSize=14
     ).encode(
         text='Questões:Q'
     )
-    
+
     return (chart + labels).properties(
-        height=350,
+        width=400,
+        height=400,
         title=alt.TitleParams(
             "Distribuição de Questões", 
-            anchor='middle', 
+            anchor='middle',
             fontSize=18,
             color='black'
         )
     ).configure_view(
-        strokeOpacity=0  # Remove a borda do gráfico
+        strokeOpacity=0
+    ).configure_title(
+        font='sans-serif',
+        fontWeight='bold',
+        anchor='middle'
     )
 
 def pizza_relevancia(ed_data):
@@ -452,7 +454,6 @@ def pizza_relevancia(ed_data):
                         legend=alt.Legend(
                             orient='bottom', title=None,
                             labelFontSize=12, labelColor='black',
-                            titleFontSize=14,
                             direction='horizontal',
                             padding=10
                         )),
@@ -465,11 +466,12 @@ def pizza_relevancia(ed_data):
         ]
     )
 
-    # Rótulos dentro das fatias (posição média de cada fatia)
+    # Rótulos dentro das fatias
     labels = alt.Chart(df).mark_text(
-        radius=120,  # distância do centro
+        radius=120,
         fontWeight='bold',
-        color='black'
+        color='black',
+        fontSize=14
     ).encode(
         theta=alt.Theta('Relevancia:Q', stack=True),
         text=alt.Text('Percentual:Q', format='.1f')
