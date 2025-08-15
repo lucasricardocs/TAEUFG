@@ -218,66 +218,78 @@ def display_simple_metrics(stats):
 def create_altair_stacked_bar(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
-    df_percent['Concluído (%)'] = (df_percent['Conteúdos_Concluídos'] / df_percent['Total_Conteudos']) * 100
-    df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
-    # Transformar em formato longo
+    # Dados em formato longo
     df_melted = df_percent.melt(
-        id_vars=['Disciplinas'],
-        value_vars=['Concluído (%)', 'Pendente (%)'],
-        var_name='Status',
+        id_vars=['Disciplinas'], 
+        value_vars=['Concluído (%)', 'Pendente (%)'], 
+        var_name='Status', 
         value_name='Percentual'
     )
-    
+
     # Mapear nomes
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Normalizar para 0-1
+    # Normalizar percentuais para posição
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Determinar transparência: se uma barra é 100%, a outra fica transparente
-    df_melted['Opacity'] = 1
-    for disc in df_melted['Disciplinas'].unique():
-        temp = df_melted[df_melted['Disciplinas'] == disc]
-        if any(temp['Percentual'] >= 99.9):
-            df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Opacity'] = 0
+    # Criar coluna de texto em %
+    df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
+
+    # Condicional para cor do rótulo
+    def label_color(row, df_row):
+        if row['Status'] == 'Concluído' and df_row['Concluído (%)'] == 100:
+            return 'white'
+        elif row['Status'] == 'Concluído' and df_row['Pendente (%)'] == 100:
+            return 'transparent'
+        elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
+            return 'white'
+        elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
+            return 'transparent'
+        else:
+            return 'white'
+
+    df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None,
-                axis=alt.Axis(labels=True, labelFont='Helvetica Neue', grid=False)),  # remove linhas horizontais
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(labels=False, title=None, grid=False)),  # remove linhas verticais
-        color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                        legend=None),
-        opacity=alt.Opacity('Opacity:Q')
+    y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Helvetica Neue')),
+    x=alt.X('Percentual_norm:Q', 
+            stack="normalize", 
+            axis=alt.Axis(title=None, labels=False)),  # remove título e valores do eixo X
+    color=alt.Color('Status:N',
+                    scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                    legend=None)
     )
 
-    # Rótulos centralizados dentro das barras com %
+    # Rótulos centralizados
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
-        color='white',
-        font='Helvetica Neue',
         fontWeight='bold',
-        fontSize=12
+        fontSize=12,
+        font='Helvetica Neue'
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual:Q', format='.0f', title='').transform_calculate(
-            PercentLabel="datum.Percentual + '%'"  # adiciona o símbolo %
-        )
-    ).encode(
-        text='PercentLabel:N'
+        text=alt.Text('PercentText:N'),
+        color=alt.Color('LabelColor:N', scale=None)
     )
 
     return (bars + labels).properties(
-        height=350
-    ).configure_view(
-        strokeOpacity=0
-    )
+        height=350,
+        title=alt.TitleParams(
+            text="Percentual de Conclusão por Disciplina",
+            anchor='middle',
+            fontSize=18,
+            font='Helvetica Neue',
+            color='black'
+        )
+    ).configure_view(strokeOpacity=0)
     
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
