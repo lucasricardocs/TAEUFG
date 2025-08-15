@@ -345,8 +345,6 @@ def display_donuts_grid(df_summary, progresso_geral):
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
 
-import streamlit as st
-
 def handle_checkbox_change(worksheet, row_number, key, conteudo_nome, disciplina):
     # Salvar estado atual do expander antes da atualização
     estado_atual = st.session_state.get(f'expander_{disciplina}', False)
@@ -362,48 +360,38 @@ def handle_checkbox_change(worksheet, row_number, key, conteudo_nome, disciplina
         st.toast(f"Falha ao atualizar '{conteudo_nome}'.", icon="❌")
         st.session_state[key] = not novo_status
 
-
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
-    if not worksheet:
-        return
+    if not worksheet: return
 
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
-
+        
         # Calcula progresso da disciplina
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
-
-        # Estado inicial do expander
+        
+        # Usar estado da sessão para controlar expanders
         expander_key = f'expander_{disc}'
         if expander_key not in st.session_state:
             st.session_state[expander_key] = False
-
-        # Cabeçalho com barra de progresso
-        with st.expander(
-            f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
-            expanded=st.session_state[expander_key]
-        ):
-            # Mantém estado aberto/fechado
-            st.session_state[expander_key] = st.session_state.get(expander_key, False)
-
-            # Barra de progresso visual
-            st.progress(progresso / 100)
-
-            # Lista de conteúdos com checkboxes
+            
+        with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
+                         expanded=st.session_state[expander_key]):
+            st.session_state[expander_key] = True  # Manter expandido
+            
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
-                    label=row['Conteúdos'],
-                    value=bool(row['Status']),
+                    label=row['Conteúdos'], 
+                    value=bool(row['Status']), 
                     key=key,
                     on_change=handle_checkbox_change,
                     kwargs={
-                        'worksheet': worksheet,
-                        'row_number': row['sheet_row'],
-                        'key': key,
+                        'worksheet': worksheet, 
+                        'row_number': row['sheet_row'], 
+                        'key': key, 
                         'conteudo_nome': row['Conteúdos'],
                         'disciplina': disc
                     }
@@ -591,41 +579,31 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
 
-	# Barra de progresso azul com gradiente
-	display_progress_bar(progresso_geral)
+    # Barra de progresso azul com gradiente
+    display_progress_bar(progresso_geral)
+    
+    # Métricas simplificadas
+    display_simple_metrics(stats)
 
-	# Métricas simplificadas
-	display_simple_metrics(stats)
-	
-	titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-	st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-	
-	st.markdown("<br>", unsafe_allow_html=True)
-	
-	titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
-	display_donuts_grid(df_summary, progresso_geral)
-	
-	titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-	display_conteudos_com_checkboxes(df)
-	
-	# Análise Estratégica
-	titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-	
-	colA, colB = st.columns([1, 3], gap="large")
-	
-	with colA:
-	    st.altair_chart(
-	        bar_questoes_padronizado(ED_DATA).properties(height=400), 
-	        use_container_width=True
-	    )
-	
-	with colB:
-	    st.altair_chart(
-	        treemap_relevancia_vertical_rotulo_fora(ED_DATA).properties(height=400),
-	        use_container_width=True
-	    )
-	
-	rodape_motivacional()
-	
+    titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
+    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
+    display_donuts_grid(df_summary, progresso_geral)
+    
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
+    display_conteudos_com_checkboxes(df)
+    
+    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
+    colA, colB = st.columns(1,3)
+    with colA:
+        st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
+    with colB:
+        st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA), use_container_width=True)
+    
+    rodape_motivacional()
+
 if __name__ == "__main__":
     main()
