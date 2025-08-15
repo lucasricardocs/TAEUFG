@@ -215,7 +215,7 @@ def display_simple_metrics(stats):
     cols[2].metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
-def create_altair_stacked_bar(df_summary):
+def create_altair_stacked_bar_streamlit(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteúdos_Concluídos'] / df_percent['Total_Conteudos']) * 100
@@ -228,35 +228,34 @@ def create_altair_stacked_bar(df_summary):
         var_name='Status',
         value_name='Percentual'
     )
-    
+
     # Mapear nomes
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Normalizar para 0-1
-    df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
-    df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
-
-    # Determinar transparência: se uma barra é 100%, a outra fica transparente
-    df_melted['Opacity'] = 1
+    # Determinar quais rótulos devem aparecer
+    df_melted['Mostrar'] = 1
     for disc in df_melted['Disciplinas'].unique():
         temp = df_melted[df_melted['Disciplinas'] == disc]
         if any(temp['Percentual'] >= 99.9):
-            df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Opacity'] = 0
+            df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Mostrar'] = 0
+
+    # Normalizar para 0-1 e calcular posição central
+    df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
+    df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None,
-                axis=alt.Axis(labels=True, labelFont='Helvetica Neue', grid=False)),  # remove linhas horizontais
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(labels=False, title=None, grid=False)),  # remove linhas verticais
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labels=True, grid=False)),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(labels=False, title=None, grid=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None),
-        opacity=alt.Opacity('Opacity:Q')
+        order=alt.Order('Status:N')
     )
 
-    # Rótulos centralizados dentro das barras com %
-    labels = alt.Chart(df_melted).mark_text(
+    # Rótulos centralizados (aparecem só se Mostrar == 1)
+    labels = alt.Chart(df_melted[df_melted['Mostrar'] == 1]).mark_text(
         align='center',
         baseline='middle',
         color='white',
@@ -264,20 +263,20 @@ def create_altair_stacked_bar(df_summary):
         fontWeight='bold',
         fontSize=12
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual:Q', format='.0f', title='').transform_calculate(
-            PercentLabel="datum.Percentual + '%'"  # adiciona o símbolo %
-        )
-    ).encode(
-        text='PercentLabel:N'
+        y='Disciplinas:N',
+        x='Posicao_norm:Q',
+        text=alt.Text('Percentual:Q', format='.0f')
     )
 
-    return (bars + labels).properties(
-        height=350
-    ).configure_view(
-        strokeOpacity=0
-    )
+    chart = (bars + labels).properties(
+        height=350,
+        title=alt.TitleParams(
+            text="Percentual de Conclusão por Disciplina",
+            anchor='middle',
+            fontSize=18,
+            color='black'
+        )
+    ).configure_view(strokeOpacity=0)
     
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
@@ -560,7 +559,7 @@ def main():
     display_simple_metrics(stats)
 
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    st.altair_chart(create_altair_stacked_bar_streamlit(df_summary), use_container_width=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
