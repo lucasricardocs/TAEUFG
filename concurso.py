@@ -397,6 +397,9 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
+import pandas as pd
+import altair as alt
+
 def create_questoes_bar_chart(ed_data):
     df = pd.DataFrame(ed_data)
     
@@ -409,8 +412,8 @@ def create_questoes_bar_chart(ed_data):
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None,
                 axis=alt.Axis(labelColor='black', labelAngle=0)),
-        y=alt.Y('Questões:Q', title='Número de Questões',
-                axis=alt.Axis(labelColor='black', titleColor='black'))
+        y=alt.Y('Questões:Q', title=None,
+                axis=alt.Axis(labels=False, ticks=False, grid=False))
     )
 
     # Rótulos dentro das barras
@@ -418,7 +421,7 @@ def create_questoes_bar_chart(ed_data):
         align='center',
         baseline='middle',
         dy=-10,
-        color='black',
+        color='white',
         fontWeight='bold',
         fontSize=14
     ).encode(
@@ -426,13 +429,14 @@ def create_questoes_bar_chart(ed_data):
     )
 
     return (chart + labels).properties(
-        width=400,
-        height=400,
+        width=450,
+        height=450,
         title=alt.TitleParams(
             "Distribuição de Questões", 
             anchor='middle',
-            fontSize=18,
-            color='black'
+            fontSize=20,
+            color='black',
+            dy=-10  # Ajusta a altura do título
         )
     ).configure_view(
         strokeOpacity=0
@@ -447,7 +451,7 @@ def pizza_relevancia(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    # Base do gráfico
+    # Base do gráfico (pizza)
     pie = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
         theta=alt.Theta('Relevancia:Q', stack=True),
         color=alt.Color('Disciplinas:N',
@@ -466,7 +470,7 @@ def pizza_relevancia(ed_data):
         ]
     )
 
-    # Rótulos dentro das fatias
+    # Rótulos dentro das fatias (percentual)
     labels = alt.Chart(df).mark_text(
         radius=120,
         fontWeight='bold',
@@ -478,13 +482,14 @@ def pizza_relevancia(ed_data):
     )
 
     chart = (pie + labels).properties(
-        width=400,
-        height=400,
+        width=450,
+        height=450,
         title=alt.TitleParams(
             text='Relevância das Disciplinas (Peso × Questões)',
             anchor='middle',
-            fontSize=18,
-            color='black'
+            fontSize=20,
+            color='black',
+            dy=-10  # Ajusta a altura do título igual ao gráfico de barras
         )
     ).configure_view(
         strokeOpacity=0
