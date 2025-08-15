@@ -445,14 +445,16 @@ def pizza_relevancia(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    # Gráfico de pizza
+    # Base do gráfico
     pie = alt.Chart(df).mark_arc(innerRadius=0, cornerRadius=5, stroke='white').encode(
-        theta=alt.Theta('Relevancia:Q'),
+        theta=alt.Theta('Relevancia:Q', stack=True),
         color=alt.Color('Disciplinas:N',
                         legend=alt.Legend(
                             orient='bottom', title=None,
                             labelFontSize=12, labelColor='black',
-                            titleFontSize=14
+                            titleFontSize=14,
+                            direction='horizontal',
+                            padding=10
                         )),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
@@ -463,9 +465,13 @@ def pizza_relevancia(ed_data):
         ]
     )
 
-    # Rótulos dentro das fatias
-    labels = alt.Chart(df).mark_text(radiusOffset=20, fontWeight='bold', color='white').encode(
-        theta=alt.Theta('Relevancia:Q'),
+    # Rótulos dentro das fatias (posição média de cada fatia)
+    labels = alt.Chart(df).mark_text(
+        radius=120,  # distância do centro
+        fontWeight='bold',
+        color='white'
+    ).encode(
+        theta=alt.Theta('Relevancia:Q', stack=True),
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
@@ -479,7 +485,7 @@ def pizza_relevancia(ed_data):
             color='black'
         )
     ).configure_view(
-        strokeOpacity=0  # Remove bordas do gráfico
+        strokeOpacity=0
     ).configure_title(
         font='sans-serif',
         fontWeight='bold',
