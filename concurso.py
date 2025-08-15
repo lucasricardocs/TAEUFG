@@ -409,8 +409,17 @@ PALETA_CORES = ['#4c9ed9', '#3b7bbf', '#2a5ca4', '#1b3d89', '#0a1f6e']  # tons d
 
 # --- Gráfico de Colunas (Questões) ---
 def bar_questoes_padronizado(ed_data):
+    import pandas as pd
+    import altair as alt
+
     df = pd.DataFrame(ed_data)
-    
+
+    # Definir cores fixas para cada disciplina
+    disciplinas = df['Disciplinas'].unique().tolist()
+    cores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#1abc9c']  # adicione ou repita cores conforme necessário
+    color_scale = alt.Scale(domain=disciplinas, range=cores)
+
+    # --- Barras ---
     chart = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
@@ -420,12 +429,20 @@ def bar_questoes_padronizado(ed_data):
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=None),
         x=alt.X('Relevancia:Q', axis=None),
+        color=alt.Color('Disciplinas:N', scale=color_scale)  # aplica cores por disciplina
     ).properties(
         width=500,
         height=500,
-        title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Helvetica Neue', color='#2c3e50')
+        title=alt.TitleParams(
+            text='Distribuição de Questões',
+            anchor='middle',
+            fontSize=18,
+            font='Helvetica Neue',
+            color='#2c3e50'
+        )
     )
 
+    # --- Labels ---
     labels = chart.mark_text(
         align='center',
         baseline='bottom',
@@ -437,6 +454,7 @@ def bar_questoes_padronizado(ed_data):
         text='Questões:Q'
     )
 
+    # --- Combina barras e labels ---
     return alt.layer(chart, labels).configure_view(
         strokeOpacity=0,
         fillOpacity=0
