@@ -148,31 +148,15 @@ def calculate_stats(df_summary):
 
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div style="border-left: 6px solid {cor_lateral}; 
-                padding: 0.8rem 1.2rem; 
-                background: #fdfdfe;
-                border-radius: 8px; 
-                margin: 1.5rem 0 1rem 0;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
-        <h2 style="color: #2c3e50; 
-                    margin-block-start: 0; 
-                    margin-block-end: 0;
-                    font-weight: 700;
-                    font-size: 1.5rem;">
+    <div class="title-container" style="border-left: 6px solid {cor_lateral};">
+        <h2 style="color: #2c3e50;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
-    <div style="display: flex; 
-                align-items: center; 
-                justify-content: space-between; 
-                background: linear-gradient(to right, #ffffff, #f9f9f9);
-                border-radius: 12px; 
-                padding: 1.5rem 2.5rem; 
-                box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
-                margin-bottom: 2rem;">
+    <div class="top-container">
         <div style="display: flex; align-items: center;">
             <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 65px; margin-right: 2rem;"/>
             <div>
@@ -215,12 +199,10 @@ def display_simple_metrics(stats):
     cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
 def create_altair_stacked_bar(df_summary):
-    # Calcular percentuais absolutos
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
-    # Dados em formato longo
     df_melted = df_percent.melt(
         id_vars=['Disciplinas'], 
         value_vars=['Concluído (%)', 'Pendente (%)'], 
@@ -228,18 +210,14 @@ def create_altair_stacked_bar(df_summary):
         value_name='Percentual'
     )
 
-    # Mapear nomes
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Normalizar percentuais para posição
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Criar coluna de texto em %
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
-    # Condicional para cor do rótulo
     def label_color(row, df_row):
         if row['Status'] == 'Concluído' and df_row['Concluído (%)'] == 100:
             return 'white'
@@ -254,18 +232,14 @@ def create_altair_stacked_bar(df_summary):
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
-    # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-    y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Helvetica Neue')),
-    x=alt.X('Percentual_norm:Q', 
-            stack="normalize", 
-            axis=alt.Axis(title=None, labels=False)),  # remove título e valores do eixo X
-    color=alt.Color('Status:N',
-                     scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                     legend=None)
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
+        color=alt.Color('Status:N',
+                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                         legend=None)
     )
 
-    # Rótulos centralizados
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
@@ -286,9 +260,12 @@ def create_altair_stacked_bar(df_summary):
             anchor='middle',
             fontSize=18,
             font='Helvetica Neue',
-            color='black'
+            color='#2c3e50'
         )
-    ).configure_view(strokeOpacity=0)
+    ).configure_view(
+        strokeOpacity=0,
+        fillOpacity=0
+    )
     
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
@@ -305,7 +282,8 @@ def create_progress_donut(source_df, title):
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
         size=24, 
         fontWeight='bold',
-        color='black'
+        color='#2c3e50',
+        font='Helvetica Neue'
     ).encode(text='text:N')
     
     return (base + text).properties(
@@ -314,10 +292,11 @@ def create_progress_donut(source_df, title):
             anchor='middle', 
             fontSize=16, 
             dy=-10,
-            color='black'
+            color='#2c3e50'
         )
     ).configure_view(
-        strokeOpacity=0  # Remove a borda do gráfico
+        strokeOpacity=0,  # Remove a borda do gráfico
+        fillOpacity=0
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -361,7 +340,7 @@ def display_conteudos_com_checkboxes(df):
 
     # Usar st.session_state para agrupar o estado dos expanders
     if 'expander_states' not in st.session_state:
-        st.session_state['expander_states'] = {}
+        st.session_state['expander_states'] = {disc: False for disc in sorted(df['Disciplinas'].unique())}
 
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
@@ -370,13 +349,12 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        # Define o estado inicial se não existir
-        if disc not in st.session_state['expander_states']:
-            st.session_state['expander_states'][disc] = False
-            
         with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
                          expanded=st.session_state['expander_states'][disc]):
             
+            # Ao expandir, salva o estado como True
+            st.session_state['expander_states'][disc] = True
+
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
@@ -405,26 +383,30 @@ def bar_questoes_padronizado(ed_data):
         size=60
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title='Disciplina',
-                 axis=alt.Axis(labelColor='black', labelAngle=0)),
-        y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='black')),
+                 axis=alt.Axis(labelColor='#2c3e50', labelAngle=0, labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
+        y=alt.Y('Questões:Q', title='Número de Questões', axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue', titleFont='Helvetica Neue', titleColor='#2c3e50')),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     ).properties(
         width=500,
         height=500,
-        title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18)
+        title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Helvetica Neue', color='#2c3e50')
     )
 
     labels = chart.mark_text(
         align='center',
-        baseline='bottom',  # fora da barra
-        dy=-5,              # posiciona acima da barra
-        color='black',
-        fontWeight='bold'
+        baseline='bottom',
+        dy=-5,
+        color='#2c3e50',
+        fontWeight='bold',
+        font='Helvetica Neue'
     ).encode(
         text='Questões:Q'
     )
 
-    return alt.layer(chart, labels).configure_view(strokeOpacity=0)
+    return alt.layer(chart, labels).configure_view(
+        strokeOpacity=0,
+        fillOpacity=0
+    )
 
 # --- Treemap Relevância ---
 def treemap_relevancia_vertical_rotulo_fora(ed_data):
@@ -439,9 +421,9 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
 
     # Treemap vertical
     base = alt.Chart(df).mark_bar(stroke='white', strokeWidth=1).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None),
-        x=alt.X('Relevancia:Q', title=None),
-        color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância")),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labelFont='Helvetica Neue')),
+        color=alt.Color('Relevancia:Q', scale=color_scale, legend=alt.Legend(title="Relevância", titleFont='Helvetica Neue', labelFont='Helvetica Neue')),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
@@ -455,7 +437,9 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         title=alt.TitleParams(
             text='Relevância das Disciplinas (Peso × Questões)',
             anchor='middle',
-            fontSize=18
+            fontSize=18,
+            font='Helvetica Neue',
+            color='#2c3e50'
         )
     )
 
@@ -463,17 +447,21 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
     labels = alt.Chart(df).mark_text(
         align='left',
         baseline='middle',
-        dx=5,   # deslocamento horizontal à frente da barra
-        color='black',
+        dx=5,
+        color='#2c3e50',
         fontWeight='bold',
-        fontSize=12
+        fontSize=12,
+        font='Helvetica Neue'
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=None),
         x=alt.X('Relevancia:Q'),
         text='custom_text:N'
     )
 
-    return alt.layer(base, labels).configure_view(strokeOpacity=0)
+    return alt.layer(base, labels).configure_view(
+        strokeOpacity=0,
+        fillOpacity=0
+    )
     
 def rodape_motivacional():
     st.markdown("---")
@@ -494,16 +482,15 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # CSS customizado - Versão melhorada
     st.markdown("""
     <style>
         /* Estilos gerais */
         .stApp {
-            background-color: #f0f2f6; /* Fundo mais suave */
+            background-color: #f0f2f6;
             color: #333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
 
-        /* Removendo bordas e sombras do contêiner principal */
         .block-container {
             border: none !important;
             box-shadow: none !important;
@@ -513,10 +500,10 @@ def main():
         /* ======== CONTAINER DO TOPO APRIMORADO ======== */
         /* ==================================== */
         .top-container {
-            background: linear-gradient(to right, #ffffff, #f9f9f9) !important;
+            background-color: #ffffff !important;
             border-radius: 12px !important;
             padding: 1.5rem 2.5rem !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05) !important;
             margin-bottom: 2rem !important;
         }
 
@@ -530,11 +517,6 @@ def main():
             border-radius: 8px !important;
             margin: 1.5rem 0 1rem 0 !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
-            transition: box-shadow 0.3s ease-in-out;
-        }
-
-        .title-container:hover {
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1) !important;
         }
         
         .title-container h2 {
@@ -550,19 +532,20 @@ def main():
             align-items: center;
             padding: 0.6rem 1rem;
             border-radius: 8px;
-            margin-bottom: 0.3rem; /* Espaço entre os itens */
+            margin-bottom: 0.3rem;
             cursor: pointer;
-            transition: background-color 0.2s, box-shadow 0.2s;
-            border: 1px solid #e0e0e0; /* Borda suave */
+            transition: background-color 0.2s;
+            border: 1px solid #e0e0e0;
             background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
+        /* Remove o efeito de hover */
         .stCheckbox > label:hover {
-            background-color: #e9ecef;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
-        /* Estilo do checkbox customizado */
         .stCheckbox > label > div:first-child {
             width: 1.25rem !important;
             height: 1.25rem !important;
@@ -575,14 +558,12 @@ def main():
             align-items: center;
         }
         
-        /* Oculta o ícone de 'X' padrão */
         .stCheckbox > label > div > svg {
             display: none;
         }
 
-        /* Adiciona o ícone de check SVG */
         .stCheckbox > label > input[type="checkbox"]:checked + div {
-            background-color: #2ecc71 !important; /* Cor de sucesso */
+            background-color: #2ecc71 !important;
             border-color: #2ecc71 !important;
         }
 
@@ -595,15 +576,13 @@ def main():
             top: 2px;
         }
 
-        /* Estilo do texto do checkbox */
         .stCheckbox > label > div:last-child {
             font-size: 1rem;
             font-weight: 500;
-            margin-left: 0.5rem; /* Espaço entre o ícone e o texto */
+            margin-left: 0.5rem;
             transition: color 0.2s;
         }
 
-        /* Estilo para itens concluídos */
         .stCheckbox > label > input[type="checkbox"]:checked + div + div {
             color: #888;
             text-decoration: line-through;
@@ -618,7 +597,7 @@ def main():
             border-radius: 12px !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
             margin-bottom: 1rem !important;
-            overflow: hidden; /* Garante que o conteúdo não vaze */
+            overflow: hidden;
         }
 
         .stExpander > div:first-child {
@@ -627,12 +606,8 @@ def main():
             font-size: 1.1rem !important;
             font-weight: 700 !important;
             color: #2c3e50 !important;
-            border-bottom: 2px solid #3498db !important; /* Destaque azul */
+            border-bottom: 2px solid #3498db !important;
             cursor: pointer;
-        }
-        
-        .stExpander > div:first-child:hover {
-            background-color: #fdfdfd !important;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -649,10 +624,8 @@ def main():
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
 
-    # Barra de progresso azul com gradiente
     display_progress_bar(progresso_geral)
     
-    # Métricas simplificadas
     display_simple_metrics(stats)
 
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
