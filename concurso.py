@@ -444,10 +444,14 @@ def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['Percentual'] = df['Percentual'].astype(float)  # garante tipo numérico
+    df['Percentual'] = df['Percentual'].astype(float)
 
+    # Gráfico de pizza
     base = alt.Chart(df).mark_arc(
-        innerRadius=70, cornerRadius=5, stroke='white', strokeWidth=1
+        innerRadius=70,
+        cornerRadius=5,
+        stroke='white',
+        strokeWidth=1
     ).encode(
         theta=alt.Theta('Percentual:Q'),
         color=alt.Color('Disciplinas:N', legend=None),
@@ -460,11 +464,13 @@ def create_relevancia_pie_chart(ed_data):
         ]
     )
 
+    # Rótulos fora do arco
     labels = alt.Chart(df).mark_text(
-        radius=95,
+        radius=120,        # distância do centro
+        radiusOffset=10,   # desloca um pouco mais para fora
         size=14,
         fontWeight='bold',
-        color='white'
+        color='black'      # legível fora do arco
     ).encode(
         theta=alt.Theta('Percentual:Q'),
         text=alt.Text('Percentual:Q', format='.1f')
@@ -478,8 +484,13 @@ def create_relevancia_pie_chart(ed_data):
             fontSize=18,
             color='black'
         )
-    ).configure_view(strokeOpacity=0
-    ).configure_title(font='sans-serif', fontWeight='bold', anchor='middle')
+    ).configure_view(
+        strokeOpacity=0
+    ).configure_title(
+        font='sans-serif',
+        fontWeight='bold',
+        anchor='middle'
+    )
 
     return chart
     
