@@ -541,7 +541,7 @@ def main():
             padding: 1.5rem 2.5rem !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
             margin-bottom: 2rem !important;
-            border: 1px solid #d3d3d3; /* Stroke fino */
+            border: 0.1px solid #d3d3d3; /* Stroke fino */
         }
         
         .top-container h1, .top-container p {
