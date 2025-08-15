@@ -108,37 +108,37 @@ def update_status_in_sheet(sheet, row_number, new_status):
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
-        df_edital['Conteudos_concluídos'] = 0
+        df_edital['Conteudos_Concluidos'] = 0
         df_edital['Conteudos_Pendentes'] = df_edital['Total_Conteudos']
         return df_edital, 0.0
 
-    resumo = df.groupby('Disciplinas', observed=True)['Status'].sum().reset_index(name='Conteudos_concluídos')
+    resumo = df.groupby('Disciplinas', observed=True)['Status'].sum().reset_index(name='Conteudos_Concluidos')
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
-    df_merged['Conteudos_concluídos'] = df_merged['Conteudos_concluídos'].astype(int)
-    df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_concluídos']
+    df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
+    df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
     
-    df_merged['Pontos_concluídos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_concluídos']
+    df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
     
     total_peso = df_merged['Peso'].sum()
-    total_pontos = df_merged['Pontos_concluídos'].sum()
+    total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
     return df_merged, round(progresso_total, 1)
 
 def calculate_stats(df_summary):
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    concluídos = df_summary['Conteudos_concluídos'].sum()
+    concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
     
     maior_prioridade = "N/A"
     if pendentes > 0:
-        df_summary['Progresso_Percentual'] = (df_summary['Conteudos_concluídos'] / df_summary['Total_Conteudos'].replace(0, 1)) * 100
+        df_summary['Progresso_Percentual'] = (df_summary['Conteudos_Concluidos'] / df_summary['Total_Conteudos'].replace(0, 1)) * 100
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
         
     return {
         'dias_restantes': dias_restantes, 
-        'concluídos': int(concluídos),
+        'concluidos': int(concluidos),
         'pendentes': int(pendentes), 
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
@@ -210,7 +210,7 @@ def display_progress_bar(progresso_geral):
 
 def display_simple_metrics(stats):
     cols = st.columns(4)
-    cols[0].metric("✅ Concluídos", f"{stats['concluídos']}")
+    cols[0].metric("✅ Concluídos", f"{stats['concluidos']}")
     cols[1].metric("⏳ Pendentes", f"{stats['pendentes']}")
     cols[2].metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
@@ -218,7 +218,7 @@ def display_simple_metrics(stats):
 def create_altair_stacked_bar_clean(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
-    df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Concluído (%)'] = (df_percent['Conteúdos_Concluídos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
     # Transformar em formato longo
@@ -233,14 +233,15 @@ def create_altair_stacked_bar_clean(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Determinar quais barras devem aparecer (se uma for ~100%, a outra some)
+    # Determinar quais barras devem aparecer
     df_melted['Mostrar'] = 1
     for disc in df_melted['Disciplinas'].unique():
         temp = df_melted[df_melted['Disciplinas'] == disc]
         if any(temp['Percentual'] >= 99.9):
+            # Apenas a barra com ~100% é mostrada
             df_melted.loc[(df_melted['Disciplinas'] == disc) & (df_melted['Percentual'] < 99.9), 'Mostrar'] = 0
 
-    # Normalizar para 0-1 (stacking)
+    # Normalizar para 0-1 (para o stacking)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
@@ -268,9 +269,11 @@ def create_altair_stacked_bar_clean(df_summary):
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text='PercentLabel:N'
+        text=alt.Text('Percentual:Q', format='.0f')
     ).transform_calculate(
-        PercentLabel="datum.Percentual.toFixed(0) + '%'"
+        PercentLabel="datum.Percentual + '%'"
+    ).encode(
+        text='PercentLabel:N'
     )
 
     return (bars + labels).properties(
@@ -319,7 +322,7 @@ def display_donuts_grid(df_summary, progresso_geral):
 
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
-            {'Status': 'Concluído', 'Valor': row['Conteudos_concluídos']},
+            {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
@@ -356,16 +359,16 @@ def display_conteudos_com_checkboxes(df):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
         
         # Calcula progresso da disciplina
-        concluídos = conteudos_disciplina['Status'].sum()
+        concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
-        progresso = (concluídos / total) * 100 if total > 0 else 0
+        progresso = (concluidos / total) * 100 if total > 0 else 0
         
         # Usar estado da sessão para controlar expanders
         expander_key = f'expander_{disc}'
         if expander_key not in st.session_state:
             st.session_state[expander_key] = False
             
-        with st.expander(f"{disc.title()} - {concluídos}/{total} ({progresso:.1f}%)", 
+        with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
                          expanded=st.session_state[expander_key]):
             st.session_state[expander_key] = True  # Manter expandido
             
@@ -560,7 +563,7 @@ def main():
     display_simple_metrics(stats)
 
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-    st.altair_chart(create_altair_stacked_bar_clean(df_summary), use_container_width=True)
+    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
