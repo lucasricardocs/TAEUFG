@@ -218,7 +218,7 @@ def display_simple_metrics(stats):
 def create_altair_stacked_bar_clean(df_summary):
     # Calcular percentuais absolutos
     df_percent = df_summary.copy()
-    df_percent['Concluído (%)'] = (df_percent['Conteúdos_Concluídos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteúdos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
     # Transformar em formato longo
