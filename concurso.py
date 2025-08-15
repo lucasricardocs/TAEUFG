@@ -397,89 +397,76 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
-def create_questoes_bar_chart(ed_data):
+# Paleta de cores padronizada
+PALETA_CORES = ['#3498db', '#1abc9c', '#f1c40f', '#e74c3c', '#9b59b6']
+
+# Gráfico de barras padronizado
+def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
-    
-    # Gráfico de barras
+
     chart = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=4, 
+        cornerRadiusTopLeft=4,
         cornerRadiusTopRight=4,
-        size=40,
-        color='#3498db'
+        size=60
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None,
                 axis=alt.Axis(labelColor='black', labelAngle=0)),
-        y=alt.Y('Questões:Q', title=None,
-                axis=alt.Axis(labels=False, ticks=False, grid=False))
+        y=alt.Y('Questões:Q', title=None, axis=None),
+        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
+    ).properties(
+        width=500,
+        height=500,
+        title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18)
     )
 
-    # Rótulos dentro das barras
     labels = chart.mark_text(
         align='center',
         baseline='middle',
-        dy=-10,
+        dy=0,
         color='white',
-        fontWeight='bold',
-        fontSize=14
+        fontWeight='bold'
     ).encode(
         text='Questões:Q'
     )
 
-    return (chart + labels).properties(
-        width=450,
-        height=450,
-        title=alt.TitleParams(
-            "Distribuição de Questões", 
-            anchor='middle',
-            fontSize=20,
-            color='black',
-            dy=-10  # Ajusta a altura do título
-        )
-    ).configure_view(
-        strokeOpacity=0
-    ).configure_title(
-        font='sans-serif',
-        fontWeight='bold',
-        anchor='middle'
-    )
+    return alt.layer(chart, labels).configure_view(strokeOpacity=0)
 
-def treemap_relevancia(ed_data):
+
+# Treemap de relevância padronizado
+def treemap_relevancia_padronizado(ed_data):
+    import altair as alt
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
-    df['Percentual'] = (df['Relevancia'] / df['Relevancia'].sum() * 100).round(1)
+    df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
 
-    chart = alt.Chart(df).mark_rect(stroke='white').encode(
-        x=alt.X('sum(Relevancia):Q', stack='zero', title=None),
-        y=alt.Y('Disciplinas:N', title=None, axis=None),
-        color=alt.Color('Relevancia:Q', scale=alt.Scale(scheme='blues')),
+    chart = alt.Chart(df).mark_rect().encode(
+        x=alt.X('Disciplinas:N', title=None, axis=None),
+        y=alt.Y('Relevancia:Q', title=None, axis=None),
+        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
             alt.Tooltip('Questões:Q'),
             alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
-            alt.Tooltip('Percentual:Q', title='Percentual (%)')
+            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     ).properties(
         width=500,
-        height=400,
-        title=alt.TitleParams(
-            text='Relevância das Disciplinas (Peso × Questões)',
-            anchor='middle',
-            fontSize=18
-        )
+        height=500,
+        title=alt.TitleParams(text='Relevância das Disciplinas (Peso × Questões)',
+                              anchor='middle', fontSize=18)
     )
 
-    # Adicionar rótulos no centro dos retângulos
-    text = chart.mark_text(
+    labels = chart.mark_text(
         align='center',
         baseline='middle',
-        color='black',
+        color='white',
         fontWeight='bold'
     ).encode(
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    return alt.layer(chart, text).configure_view(strokeOpacity=0)
+    return alt.layer(chart, labels).configure_view(strokeOpacity=0)
     
 def rodape_motivacional():
     st.markdown("---")
