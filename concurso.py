@@ -242,12 +242,10 @@ def create_altair_stacked_bar(df_summary):
 
     # Condicional para cor do rótulo
     def label_color(row, df_row):
-        # Se esta barra for Concluído
         if row['Status'] == 'Concluído' and df_row['Concluído (%)'] == 100:
             return 'white'
         elif row['Status'] == 'Concluído' and df_row['Pendente (%)'] == 100:
             return 'transparent'
-        # Se esta barra for Pendente
         elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
             return 'white'
         elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
@@ -255,13 +253,12 @@ def create_altair_stacked_bar(df_summary):
         else:
             return 'white'
 
-    # Mapear cada linha do melted para a cor
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
-        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None)),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Helvetica Neue')),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None, labelFont='Helvetica Neue')),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None)
@@ -272,12 +269,13 @@ def create_altair_stacked_bar(df_summary):
         align='center',
         baseline='middle',
         fontWeight='bold',
-        fontSize=12
+        fontSize=12,
+        font='Helvetica Neue'
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
         text=alt.Text('PercentText:N'),
-        color=alt.Color('LabelColor:N', scale=None)  # Usa a cor calculada
+        color=alt.Color('LabelColor:N', scale=None)
     )
 
     return (bars + labels).properties(
@@ -286,6 +284,7 @@ def create_altair_stacked_bar(df_summary):
             text="Percentual de Conclusão por Disciplina",
             anchor='middle',
             fontSize=18,
+            font='Helvetica Neue',
             color='black'
         )
     ).configure_view(strokeOpacity=0)
