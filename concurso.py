@@ -473,7 +473,7 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         fontWeight='bold',
         fontSize=12
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None),
+        y=alt.Y('Disciplinas:N', sort=None, axis=None),
         x=alt.X('Relevancia:Q'),
         text='custom_text:N'
     )
