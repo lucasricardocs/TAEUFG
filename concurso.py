@@ -429,7 +429,7 @@ def create_relevancia_pie_chart(ed_data):
     ).encode(
         text=alt.Text('Percentual:Q', format='.1f'),
         angle=alt.value(0)
-    
+    )
     return (base + labels).properties(
         height=350, 
         title=alt.TitleParams(
