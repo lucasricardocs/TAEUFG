@@ -462,11 +462,11 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
 
     # --- Barras com cantos arredondados à direita e stroke ---
     bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=8,
-        cornerRadiusBottomRight=8,
+        cornerRadiusTopRight=3,
+        cornerRadiusBottomRight=3,
         stroke='#d3d3d3',
         strokeWidth=2,
-        size=30  # grossura da barra
+        size=60  # grossura da barra
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, axis=None),
         x=alt.X('Relevancia:Q', axis=None),
