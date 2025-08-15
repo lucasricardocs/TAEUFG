@@ -524,29 +524,45 @@ def main():
             margin: 1rem 0 1.5rem 0;
         }
         
-        /* Expanders mais compactos */
+        /* ======== EXPANDERS ======== */
         .stExpander {
-            border: 1px solid #ddd !important;
-            border-radius: 4px !important;
-            margin-bottom: 0.5rem !important; /* Menos espaço entre eles */
+            border: 1px solid #ddd !important;  /* Borda leve */
+            border-radius: 6px !important;      /* Cantos arredondados */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; /* Sombra suave */
+            margin-bottom: 0.6rem !important;   /* Espaço menor entre expanders */
         }
         
-        /* Cabeçalho do expander mais enxuto */
-        .st-emotion-cache-1q7spjk {
-            font-size: 1rem !important;
-            font-weight: 600 !important;
-            padding: 0.4rem 0.6rem !important; /* Metade do tamanho anterior */
+        .stExpander > div:first-child {
+            padding: 0.5rem 0.8rem !important;  /* Espaço interno reduzido */
+            background-color: #f9f9f9 !important;
+            font-size: 1rem !important;         /* Tamanho de texto equilibrado */
+            font-weight: 600 !important;        /* Negrito */
+            color: #333 !important;
         }
         
-        /* Checkboxes mais próximas */
+        /* ======== CHECKBOXES ======== */
         .stCheckbox > label {
-            font-size: 0.95rem;
-            padding: 0.3rem 0; /* Menos espaço */
-            border-bottom: 1px solid #f5f5f5;
+            font-size: 0.95rem !important;      /* Um pouco menor que antes */
+            padding: 0.4rem 0 !important;       /* Menos espaçamento */
+            display: flex;
+            align-items: center;                /* Alinha verticalmente */
+            gap: 0.4rem;                         /* Espaço entre caixa e texto */
+            border-bottom: 1px solid #eee;      /* Linha divisória sutil */
         }
         
         .stCheckbox > label:last-child {
-            border-bottom: none !important;
+            border-bottom: none !important;     /* Remove a última linha */
+        }
+        
+        /* ======== CORES AO PASSAR O MOUSE ======== */
+        .stExpander:hover {
+            border-color: #bbb !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08) !important;
+        }
+        
+        .stCheckbox > label:hover {
+            background-color: #f4f4f4 !important;
+            border-radius: 4px;
         }
     </style>
     """, unsafe_allow_html=True)
