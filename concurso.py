@@ -345,40 +345,18 @@ def display_donuts_grid(df_summary, progresso_geral):
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
 
-st.markdown("""
-<style>
-    div[data-testid="stExpander"] {
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        padding: 8px;
-        margin-bottom: 8px;
-        border: 1px solid #ddd;
-    }
-    div[data-testid="stExpander"] > div[role="button"] {
-        background-color: #e6e6e6;
-        padding: 8px;
-        font-weight: bold;
-        border-radius: 6px;
-    }
-    div.stCheckbox {
-        margin: 0px 0px 4px 0px !important;
-        padding: 0px !important;
-    }
-    label[data-testid="stCheckbox"] p {
-        margin-bottom: 0px !important;
-        font-size: 15px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
+import streamlit as st
 
 def handle_checkbox_change(worksheet, row_number, key, conteudo_nome, disciplina):
-    estado_atual = st.session_state.get(f'expander_{disciplina}', True)
+    # Salvar estado atual do expander antes da atualização
+    estado_atual = st.session_state.get(f'expander_{disciplina}', False)
+    
     novo_status = st.session_state[key]
-
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast(f"Status de '{conteudo_nome}' atualizado!", icon="✅")
         load_data_with_row_indices.clear()
+        
+        # Restaurar estado do expander após atualização
         st.session_state[f'expander_{disciplina}'] = estado_atual
     else:
         st.toast(f"Falha ao atualizar '{conteudo_nome}'.", icon="❌")
@@ -393,21 +371,32 @@ def display_conteudos_com_checkboxes(df):
     for disc in sorted(df['Disciplinas'].unique()):
         conteudos_disciplina = df[df['Disciplinas'] == disc]
 
+        # Calcula progresso da disciplina
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
 
+        # Estado inicial do expander
         expander_key = f'expander_{disc}'
         if expander_key not in st.session_state:
-            st.session_state[expander_key] = True
+            st.session_state[expander_key] = False
 
-        with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)",
-                         expanded=st.session_state[expander_key]):
+        # Cabeçalho com barra de progresso
+        with st.expander(
+            f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
+            expanded=st.session_state[expander_key]
+        ):
+            # Mantém estado aberto/fechado
+            st.session_state[expander_key] = st.session_state.get(expander_key, False)
 
+            # Barra de progresso visual
+            st.progress(progresso / 100)
+
+            # Lista de conteúdos com checkboxes
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
-                    label=f"{row['Conteúdos']}",
+                    label=row['Conteúdos'],
                     value=bool(row['Status']),
                     key=key,
                     on_change=handle_checkbox_change,
