@@ -421,15 +421,11 @@ def create_questoes_bar_chart(ed_data):
 def create_relevancia_pie_chart(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
-    total_relevancia = df['Relevancia'].sum()
-    df['Percentual'] = (df['Relevancia'] / total_relevancia) * 100
+    df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
+    df['Percentual'] = df['Percentual'].astype(float)  # garante tipo numérico
 
-    # Gráfico base
     base = alt.Chart(df).mark_arc(
-        innerRadius=70, 
-        cornerRadius=5,
-        stroke='white',
-        strokeWidth=1
+        innerRadius=70, cornerRadius=5, stroke='white', strokeWidth=1
     ).encode(
         theta=alt.Theta('Percentual:Q'),
         color=alt.Color('Disciplinas:N', legend=None),
@@ -442,18 +438,16 @@ def create_relevancia_pie_chart(ed_data):
         ]
     )
 
-    # Labels centralizados nas fatias
     labels = alt.Chart(df).mark_text(
-        radius=95,  # posição dentro do arco
+        radius=95,
         size=14,
         fontWeight='bold',
         color='white'
     ).encode(
-        theta=alt.Theta('Percentual:Q'),  # garante ângulo correto
+        theta=alt.Theta('Percentual:Q'),
         text=alt.Text('Percentual:Q', format='.1f')
     )
 
-    # Combinar gráfico e labels
     chart = (base + labels).properties(
         height=350,
         title=alt.TitleParams(
@@ -462,13 +456,10 @@ def create_relevancia_pie_chart(ed_data):
             fontSize=18,
             color='black'
         )
-    ).configure_view(
-        strokeOpacity=0
-    ).configure_title(
-        font='sans-serif',
-        fontWeight='bold',
-        anchor='middle'
-    )
+    ).configure_view(strokeOpacity=0
+    ).configure_title(font='sans-serif', fontWeight='bold', anchor='middle')
+
+    return chart
     
 def rodape_motivacional():
     st.markdown("---")
