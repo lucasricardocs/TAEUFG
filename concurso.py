@@ -148,44 +148,19 @@ def calculate_stats(df_summary):
 
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div style="
-        position: relative;
+    <div class="title-container" style="
         border-left: 6px solid {cor_lateral};
-        background-color: #fcfcfc;
-        padding: 0.7rem 1.2rem;
-        margin: 1rem 0 1.5rem 0;
-        border-radius: 8px;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.06);
-        transition: all 0.3s ease;
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.08)';"
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 12px rgba(0,0,0,0.06)';">
-        <h2 style="
-            color: #2c3e50;
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.45rem;
-            line-height: 1.3;
-            font-family: 'Helvetica Neue', sans-serif;
-        ">
+        background: linear-gradient(to right, #fdfdfe, #f9f9f9);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    ">
+        <h2 style="color: #2c3e50;">
             {texto}
         </h2>
-    </div>
-    """, unsafe_allow_html=True)
-
+    </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
-    <div style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.2rem 2rem;
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.07);
-        transition: box-shadow 0.3s ease, transform 0.3s ease;
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.1)';"
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.07)';">
+    <div class="top-container">
         <div style="display: flex; align-items: center;">
             <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 65px; margin-right: 1.8rem;"/>
             <div>
@@ -579,11 +554,17 @@ def main():
         .title-container {
             border-left: 6px solid #8e44ad !important;
             padding: 0.8rem 1.2rem !important;
-            background: #fdfdfe !important;
             border-radius: 8px !important;
             margin: 1.5rem 0 1rem 0 !important;
             box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
             border: 1px solid #d3d3d3; /* Stroke fino */
+            background: linear-gradient(to right, #fdfdfe, #f9f9f9) !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .title-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08) !important;
         }
         
         .title-container h2 {
@@ -592,47 +573,47 @@ def main():
         }
 
         /* ========================= */
-/*   CHECKBOX TOTALMENTE NEUTRO   */
-/* ========================= */
-.stCheckbox > label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 1rem;
-    font-weight: normal;
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin-bottom: 0rem;
-    cursor: pointer;
-}
+        /*   CHECKBOX TOTALMENTE NEUTRO   */
+        /* ========================= */
+        .stCheckbox > label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 1rem;
+            font-weight: normal;
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-bottom: 0rem;
+            cursor: pointer;
+        }
 
-.stCheckbox > label:hover {
-    background: none !important;
-    border: none !important;
-}
+        .stCheckbox > label:hover {
+            background: none !important;
+            border: none !important;
+        }
 
-/* A caixinha mantém o padrão do navegador/Streamlit */
-.stCheckbox > label > div:first-child {
-    width: auto !important;
-    height: auto !important;
-    border: none !important;
-    background: none !important;
-    padding: 0 !important;
-}
+        /* A caixinha mantém o padrão do navegador/Streamlit */
+        .stCheckbox > label > div:first-child {
+            width: auto !important;
+            height: auto !important;
+            border: none !important;
+            background: none !important;
+            padding: 0 !important;
+        }
 
-.stCheckbox > label > div > svg {
-    display: none !important;
-}
+        .stCheckbox > label > div > svg {
+            display: none !important;
+        }
 
-.stCheckbox > label > input[type="checkbox"]:checked + div {
-    background: none !important;
-    border: none !important;
-}
+        .stCheckbox > label > input[type="checkbox"]:checked + div {
+            background: none !important;
+            border: none !important;
+        }
 
-.stCheckbox > label > input[type="checkbox"]:checked + div::after {
-    content: none !important;
-}
+        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
+            content: none !important;
+        }
     </style>
     """, unsafe_allow_html=True)
     
