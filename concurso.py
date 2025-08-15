@@ -614,10 +614,10 @@ def main():
     colA, colB = st.columns([1, 3], gap="large")
 
 	with colA:
-    st.altair_chart(bar_questoes_padronizado(ED_DATA).properties(height=400), use_container_width=True)
+    		st.altair_chart(bar_questoes_padronizado(ED_DATA).properties(height=400), use_container_width=True)
 
 	with colB:
-    st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA).properties(height=400), use_container_width=True)
+    		st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA).properties(height=400), use_container_width=True)
     
     rodape_motivacional()
 
