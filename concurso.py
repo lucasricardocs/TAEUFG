@@ -619,34 +619,6 @@ def main():
         		use_container_width=True
     )
 
-	# Barra de progresso azul com gradiente
-	display_progress_bar(progresso_geral)
-
-	# Métricas simplificadas
-	display_simple_metrics(stats)
-
-	titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
-	st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-
-	st.markdown("<br>", unsafe_allow_html=True)
-
-	titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
-	display_donuts_grid(df_summary, progresso_geral)
-
-	titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-	display_conteudos_com_checkboxes(df)
-
-	# Análise Estratégica
-	titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-
-	colA, colB = st.columns([1, 3], gap="large")
-
-	with colA:
-    		st.altair_chart(
-        		bar_questoes_padronizado(ED_DATA).properties(height=400), 
-        		use_container_width=True
-    )
-
 	with colB:
     		st.altair_chart(
         		treemap_relevancia_vertical_rotulo_fora(ED_DATA).properties(height=400),
