@@ -595,7 +595,7 @@ def main():
     with colA:
         st.altair_chart(create_questoes_bar_chart(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(pizza_relevancia(ED_DATA) , use_container_width=True)
+        st.altair_chart(treemap_relevancia(ed_data) , use_container_width=True)
 
     rodape_motivacional()
 
