@@ -220,12 +220,12 @@ def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
-
+    
     # Dados em formato longo
     df_melted = df_percent.melt(
-        id_vars=['Disciplinas'],
-        value_vars=['Concluído (%)', 'Pendente (%)'],
-        var_name='Status',
+        id_vars=['Disciplinas'], 
+        value_vars=['Concluído (%)', 'Pendente (%)'], 
+        var_name='Status', 
         value_name='Percentual'
     )
 
@@ -233,11 +233,14 @@ def create_altair_stacked_bar(df_summary):
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Calcular posição central dentro da barra (0 a 1)
+    # Calcular posição central normalizada (0-1)
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
 
-    # Criar gráfico de barras empilhadas
+    # Criar coluna para mostrar rótulo somente quando a barra não for 100%
+    df_melted['Mostrar_Rotulo'] = df_melted['Percentual'] < 100
+
+    # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title=None)),
@@ -246,24 +249,27 @@ def create_altair_stacked_bar(df_summary):
                         legend=None)
     )
 
-    # Adicionar rótulos centralizados dentro das barras
+    # Rótulos centralizados
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
         color='white',
         fontWeight='bold',
         fontSize=12
+    ).transform_filter(
+        alt.datum.Mostrar_Rotulo  # mostra só se True
+    ).transform_calculate(
+        PercentText="datum.Percentual.toFixed(1) + '%'"
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
-        text=alt.Text('Percentual:Q', format='.1f', title='Percentual (%)')  # mostra em %
+        text='PercentText:N'
     )
 
-    # Combinar barras e rótulos
     return (bars + labels).properties(
         height=350,
         title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina",
+            text="Percentual de Conclusão por Disciplina", 
             anchor='middle',
             fontSize=18,
             color='black'
