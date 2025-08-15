@@ -216,66 +216,59 @@ def display_simple_metrics(stats):
     cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
 def create_altair_stacked_bar(df_summary):
-    # Calcular percentuais
+    # Calcular percentuais absolutos
     df_percent = df_summary.copy()
     df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
     
-    # Preparar dados para o gráfico
-    df_melted = df_percent.melt(id_vars=['Disciplinas'], 
-                                value_vars=['Concluído (%)', 'Pendente (%)'], 
-                                var_name='Status', 
-                                value_name='Percentual')
-    
+    # Dados em formato longo
+    df_melted = df_percent.melt(
+        id_vars=['Disciplinas'], 
+        value_vars=['Concluído (%)', 'Pendente (%)'], 
+        var_name='Status', 
+        value_name='Percentual'
+    )
+
     # Mapear nomes
     status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
-    # Calcular posição para rótulos
-    df_melted['Posicao'] = df_melted.groupby('Disciplinas')['Percentual'].cumsum() - (df_melted['Percentual'] / 2)
-    
-    # Criar gráfico de barras
+    # Calcular posição central normalizada (0-1)
+    df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
+    df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
+
+    # Gráfico de barras
     bars = alt.Chart(df_melted).mark_bar().encode(
-        y=alt.Y('Disciplinas:N', 
-                sort=None, 
-                title=None, 
-                axis=alt.Axis(labelColor='black', titleFontSize=14)),
-        x=alt.X('Percentual:Q', 
-                stack="normalize", 
-                axis=alt.Axis(format='%', title='Percentual', labelColor='black', titleColor='black'),
-                scale=alt.Scale(domain=[0, 1])),  # Fixar eixo X até 100%
-        color=alt.Color('Status:N', 
-                       scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                       legend=None),  # Remover legenda
-        order=alt.Order('color_Status_sort_index:Q')
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black')),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(format='%', title='Percentual')),
+        color=alt.Color('Status:N',
+                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        legend=None)
     )
-    
-    # Adicionar rótulos dentro das barras
+
+    # Rótulos centralizados
     labels = alt.Chart(df_melted).mark_text(
         align='center',
         baseline='middle',
-        dx=0,
         color='white',
         fontWeight='bold',
         fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Posicao:Q', stack='zero', axis=None),
+        x=alt.X('Posicao_norm:Q'),  # posição já normalizada
         text=alt.Text('Percentual:Q', format='.1f')
     )
-    
+
     return (bars + labels).properties(
-        height=350, 
+        height=350,
         title=alt.TitleParams(
             text="Percentual de Conclusão por Disciplina", 
-            anchor='middle', 
+            anchor='middle',
             fontSize=18,
             color='black'
         )
-    ).configure_view(
-        strokeOpacity=0  # Remove a borda do gráfico
-    )
-
+    ).configure_view(strokeOpacity=0)
+    
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0]
@@ -430,8 +423,8 @@ def create_relevancia_pie_chart(ed_data):
     df['Relevancia'] = df['Peso'] * df['Questões']
     total_relevancia = df['Relevancia'].sum()
     df['Percentual'] = (df['Relevancia'] / total_relevancia) * 100
-    
-    # Criar gráfico de pizza
+
+    # Gráfico base
     base = alt.Chart(df).mark_arc(
         innerRadius=70, 
         cornerRadius=5,
@@ -439,7 +432,7 @@ def create_relevancia_pie_chart(ed_data):
         strokeWidth=1
     ).encode(
         theta=alt.Theta('Percentual:Q'),
-        color=alt.Color('Disciplinas:N', legend=None),  # Remover legenda
+        color=alt.Color('Disciplinas:N', legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
@@ -448,29 +441,35 @@ def create_relevancia_pie_chart(ed_data):
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     )
-    
-    # Adicionar rótulos com percentuais dentro das fatias
-    labels = base.mark_text(
-        radius=150,  # Posição do rótulo (dentro da fatia)
+
+    # Labels centralizados nas fatias
+    labels = alt.Chart(df).mark_text(
+        radius=95,  # controla a posição dentro do arco
         size=14,
         fontWeight='bold',
         color='white'
     ).encode(
+        theta=alt.Theta('Percentual:Q'),  # garante posição angular correta
         text=alt.Text('Percentual:Q', format='.1f')
     )
-    
-    return (base + labels).properties(
+
+    # Combinar e formatar
+    chart = (base + labels).properties(
         height=350,
         title=alt.TitleParams(
-            "Relevância (Peso × Questões)", 
-            anchor='middle', 
+            "Relevância (Peso × Questões)",
+            anchor='middle',
             fontSize=18,
             color='black'
         )
     ).configure_view(
-        strokeOpacity=0  # Remove a borda do gráfico
+        strokeOpacity=0
+    ).configure_title(
+        font='sans-serif',
+        fontWeight='bold',
+        anchor='middle'
     )
-
+    
 def rodape_motivacional():
     st.markdown("---")
     st.markdown("""
