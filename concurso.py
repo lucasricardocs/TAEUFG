@@ -463,18 +463,20 @@ def treemap_relevancia_vertical_com_rotulos(ed_data):
         )
     )
 
-    # Rótulos centralizados com nome e percentual
-    labels = chart.mark_text(
-        align='center',
-        baseline='middle',
-        color='white',
-        fontWeight='bold'
-    ).encode(
-        text=alt.Text('custom_text:N')
-    )
-
     # Criar coluna customizada para rótulos
     df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']}\n{row['Percentual']:.1f}%", axis=1)
+
+    # Rótulos centralizados, cor branca fixa
+    labels = alt.Chart(df).mark_text(
+        align='center',
+        baseline='middle',
+        color='white',  # Cor fixa
+        fontWeight='bold'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None),
+        x=alt.X('Relevancia:Q', stack='zero'),
+        text='custom_text:N'
+    )
 
     return alt.layer(chart, labels).configure_view(strokeOpacity=0)
     
