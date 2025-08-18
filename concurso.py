@@ -22,13 +22,9 @@ except:
     pass
 
 # --- Constantes de Configuração ---
-# CUIDADO: Por segurança, o SPREADSHEET_ID e WORKSHEET_NAME devem ser secretos no ambiente de produção.
-# Aqui eles estão fixos apenas para demonstração.
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
-
-# Chave da API do OpenWeatherMap
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
 
 ED_DATA = {
@@ -38,7 +34,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# Lista de frases motivacionais
 FRASES_MOTIVACIONAIS = [
     "A aprovação é uma maratona, não um sprint. Mantenha o seu ritmo.",
     "Cada tópico estudado é um passo mais perto do seu futuro cargo.",
@@ -172,7 +167,8 @@ def calculate_stats(df_summary):
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
-# --- Funções para buscar dados de clima real (usando requests) ---
+    
+# --- Funções para buscar dados de clima real ---
 @st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
@@ -220,7 +216,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         border-left: 6px solid {cor_lateral};
         background: linear-gradient(to right, #fdfdfe, #f9f9f9);
     ">
-        <h2 style="color: #2c3e50;">
+        <h2 style="color: #2c3e50; font-family: 'Helvetica Neue', sans-serif;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
@@ -248,22 +244,26 @@ def render_topbar_with_logo(dias_restantes):
                     margin: 0;
                     font-size: 1.1rem;
                     font-weight: 500;
+                    font-family: 'Helvetica Neue', sans-serif;
                 ">
                     Concurso TAE UFG 2025
                 </p>
             </div>
         </div>
+        <div class="top-container-center">
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
+            </p>
+        </div>
         <div class="top-container-right">
             <p style="
-                margin: 0.1rem 0 0.5rem 0; /* Ajustado para subir o texto */
+                margin: 0.1rem 0 0.5rem 0;
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
+                font-family: 'Helvetica Neue', sans-serif;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-            </p>
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
             </p>
         </div>
     </div>
@@ -273,8 +273,8 @@ def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-            <span style="font-weight: 500; color: #3498db;">Progresso Geral</span>
-            <span style="font-weight: 600; color: #2c3e50;">{progresso_geral:.1f}%</span>
+            <span style="font-weight: 500; color: #3498db; font-family: 'Helvetica Neue', sans-serif;">Progresso Geral</span>
+            <span style="font-weight: 600; color: #2c3e50; font-family: 'Helvetica Neue', sans-serif;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="height: 100%; width: {progresso_geral}%;
@@ -358,6 +358,11 @@ def create_altair_stacked_bar(df_summary):
     ).configure_view(
         stroke=None,
         fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Helvetica Neue',
+        titleFont='Helvetica Neue'
     )
 
 def create_progress_donut(source_df, title):
@@ -385,11 +390,14 @@ def create_progress_donut(source_df, title):
             anchor='middle',
             fontSize=26,
             dy=-10,
-            color='#000000'
+            color='#000000',
+            font='Helvetica Neue'
         )
     ).configure_view(
         stroke=None,
         fill='transparent'
+    ).configure(
+        background='transparent'
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -467,7 +475,7 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
-# --- Gráficos
+# --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
 def bar_questoes_padronizado(ed_data):
@@ -508,6 +516,11 @@ def bar_questoes_padronizado(ed_data):
     ).configure_view(
         stroke=None,
         fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Helvetica Neue',
+        titleFont='Helvetica Neue'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -567,6 +580,11 @@ def bar_relevancia_customizado(ed_data):
     ).configure_view(
         stroke=None,
         fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Helvetica Neue',
+        titleFont='Helvetica Neue'
     )
 
 def rodape_motivacional():
@@ -574,7 +592,7 @@ def rodape_motivacional():
     st.markdown("---")
     st.markdown(f"""
     <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
-        <p style='font-size: 0.9rem; margin: 0;'>
+        <p style='font-size: 0.9rem; margin: 0; font-family: "Helvetica Neue", sans-serif;'>
             🚀 {frase_aleatoria} ✨
         </p>
     </div>
@@ -589,21 +607,25 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Configura um tema vazio para garantir fundos transparentes nos gráficos Altair
+    # Configura um tema vazio para garantir fundos transparentes
     alt.themes.enable('none')
     
     # CSS com animações e efeitos
     st.markdown("""
     <style>
         /* Tipografia e cores globais */
+        * {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        }
+        
         .stApp {
             background-color: #f7f9fc;
             color: #333;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
-        /* Oculta o fundo padrão dos gráficos */
-        .stApp [data-testid="stVegaLiteChart"] > div {
+        /* Fundo transparente para todos os gráficos */
+        .stApp [data-testid="stVegaLiteChart"] > div,
+        .vega-embed.has-actions {
             background-color: transparent !important;
         }
 
@@ -616,27 +638,16 @@ def main():
             animation: fadeIn 0.8s ease-out;
         }
 
-        /* Efeito de hover suave */
-        .title-container, .top-container, [data-testid="stMetricValue"] {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .title-container:hover, .top-container:hover, [data-testid="stMetricValue"]:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
         /* ==================================== */
-        /* ======== CONTAINER DO TOPO APRIMORADO ======== */
+        /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
         .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
-            padding: 2rem 3rem;
+            padding: 1.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
-            position: relative;
-            overflow: hidden;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -644,23 +655,22 @@ def main():
         .top-container-left {
             display: flex;
             align-items: center;
+            flex: 1;
+        }
+        .top-container-center {
+            flex: 1;
+            text-align: center;
         }
         .top-container-right {
+            flex: 1;
             text-align: right;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Alinhamento do conteúdo no topo */
-            height: 100%;
+            justify-content: flex-end;
         }
 
-        .top-container h1, .top-container p {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            position: relative;
-            z-index: 2;
-        }
-        
         /* ==================================== */
-        /* ======== ANIMAÇÃO CONTADOR DE DIAS ======== */
+        /* ======== DESTAQUE PARA CONTADOR DE DIAS ======== */
         /* ==================================== */
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -670,16 +680,11 @@ def main():
         .days-countdown {
             animation: pulse 2s infinite;
             color: #e74c3c;
-            font-weight: 700;
-            font-size: 4.5rem; /* Aumentado para maior destaque */
+            font-weight: 800;
+            font-size: 5.5rem;
             margin: 0;
-            font-family: 'Helvetica Neue', sans-serif;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
-            line-height: 1.2;
-        }
-        .top-container-right p:first-child {
-            margin-bottom: 0.5rem;
-            margin-top: 0.1rem; /* Altera a margem superior para subir */
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
+            line-height: 1.1;
         }
         
         /* ==================================== */
@@ -698,6 +703,7 @@ def main():
             font-weight: 700;
             font-size: 1.6rem;
             color: #2c3e50;
+            margin: 0;
         }
         
         /* ==================================== */
@@ -763,49 +769,7 @@ def main():
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    
-    weather_data = get_weather_data('Goiania, BR')
-    
-    st.markdown(f"""
-    <div class="top-container">
-        <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
-            <div>
-                <h1 style="
-                    color: #2c3e50;
-                    margin: 0;
-                    font-size: 2.2rem;
-                    font-weight: 500;
-                    line-height: 1.2;
-                    font-family: 'Helvetica Neue', sans-serif;
-                ">
-                    Dashboard de Estudos
-                </h1>
-                <p style="
-                    color: #555;
-                    margin: 0;
-                    font-size: 1.1rem;
-                    font-weight: 500;
-                ">
-                    Concurso TAE UFG 2025
-                </p>
-            </div>
-        </div>
-        <div class="top-container-right">
-            <p style="
-                margin: 0.1rem 0 0.5rem 0;
-                color: #777;
-                font-size: 0.9rem;
-                font-weight: 400;
-            ">
-                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-            </p>
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    render_topbar_with_logo(dias_restantes)
 
     df = load_data_with_row_indices()
 
@@ -817,7 +781,6 @@ def main():
     stats = calculate_stats(df_summary)
 
     display_progress_bar(progresso_geral)
-    
     display_simple_metrics(stats)
 
     st.divider()
@@ -844,4 +807,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
