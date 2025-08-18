@@ -224,32 +224,34 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
 def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
-    st.markdown(f"""
-    <div class="top-container">
-        <!-- Coluna Esquerda: Logo -->
-        <div class="top-column left-column">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" class="logo-img"/>
+    # Cria 3 colunas com proporções 1:2:1
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col1:  # Coluna Esquerda - Logo
+        st.image("https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png", width=120)
+    
+    with col2:  # Coluna Central - Títulos
+        st.markdown("""
+        <div style="text-align: center;">
+            <h1 style="margin: 0; font-size: 2.8rem; color: #2c3e50;">Dashboard de Estudos</h1>
+            <p style="margin: 0; margin-top: 0.5rem; font-size: 1.8rem; color: #555;">Concurso TAE UFG 2025</p>
         </div>
-        
-        <!-- Coluna Central: Títulos -->
-        <div class="top-column center-column">
-            <div class="titles-container">
-                <h1>Dashboard de Estudos</h1>
-                <p>Concurso TAE UFG 2025</p>
-            </div>
-        </div>
-        
-        <!-- Coluna Direita: Informações -->
-        <div class="top-column right-column">
-            <div class="info-top">
+        """, unsafe_allow_html=True)
+    
+    with col3:  # Coluna Direita - Informações
+        st.markdown(f"""
+        <div style="text-align: right;">
+            <div style="font-size: 1.1rem; color: #777;">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
-            <div class="days-countdown">
+            <div style="color: #e74c3c; font-weight: 800; font-size: 3.5rem; text-align: center; margin-top: 1rem;">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    
+    # Adiciona uma linha divisória
+    st.markdown("---")
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
