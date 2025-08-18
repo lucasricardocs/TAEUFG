@@ -9,6 +9,7 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import random
+from pyowm.owm25 import OWM25
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -21,9 +22,14 @@ except:
     pass
 
 # --- Constantes de Configuração ---
+# CUIDADO: Por segurança, o SPREADSHEET_ID e WORKSHEET_NAME devem ser secretos no ambiente de produção.
+# Aqui eles estão fixos apenas para demonstração.
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
+
+# Chave da API do OpenWeatherMap
+API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
 
 ED_DATA = {
     'Disciplinas': ['PORTUGUES', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'ESPECÍFICOS'],
@@ -32,6 +38,7 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
+# Lista de frases motivacionais
 FRASES_MOTIVACIONAIS = [
     "A aprovação é uma maratona, não um sprint. Mantenha o seu ritmo.",
     "Cada tópico estudado é um passo mais perto do seu futuro cargo.",
@@ -165,6 +172,34 @@ def calculate_stats(df_summary):
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
+# --- Funções para buscar dados de clima real ---
+@st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
+def get_weather_data(city_name):
+    try:
+        owm = OWM25(API_KEY)
+        observation = owm.weather_at_place(city_name)
+        w = observation.weather
+        
+        temperature = w.temperature('celsius')['temp']
+        status = w.status
+        
+        weather_emojis = {
+            'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
+            'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
+            'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
+        }
+        emoji = weather_emojis.get(status, '🌍')
+        
+        return {
+            "temperature": f"{temperature:.0f}°C",
+            "emoji": emoji
+        }
+    except Exception as e:
+        # Se a API falhar, retorne dados padrão para não quebrar o app
+        return {
+            "temperature": "N/A",
+            "emoji": "🤷"
+        }
 
 # --- Funções de Interface e Visualização ---
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
@@ -179,9 +214,11 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
+    weather_data = get_weather_data('Goiania, BR')
+    
     st.markdown(f"""
     <div class="top-container">
-        <div style="display: flex; align-items: center;">
+        <div class="top-container-left">
             <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 110px; margin-right: 1rem;"/>
             <div>
                 <h1 style="
@@ -204,14 +241,8 @@ def render_topbar_with_logo(dias_restantes):
                 </p>
             </div>
         </div>
-        <div style="text-align: right;">
-            <p style="
-                color: #e74c3c;
-                font-weight: 700;
-                font-size: 1.65rem;
-                margin: 0;
-                font-family: 'Helvetica Neue', sans-serif;
-            ">
+        <div class="top-container-right">
+            <p class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </p>
             <p style="
@@ -220,7 +251,7 @@ def render_topbar_with_logo(dias_restantes):
                 font-size: 0.9rem;
                 font-weight: 400;
             ">
-                {datetime.now().strftime('%d de %B de %Y')}
+                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </p>
         </div>
     </div>
@@ -242,7 +273,6 @@ def display_progress_bar(progresso_geral):
     """, unsafe_allow_html=True)
 
 def display_simple_metrics(stats):
-    st.markdown('<div class="metric-container animated-fade-in">', unsafe_allow_html=True)
     cols = st.columns(4)
     with cols[0]:
         st.metric("✅ Concluídos", f"{stats['concluidos']}")
@@ -252,7 +282,6 @@ def display_simple_metrics(stats):
         st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     with cols[3]:
         st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
@@ -321,9 +350,6 @@ def create_altair_stacked_bar(df_summary):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    ).configure_view(
-        strokeOpacity=0,
-        fillOpacity=0
     )
 
 def create_progress_donut(source_df, title):
@@ -353,9 +379,6 @@ def create_progress_donut(source_df, title):
             dy=-10,
             color='#2c3e50'
         )
-    ).configure_view(
-        strokeOpacity=0,
-        fillOpacity=0
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -471,9 +494,6 @@ def bar_questoes_padronizado(ed_data):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    ).configure_view(
-        strokeOpacity=0,
-        fillOpacity=0
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -528,9 +548,6 @@ def bar_relevancia_customizado(ed_data):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    ).configure_view(
-        strokeOpacity=0,
-        fillOpacity=0
     )
 
 def rodape_motivacional():
@@ -553,6 +570,9 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
+    # Configura um tema vazio para garantir fundos transparentes nos gráficos Altair
+    alt.themes.enable('none')
+    
     # CSS com animações e efeitos
     st.markdown("""
     <style>
@@ -561,11 +581,6 @@ def main():
             background-color: #f7f9fc;
             color: #333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        }
-
-        /* Oculta o fundo padrão dos gráficos */
-        .stApp [data-testid="stVegaLiteChart"] > div {
-            background-color: transparent !important;
         }
 
         /* Animação de Fade-in */
@@ -578,10 +593,10 @@ def main():
         }
 
         /* Efeito de hover suave */
-        .title-container, .top-container, .metric-container {
+        .title-container, .top-container, [data-testid="stMetricValue"] {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .title-container:hover, .top-container:hover, .metric-container:hover {
+        .title-container:hover, .top-container:hover, [data-testid="stMetricValue"]:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
@@ -598,12 +613,39 @@ def main():
             border: 1px solid #d3d3d3;
             position: relative;
             overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-container-left {
+            display: flex;
+            align-items: center;
+        }
+        .top-container-right {
+            text-align: right;
         }
 
         .top-container h1, .top-container p {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             position: relative;
             z-index: 2;
+        }
+        
+        /* ==================================== */
+        /* ======== ANIMAÇÃO CONTADOR DE DIAS ======== */
+        /* ==================================== */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .days-countdown {
+            animation: pulse 2s infinite;
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: 1.65rem;
+            margin: 0;
+            font-family: 'Helvetica Neue', sans-serif;
         }
 
         /* ==================================== */
@@ -636,13 +678,6 @@ def main():
             font-size: 1rem;
             font-weight: 500;
             color: #666;
-        }
-        .metric-container {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         
         /* ==================================== */
@@ -694,8 +729,50 @@ def main():
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    render_topbar_with_logo(dias_restantes)
     
+    weather_data = get_weather_data('Goiania, BR')
+    
+    st.markdown(f"""
+    <div class="top-container">
+        <div class="top-container-left">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 110px; margin-right: 1rem;"/>
+            <div>
+                <h1 style="
+                    color: #2c3e50;
+                    margin: 0;
+                    font-size: 2.2rem;
+                    font-weight: 500;
+                    line-height: 1.2;
+                    font-family: 'Helvetica Neue', sans-serif;
+                ">
+                    Dashboard de Estudos
+                </h1>
+                <p style="
+                    color: #555;
+                    margin: 0;
+                    font-size: 1.1rem;
+                    font-weight: 500;
+                ">
+                    Concurso TAE UFG 2025
+                </p>
+            </div>
+        </div>
+        <div class="top-container-right">
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
+            </p>
+            <p style="
+                margin: 0;
+                color: #777;
+                font-size: 0.9rem;
+                font-weight: 400;
+            ">
+                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     df = load_data_with_row_indices()
 
     if df.empty:
