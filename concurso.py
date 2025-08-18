@@ -21,8 +21,6 @@ except:
     pass
 
 # --- Constantes de Configuração ---
-# CUIDADO: Por segurança, o SPREADSHEET_ID e WORKSHEET_NAME devem ser secretos no ambiente de produção.
-# Aqui eles estão fixos apenas para demonstração.
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -34,7 +32,6 @@ ED_DATA = {
     'Questões': [10, 5, 5, 10, 20]
 }
 
-# Lista de frases motivacionais
 FRASES_MOTIVACIONAIS = [
     "A aprovação é uma maratona, não um sprint. Mantenha o seu ritmo.",
     "Cada tópico estudado é um passo mais perto do seu futuro cargo.",
@@ -59,7 +56,6 @@ FRASES_MOTIVACIONAIS = [
 ]
 
 # --- Funções de Conexão com Google Sheets ---
-
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
@@ -114,7 +110,6 @@ def load_data_with_row_indices():
         return pd.DataFrame()
 
 # --- Funções de Lógica e Cálculos ---
-
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -143,9 +138,9 @@ def calculate_progress(df):
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-
+    
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
-
+    
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -156,29 +151,27 @@ def calculate_stats(df_summary):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-
+    
     maior_prioridade = "N/A"
     if pendentes > 0:
         df_summary['Progresso_Percentual'] = (df_summary['Conteudos_Concluidos'] / df_summary['Total_Conteudos'].replace(0, 1)) * 100
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
-
+        
     return {
-        'dias_restantes': dias_restantes,
+        'dias_restantes': dias_restantes, 
         'concluidos': int(concluidos),
-        'pendentes': int(pendentes),
+        'pendentes': int(pendentes), 
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
 
 # --- Funções de Interface e Visualização ---
-
 def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     st.markdown(f"""
-    <div class="title-container" style="
+    <div class="title-container animated-fade-in" style="
         border-left: 6px solid {cor_lateral};
         background: linear-gradient(to right, #fdfdfe, #f9f9f9);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     ">
         <h2 style="color: #2c3e50;">
             {texto}
@@ -189,12 +182,12 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div style="display: flex; align-items: center;">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 95px; margin-right: 1.8rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 110px; margin-right: 1rem;"/>
             <div>
                 <h1 style="
                     color: #2c3e50;
                     margin: 0;
-                    font-size: 1.95rem;
+                    font-size: 2.2rem;
                     font-weight: 500;
                     line-height: 1.2;
                     font-family: 'Helvetica Neue', sans-serif;
@@ -204,7 +197,7 @@ def render_topbar_with_logo(dias_restantes):
                 <p style="
                     color: #555;
                     margin: 0;
-                    font-size: 1rem;
+                    font-size: 1.1rem;
                     font-weight: 500;
                 ">
                     Concurso TAE UFG 2025
@@ -235,7 +228,7 @@ def render_topbar_with_logo(dias_restantes):
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
-    <div style="margin: 0.5rem 0 1.5rem 0;">
+    <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
             <span style="font-weight: 500; color: #3498db;">Progresso Geral</span>
             <span style="font-weight: 600; color: #2c3e50;">{progresso_geral:.1f}%</span>
@@ -249,11 +242,17 @@ def display_progress_bar(progresso_geral):
     """, unsafe_allow_html=True)
 
 def display_simple_metrics(stats):
+    st.markdown('<div class="metric-container animated-fade-in">', unsafe_allow_html=True)
     cols = st.columns(4)
-    cols[0].metric("✅ Concluídos", f"{stats['concluidos']}")
-    cols[1].metric("⏳ Pendentes", f"{stats['pendentes']}")
-    cols[2].metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
-    cols[3].metric("⭐ Prioridade", stats['maior_prioridade'].title())
+    with cols[0]:
+        st.metric("✅ Concluídos", f"{stats['concluidos']}")
+    with cols[1]:
+        st.metric("⏳ Pendentes", f"{stats['pendentes']}")
+    with cols[2]:
+        st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
+    with cols[3]:
+        st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
@@ -360,6 +359,7 @@ def create_progress_donut(source_df, title):
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
+    st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
     charts_data = []
     prog_geral_df = pd.DataFrame([
         {'Status': 'Concluido', 'Valor': progresso_geral},
@@ -382,15 +382,15 @@ def display_donuts_grid(df_summary, progresso_geral):
                     chart_info = charts_data[i+j]
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# Lógica de manuseio do checkbox aprimorada (UX)
+
 def on_checkbox_change(worksheet, row_number, key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Limpa o cache para forçar a recarga dos dados e atualizar todos os gráficos
         load_data_with_row_indices.clear()
-        # Não precisa de st.rerun() aqui, o script roda automaticamente.
+        
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -399,10 +399,8 @@ def display_conteudos_com_checkboxes(df):
     if not worksheet:
         return
     
-    # Campo de busca para UX aprimorada
     search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM...").strip().upper()
     
-    # Filtra o DataFrame com base na busca
     if search_query:
         df_filtered = df[df.apply(lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(), axis=1)]
     else:
@@ -420,11 +418,9 @@ def display_conteudos_com_checkboxes(df):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
-                # Garante que o estado do checkbox na UI seja lido da planilha
                 if key not in st.session_state:
                     st.session_state[key] = bool(row['Status'])
 
-                # Renderiza o checkbox
                 st.checkbox(
                     label=row['Conteúdos'],
                     value=st.session_state[key],
@@ -437,15 +433,12 @@ def display_conteudos_com_checkboxes(df):
                     }
                 )
 
-# --- Paleta de cores base ---
-# Ajustado para uma paleta de cores mais profissional
+# --- Gráficos
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
-# --- Gráfico de Colunas (Questões) ---
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
 
-    # --- Barras ---
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
@@ -457,7 +450,6 @@ def bar_questoes_padronizado(ed_data):
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
 
-    # --- Labels acima das barras ---
     labels = bars.mark_text(
         align='center',
         baseline='bottom',
@@ -484,20 +476,17 @@ def bar_questoes_padronizado(ed_data):
         fillOpacity=0
     )
 
-# --- Gráfico de Barras de Relevância (versão aprimorada) ---
 def bar_relevancia_customizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
     df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
-    # Escala de cores azul claro → azul escuro
     color_scale = alt.Scale(
         domain=[df['Relevancia'].min(), df['Relevancia'].max()],
         range=['#cce6ff', '#004c99']
     )
 
-    # --- Camada 1: Barras ---
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
@@ -516,12 +505,11 @@ def bar_relevancia_customizado(ed_data):
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     )
-
-    # --- Camada 2: Rótulos de texto com nome e percentual ---
+    
     text = bars.mark_text(
         align='left',
         baseline='middle',
-        dx=3, # Deslocamento para fora da barra
+        dx=3,
         color='#2c3e50',
         fontWeight='bold',
         fontSize=12,
@@ -549,7 +537,7 @@ def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
     st.markdown("---")
     st.markdown(f"""
-    <div style="text-align: center; margin: 1.5rem 0; padding: 1rem; color: #555;">
+    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0;'>
             🚀 {frase_aleatoria} ✨
         </p>
@@ -564,12 +552,13 @@ def main():
         layout="wide",
         initial_sidebar_state="collapsed"
     )
-
+    
+    # CSS com animações e efeitos
     st.markdown("""
     <style>
-        /* Estilos gerais */
+        /* Tipografia e cores globais */
         .stApp {
-            background-color: #ffffff;
+            background-color: #f7f9fc;
             color: #333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
@@ -579,46 +568,83 @@ def main():
             background-color: transparent !important;
         }
 
+        /* Animação de Fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animated-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* Efeito de hover suave */
+        .title-container, .top-container, .metric-container {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .title-container:hover, .top-container:hover, .metric-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
         /* ==================================== */
         /* ======== CONTAINER DO TOPO APRIMORADO ======== */
         /* ==================================== */
         .top-container {
-            background-color: #ffffff !important;
-            border-radius: 12px !important;
-            padding: 1.5rem 2.5rem !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
-            margin-bottom: 2rem !important;
-            border: 0.1px solid #d3d3d3; /* Stroke fino */
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
+            border-radius: 18px;
+            padding: 2rem 3rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid #d3d3d3;
+            position: relative;
+            overflow: hidden;
         }
 
         .top-container h1, .top-container p {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            position: relative;
+            z-index: 2;
         }
 
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
         .title-container {
-            border-left: 6px solid #8e44ad !important;
-            padding: 0.8rem 1.2rem !important;
-            border-radius: 8px !important;
-            margin: 1.5rem 0 1rem 0 !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05) !important;
-            border: 0.1px solid #d3d3d3; /* Stroke fino */
-            background: linear-gradient(to right, #fff, #f9f9f9) !important;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 6px solid #8e44ad;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0 1.5rem 0;
+            background: linear-gradient(to right, #ffffff, #f9f9f9);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
         }
-
-        .title-container:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.08) !important;
-        }
-
+        
         .title-container h2 {
-            font-weight: 700 !important;
-            font-size: 1.5rem !important;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #2c3e50;
         }
-
+        
+        /* ==================================== */
+        /* ======== MÉTRICAS EM DESTAQUE ======== */
+        /* ==================================== */
+        [data-testid="stMetricValue"] {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+        }
+        .metric-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
         /* ==================================== */
         /* ======== CHECKBOXES ESTILIZADOS ======== */
         /* ==================================== */
@@ -629,7 +655,7 @@ def main():
 
         .stCheckbox > label {
             transition: background-color 0.2s ease;
-            padding: 0.1rem 0.5rem; /* Ajustado para deixar os itens mais próximos */
+            padding: 0.1rem 0.5rem;
             border-radius: 5px;
             font-weight: 400;
         }
@@ -666,35 +692,35 @@ def main():
         }
     </style>
     """, unsafe_allow_html=True)
-
+    
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
-
+    
     df = load_data_with_row_indices()
 
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
-
+        
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
 
     display_progress_bar(progresso_geral)
-
+    
     display_simple_metrics(stats)
 
     st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-
+    
     st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
-
+    
     st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
-
+    
     st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
@@ -702,7 +728,7 @@ def main():
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
         st.altair_chart(bar_relevancia_customizado(ED_DATA), use_container_width=True)
-
+    
     rodape_motivacional()
 
 if __name__ == "__main__":
