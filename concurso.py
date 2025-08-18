@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -223,46 +222,105 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
-    weather_data = get_weather_data('Goiania, BR')
+    weather_data = get_weather_data('Goiânia, BR')
     
-    st.markdown(f"""
+    st.markdown("""
     <style>
-        /* Container principal - mantido */
-        .responsive-topbar {{
+        .responsive-topbar {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
+            gap: 1rem;
+            padding: 1rem 2rem;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 12px;
             margin-bottom: 1.5rem;
-        }}
+            border: 1px solid #d3d3d3;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
         
-        /* ANIMAÇÃO FUNCIONAL */
-        @keyframes pulse {{
-            0% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }}
+        .topbar-logo {
+            flex: 1 1 100px;
+            min-width: 100px;
+            display: flex;
+            justify-content: flex-start;
+        }
         
-        .days-countdown {{
+        .topbar-titles {
+            flex: 3 1 250px;
+            text-align: center;
+            padding: 0 0.5rem;
+        }
+        
+        .topbar-info {
+            flex: 2 1 200px;
+            text-align: right;
+        }
+        
+        @media (max-width: 768px) {
+            .responsive-topbar {
+                flex-direction: column;
+                text-align: center;
+            }
+            .topbar-logo, .topbar-titles, .topbar-info {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        /* Títulos menores */
+        .main-title {
+            margin: 0;
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+        
+        .sub-title {
+            margin: 0.3rem 0 0;
+            font-size: clamp(1rem, 1.8vw, 1.4rem);
+            color: #555;
+        }
+        
+        .weather-info {
+            font-size: clamp(0.8rem, 1.3vw, 1rem);
+            color: #777;
+        }
+        
+        .days-countdown {
             color: #e74c3c;
             font-weight: 800;
             font-size: clamp(1.5rem, 3vw, 2.5rem);
-            margin: 0.5rem 0;
+            margin-top: 0.3rem;
             animation: pulse 2s infinite ease-in-out;
             display: inline-block;
-            transform-origin: center;
-        }}
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
+    """, unsafe_allow_html=True)
     
+    st.markdown(f"""
     <div class="responsive-topbar">
+        <div class="topbar-logo">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: auto; max-width: 100%; max-height: 80px;"/>
+        </div>
+        
+        <div class="topbar-titles">
+            <h1 class="main-title">Dashboard de Estudos</h1>
+            <p class="sub-title">Concurso TAE UFG 2025</p>
+        </div>
+        
         <div class="topbar-info">
             <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
-            <div class="days-countdown" style="animation: pulse 2s infinite;">
+            <div class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
         </div>
@@ -455,19 +513,16 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        # Usar um estado para cada expander
         expander_key = f"expander_{disc}"
         if expander_key not in st.session_state:
-            st.session_state[expander_key] = True  # Por padrão, expandido
+            st.session_state[expander_key] = True
 
         with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expander_key]):
-            # Atualiza o estado para manter expandido mesmo quando o checkbox é alterado
             st.session_state[expander_key] = True
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
-                # Verifica se a chave já existe no estado da sessão
                 if key not in st.session_state:
                     st.session_state[key] = bool(row['Status'])
 
@@ -545,7 +600,7 @@ def bar_relevancia_customizado(ed_data):
         strokeWidth=1,
         size=40
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),  # Remover rótulos do eixo Y
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
@@ -611,14 +666,11 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Configura um tema vazio para garantir fundos transparentes
     alt.themes.enable('none')
     
-    # CSS com animações e efeitos
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Tipografia e cores globais */
         * {
             font-family: 'Nunito', sans-serif !important;
         }
@@ -628,13 +680,11 @@ def main():
             color: #333;
         }
         
-        /* Fundo transparente para todos os gráficos */
         .stApp [data-testid="stVegaLiteChart"] > div,
         .vega-embed.has-actions {
             background-color: transparent !important;
         }
 
-        /* Animação de Fade-in */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -643,104 +693,6 @@ def main():
             animation: fadeIn 0.8s ease-out;
         }
 
-        /* ==================================== */
-        /* ======== NOVO CONTAINER DO TOPO ======== */
-        /* ==================================== */
-        .top-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 18px;
-            padding: 1.5rem 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            border: 1px solid #d3d3d3;
-            height: 250px;
-        }
-        
-        /* Colunas do topo */
-        .top-column {
-            display: flex;
-            height: 100%;
-            padding: 0 15px;
-        }
-        
-        /* Coluna Esquerda: Logo */
-        .left-column {
-            flex: 1;
-            justify-content: center;
-            align-items: center;
-        }
-        .logo-img {
-            height: 120px;
-            max-width: 100%;
-            object-fit: contain;
-        }
-        
-        /* Coluna Central: Títulos */
-        .center-column {
-            flex: 2;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            border-left: 1px solid #d3d3d3;
-            border-right: 1px solid #d3d3d3;
-        }
-        .titles-container {
-            width: 100%;
-        }
-        .titles-container h1 {
-            color: #2c3e50;
-            margin: 0;
-            font-size: 2.8rem;
-            font-weight: 700;
-            line-height: 1.1;
-        }
-        .titles-container p {
-            color: #555;
-            margin: 0;
-            margin-top: 0.8rem;
-            font-size: 1.8rem;
-            font-weight: 500;
-        }
-        
-        /* Coluna Direita: Informações */
-        .right-column {
-            flex: 1;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .info-top {
-            font-size: 1.1rem;
-            color: #777;
-            text-align: right;
-            font-weight: 400;
-        }
-        .days-countdown {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #e74c3c;
-            font-weight: 800;
-            font-size: 3.5rem;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
-            animation: pulse 2s infinite;
-            line-height: 1.2;
-            text-align: center;
-        }
-        
-        /* Animação do contador de dias */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }
-
-        /* ==================================== */
-        /* ======== TÍTULOS MELHORADOS ======== */
-        /* ==================================== */
         .title-container {
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
@@ -757,15 +709,11 @@ def main():
             margin: 0;
         }
         
-        /* ==================================== */
-        /* ======== SOLUÇÃO PARA AS SETAS ======== */
-        /* ==================================== */
-        /* Esconde o ícone de SVG padrão no cabeçalho do expander */
+        /* SOLUÇÃO PARA ESCONDER E SUBSTITUIR AS SETAS DO EXPANDER */
         .st-expander-header [data-testid="stExpander-header-action-icon"] {
             display: none;
         }
 
-        /* Adiciona o ícone de + */
         .st-expander-header button::before {
             content: "+";
             display: inline-block;
@@ -775,14 +723,10 @@ def main():
             color: #9b59b6;
         }
 
-        /* Adiciona o ícone de - quando o expander está expandido */
         .st-expander-header[aria-expanded="true"] button::before {
             content: "-";
         }
         
-        /* ==================================== */
-        /* ======== MÉTRICAS EM DESTAQUE ======== */
-        /* ==================================== */
         [data-testid="stMetricValue"] {
             font-size: 1.8rem;
             font-weight: bold;
@@ -794,9 +738,6 @@ def main():
             color: #666;
         }
         
-        /* ==================================== */
-        /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
-        /* ==================================== */
         .stCheckbox > label {
             transition: none !important;
         }
@@ -804,9 +745,6 @@ def main():
             background-color: inherit;
         }
         
-        /* ==================================== */
-        /* ======== CORREÇÃO DE LAYOUT ======== */
-        /* ==================================== */
         .st-emotion-cache-1v0mbdj {
             display: block;
             margin: 0 auto;
@@ -853,4 +791,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
