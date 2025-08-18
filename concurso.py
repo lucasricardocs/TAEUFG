@@ -258,7 +258,7 @@ def render_topbar_with_logo(dias_restantes):
                 margin: 0.1rem 0 0.1rem 0; /* Ajustado para subir o texto */
                 color: #777;
                 font-size: 0.5rem;
-                font-weight: 400;
+                font-weight: 200;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </p>
