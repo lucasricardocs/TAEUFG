@@ -9,7 +9,7 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import random
-from pyowm.owm25 import OWM25
+from pyowm import OWM
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -176,7 +176,7 @@ def calculate_stats(df_summary):
 @st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     try:
-        owm = OWM25(API_KEY)
+        owm = OWM(API_KEY)
         observation = owm.weather_at_place(city_name)
         w = observation.weather
         
