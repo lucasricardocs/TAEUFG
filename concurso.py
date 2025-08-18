@@ -675,7 +675,7 @@ def main():
         .days-countdown {
             animation: pulse 2s infinite;
             color: #e74c3c;
-            font-weight: 800;
+            font-weight: 500;
             font-size: 3.5rem; /* Tamanho ajustado para caber melhor */
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
