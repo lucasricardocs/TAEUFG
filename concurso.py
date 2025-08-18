@@ -554,7 +554,7 @@ def bar_relevancia_customizado(ed_data):
         fontSize=12,
         font='Helvetica Neue'
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
+        y=alt.Y('Disciplinas:N'),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
