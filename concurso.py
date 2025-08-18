@@ -224,34 +224,116 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
 def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
-    # Cria 3 colunas com proporções 1:2:1
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # CSS responsivo para o container do topo
+    st.markdown("""
+    <style>
+        /* Container principal responsivo */
+        .responsive-topbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
+            border-radius: 18px;
+            margin-bottom: 2rem;
+            border: 1px solid #d3d3d3;
+        }
+        
+        /* Colunas se ajustam em telas pequenas */
+        .topbar-logo {
+            flex: 1 1 120px;
+            min-width: 120px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .topbar-titles {
+            flex: 3 1 300px;
+            text-align: center;
+            padding: 0 1rem;
+        }
+        
+        .topbar-info {
+            flex: 2 1 250px;
+            text-align: right;
+        }
+        
+        /* Ajustes para telas pequenas */
+        @media (max-width: 768px) {
+            .responsive-topbar {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .topbar-info {
+                text-align: center;
+                margin-top: 1rem;
+            }
+            
+            .days-countdown {
+                font-size: 2.5rem !important;
+            }
+        }
+        
+        /* Estilos dos elementos */
+        .main-title {
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.8rem);
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+        
+        .sub-title {
+            margin: 0.5rem 0 0;
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
+            color: #555;
+        }
+        
+        .weather-info {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #777;
+        }
+        
+        .days-countdown {
+            color: #e74c3c;
+            font-weight: 800;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            margin-top: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
-    with col1:  # Coluna Esquerda - Logo
-        st.image("https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png", width=120)
-    
-    with col2:  # Coluna Central - Títulos
-        st.markdown("""
-        <div style="text-align: center;">
-            <h1 style="margin: 0; font-size: 2.8rem; color: #2c3e50;">Dashboard de Estudos</h1>
-            <p style="margin: 0; margin-top: 0.5rem; font-size: 1.8rem; color: #555;">Concurso TAE UFG 2025</p>
+    # HTML do topbar responsivo
+    st.markdown(f"""
+    <div class="responsive-topbar">
+        <div class="topbar-logo">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: auto; max-width: 100%; max-height: 120px;"/>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:  # Coluna Direita - Informações
-        st.markdown(f"""
-        <div style="text-align: right;">
-            <div style="font-size: 1.1rem; color: #777;">
+        
+        <div class="topbar-titles">
+            <h1 class="main-title">Dashboard de Estudos</h1>
+            <p class="sub-title">Concurso TAE UFG 2025</p>
+        </div>
+        
+        <div class="topbar-info">
+            <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
-            <div style="color: #e74c3c; font-weight: 800; font-size: 3.5rem; text-align: center; margin-top: 1rem;">
+            <div class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    # Adiciona uma linha divisória
-    st.markdown("---")
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
