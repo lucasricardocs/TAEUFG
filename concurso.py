@@ -216,7 +216,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         border-left: 6px solid {cor_lateral};
         background: linear-gradient(to right, #fdfdfe, #f9f9f9);
     ">
-        <h2 style="color: #2c3e50; font-family: 'Helvetica Neue', sans-serif;">
+        <h2 style="color: #2c3e50; font-family: 'Nunito', sans-serif;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
@@ -227,25 +227,11 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
-            <div style="display: flex; flex-direction: column; justify-content: center;">
-                <h1 style="
-                    color: #2c3e50;
-                    margin: 0;
-                    font-size: 2.2rem;
-                    font-weight: 500;
-                    line-height: 1.2;
-                    font-family: 'Helvetica Neue', sans-serif;
-                ">
+            <div class="titles-container">
+                <h1 style="margin: 0;">
                     Dashboard de Estudos
                 </h1>
-                <p style="
-                    color: #555;
-                    margin: 0;
-                    font-size: 1.1rem;
-                    font-weight: 500;
-                    font-family: 'Helvetica Neue', sans-serif;
-                ">
+                <p style="margin: 0;">
                     Concurso TAE UFG 2025
                 </p>
             </div>
@@ -265,8 +251,8 @@ def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-            <span style="font-weight: 500; color: #3498db; font-family: 'Helvetica Neue', sans-serif;">Progresso Geral</span>
-            <span style="font-weight: 600; color: #2c3e50; font-family: 'Helvetica Neue', sans-serif;">{progresso_geral:.1f}%</span>
+            <span style="font-weight: 500; color: #3498db; font-family: 'Nunito', sans-serif;">Progresso Geral</span>
+            <span style="font-weight: 600; color: #2c3e50; font-family: 'Nunito', sans-serif;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="height: 100%; width: {progresso_geral}%;
@@ -318,7 +304,7 @@ def create_altair_stacked_bar(df_summary):
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Helvetica Neue')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -330,7 +316,7 @@ def create_altair_stacked_bar(df_summary):
         baseline='middle',
         fontWeight='bold',
         fontSize=12,
-        font='Helvetica Neue'
+        font='Nunito'
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
@@ -344,7 +330,7 @@ def create_altair_stacked_bar(df_summary):
             text="Percentual de Conclusão por Disciplina",
             anchor='middle',
             fontSize=18,
-            font='Helvetica Neue',
+            font='Nunito',
             color='#000000'
         )
     ).configure_view(
@@ -353,8 +339,8 @@ def create_altair_stacked_bar(df_summary):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Helvetica Neue',
-        titleFont='Helvetica Neue'
+        labelFont='Nunito',
+        titleFont='Nunito'
     )
 
 def create_progress_donut(source_df, title):
@@ -373,7 +359,7 @@ def create_progress_donut(source_df, title):
         size=24,
         fontWeight='bold',
         color='#000000',
-        font='Helvetica Neue'
+        font='Nunito'
     ).encode(text='text:N')
 
     return (base + text).properties(
@@ -383,7 +369,7 @@ def create_progress_donut(source_df, title):
             fontSize=26,
             dy=-10,
             color='#000000',
-            font='Helvetica Neue'
+            font='Nunito'
         )
     ).configure_view(
         stroke=None,
@@ -479,8 +465,8 @@ def bar_questoes_padronizado(ed_data):
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue', labelColor='#000000')),
-        y=alt.Y('Questões:Q', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue', labelColor='#000000')),
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
+        y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
 
@@ -490,7 +476,7 @@ def bar_questoes_padronizado(ed_data):
         dy=-5,
         color='#000000',
         fontWeight='bold',
-        font='Helvetica Neue'
+        font='Nunito'
     ).encode(
         text='Questões:Q'
     )
@@ -502,7 +488,7 @@ def bar_questoes_padronizado(ed_data):
             text='Distribuição de Questões',
             anchor='middle',
             fontSize=18,
-            font='Helvetica Neue',
+            font='Nunito',
             color='#000000'
         )
     ).configure_view(
@@ -511,8 +497,8 @@ def bar_questoes_padronizado(ed_data):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Helvetica Neue',
-        titleFont='Helvetica Neue'
+        labelFont='Nunito',
+        titleFont='Nunito'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -534,7 +520,7 @@ def bar_relevancia_customizado(ed_data):
         size=40
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
-        x=alt.X('Relevancia:Q', sort='-y', title=None, axis=alt.Axis(labels=False, grid=False)),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
@@ -552,9 +538,9 @@ def bar_relevancia_customizado(ed_data):
         color='#000000',
         fontWeight='bold',
         fontSize=12,
-        font='Helvetica Neue'
+        font='Nunito'
     ).encode(
-        y=alt.Y('Disciplinas:N'),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
@@ -566,7 +552,7 @@ def bar_relevancia_customizado(ed_data):
             text='Relevância das Disciplinas',
             anchor='middle',
             fontSize=18,
-            font='Helvetica Neue',
+            font='Nunito',
             color='#000000'
         )
     ).configure_view(
@@ -575,8 +561,8 @@ def bar_relevancia_customizado(ed_data):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Helvetica Neue',
-        titleFont='Helvetica Neue'
+        labelFont='Nunito',
+        titleFont='Nunito'
     )
 
 def rodape_motivacional():
@@ -584,7 +570,7 @@ def rodape_motivacional():
     st.markdown("---")
     st.markdown(f"""
     <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
-        <p style='font-size: 0.9rem; margin: 0; font-family: "Helvetica Neue", sans-serif;'>
+        <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
             🚀 {frase_aleatoria} ✨
         </p>
     </div>
@@ -604,10 +590,11 @@ def main():
     
     # CSS com animações e efeitos
     st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Tipografia e cores globais */
         * {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+            font-family: 'Nunito', sans-serif !important;
         }
         
         .stApp {
@@ -643,12 +630,30 @@ def main():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 120px; /* Altura fixa para melhor alinhamento */
+            height: 400px; /* Altura fixa de 400px */
         }
         .top-container-left {
             display: flex;
             align-items: center;
             flex: 1;
+            height: 100%;
+            justify-content: center; /* Centraliza horizontalmente */
+        }
+        .titles-container {
+            text-align: center; /* Centraliza o texto */
+        }
+        .titles-container h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 3.5rem; /* Tamanho aumentado */
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        .titles-container p {
+            color: #555;
+            margin: 0;
+            font-size: 1.8rem; /* Tamanho aumentado */
+            font-weight: 500;
         }
         .top-container-right {
             display: flex;
@@ -656,9 +661,10 @@ def main():
             align-items: flex-end;
             justify-content: space-between;
             height: 100%;
+            flex: 1;
         }
         .weather-info {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             color: #777;
             margin-bottom: 0.5rem;
             font-weight: 400;
@@ -675,8 +681,8 @@ def main():
         .days-countdown {
             animation: pulse 2s infinite;
             color: #e74c3c;
-            font-weight: 500;
-            font-size: 3.5rem; /* Tamanho ajustado para caber melhor */
+            font-weight: 800;
+            font-size: 4.5rem; /* Tamanho ajustado */
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
@@ -732,49 +738,13 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== CHECKBOXES ESTILIZADOS ======== */
+        /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
         /* ==================================== */
-        .stCheckbox {
-            padding: 0.2rem 0;
-            margin: 0;
-        }
-
         .stCheckbox > label {
-            transition: background-color 0.2s ease;
-            padding: 0.1rem 0.5rem;
-            border-radius: 5px;
-            font-weight: 400;
+            transition: none !important;
         }
-
         .stCheckbox > label:hover {
-            background-color: #f0f2f6;
-        }
-
-        .stCheckbox > label > div:first-child {
-            border: 1px solid #d3d3d3;
-            border-radius: 4px;
-            width: 18px !important;
-            height: 18px !important;
-            background-color: #f7f7f7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .stCheckbox > label > div:first-child:hover {
-            border-color: #3498db;
-        }
-
-        .stCheckbox > label > input[type="checkbox"]:checked + div:first-child {
-            background-color: #2ecc71;
-            border-color: #2ecc71;
-        }
-
-        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
-            content: '✓';
-            color: white;
-            font-size: 12px;
-            line-height: 1;
+            background-color: inherit;
         }
     </style>
     """, unsafe_allow_html=True)
