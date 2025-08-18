@@ -1,6 +1,4 @@
-Aqui está o código completo e arrumado, com a solução do CSS para esconder a seta do st.expander já aplicada.
-O seletor [data-testid="stExpander-header-action-icon"] é o mais robusto e atualizado para atingir o ícone de seta do Streamlit.
-Copie e cole este código no seu arquivo .py.
+
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
