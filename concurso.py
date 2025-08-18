@@ -62,7 +62,7 @@ FRASES_MOTIVACIONAIS = [
 
 @st.cache_resource(show_spinner="Conectando ao Google Sheets...")
 def get_gspread_client():
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets',
               'https://www.googleapis.com/auth/spreadsheets.readonly']
     try:
         credentials_dict = st.secrets["gcp_service_account"]
@@ -92,13 +92,13 @@ def load_data_with_row_indices():
     try:
         data = worksheet.get_all_values()
         if len(data) < 2: return pd.DataFrame()
-        
+
         df = pd.DataFrame(data[1:], columns=data[0])
         required_cols = ['Disciplinas', 'Conteúdos', 'Status']
         if not all(col in df.columns for col in required_cols):
             st.error(f"❌ Colunas obrigatórias faltando. Verifique se a planilha tem: {required_cols}")
             return pd.DataFrame()
-            
+
         df = df[required_cols].copy()
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
@@ -121,7 +121,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         if 'Status' not in header:
             st.error("❌ Coluna 'Status' não encontrada na planilha.")
             return False
-            
+
         status_col_index = header.index('Status') + 1
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
@@ -143,9 +143,9 @@ def calculate_progress(df):
     df_merged = pd.merge(df_edital, resumo, how='left', on='Disciplinas').fillna(0)
     df_merged['Conteudos_Concluidos'] = df_merged['Conteudos_Concluidos'].astype(int)
     df_merged['Conteudos_Pendentes'] = df_merged['Total_Conteudos'] - df_merged['Conteudos_Concluidos']
-    
+
     df_merged['Pontos_Concluidos'] = (df_merged['Peso'] / df_merged['Total_Conteudos'].replace(0, 1)) * df_merged['Conteudos_Concluidos']
-    
+
     total_peso = df_merged['Peso'].sum()
     total_pontos = df_merged['Pontos_Concluidos'].sum()
     progresso_total = (total_pontos / total_peso * 100) if total_peso > 0 else 0
@@ -156,17 +156,17 @@ def calculate_stats(df_summary):
     concluidos = df_summary['Conteudos_Concluidos'].sum()
     pendentes = df_summary['Conteudos_Pendentes'].sum()
     topicos_por_dia = round(pendentes / dias_restantes, 1) if dias_restantes > 0 else 0
-    
+
     maior_prioridade = "N/A"
     if pendentes > 0:
         df_summary['Progresso_Percentual'] = (df_summary['Conteudos_Concluidos'] / df_summary['Total_Conteudos'].replace(0, 1)) * 100
         df_summary['Prioridade_Score'] = (100 - df_summary['Progresso_Percentual']) * df_summary['Peso']
         maior_prioridade = df_summary.loc[df_summary['Prioridade_Score'].idxmax()]['Disciplinas']
-        
+
     return {
-        'dias_restantes': dias_restantes, 
+        'dias_restantes': dias_restantes,
         'concluidos': int(concluidos),
-        'pendentes': int(pendentes), 
+        'pendentes': int(pendentes),
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
@@ -241,8 +241,8 @@ def display_progress_bar(progresso_geral):
             <span style="font-weight: 600; color: #2c3e50;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
-            <div style="height: 100%; width: {progresso_geral}%; 
-                        background: linear-gradient(90deg, #3498db, #1abc9c); 
+            <div style="height: 100%; width: {progresso_geral}%;
+                        background: linear-gradient(90deg, #3498db, #1abc9c);
                         border-radius: 10px; transition: width 0.5s ease;"></div>
         </div>
     </div>
@@ -257,17 +257,17 @@ def display_simple_metrics(stats):
 
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
-    df_percent['Concluído (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Concluido (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
     df_melted = df_percent.melt(
-        id_vars=['Disciplinas'], 
-        value_vars=['Concluído (%)', 'Pendente (%)'], 
-        var_name='Status', 
+        id_vars=['Disciplinas'],
+        value_vars=['Concluido (%)', 'Pendente (%)'],
+        var_name='Status',
         value_name='Percentual'
     )
 
-    status_map = {'Concluído (%)': 'Concluído', 'Pendente (%)': 'Pendente'}
+    status_map = {'Concluido (%)': 'Concluido', 'Pendente (%)': 'Pendente'}
     df_melted['Status'] = df_melted['Status'].map(status_map)
 
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
@@ -276,13 +276,13 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        if row['Status'] == 'Concluído' and df_row['Concluído (%)'] == 100:
+        if row['Status'] == 'Concluido' and df_row['Concluido (%)'] == 100:
             return 'white'
-        elif row['Status'] == 'Concluído' and df_row['Pendente (%)'] == 100:
+        elif row['Status'] == 'Concluido' and df_row['Pendente (%)'] == 100:
             return 'transparent'
         elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
             return 'white'
-        elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
+        elif row['Status'] == 'Pendente' and df_row['Concluido (%)'] == 100:
             return 'transparent'
         else:
             return 'white'
@@ -296,7 +296,7 @@ def create_altair_stacked_bar(df_summary):
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None)
     )
 
@@ -326,50 +326,50 @@ def create_altair_stacked_bar(df_summary):
         strokeOpacity=0,
         fillOpacity=0
     )
-    
+
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
-    concluido_val = source_df[source_df['Status'] == 'Concluído']['Valor'].iloc[0]
+    concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
-    
+
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=1).encode(
         theta=alt.Theta("Valor:Q"),
-        color=alt.Color("Status:N", 
-                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']), 
+        color=alt.Color("Status:N",
+                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
-        size=24, 
+        size=24,
         fontWeight='bold',
         color='#2c3e50',
         font='Helvetica Neue'
     ).encode(text='text:N')
-    
+
     return (base + text).properties(
         title=alt.TitleParams(
-            text=title, 
-            anchor='middle', 
-            fontSize=26, 
+            text=title,
+            anchor='middle',
+            fontSize=26,
             dy=-10,
             color='#2c3e50'
         )
     ).configure_view(
-        strokeOpacity=0, 
+        strokeOpacity=0,
         fillOpacity=0
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
     charts_data = []
     prog_geral_df = pd.DataFrame([
-        {'Status': 'Concluído', 'Valor': progresso_geral},
+        {'Status': 'Concluido', 'Valor': progresso_geral},
         {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
     ])
     charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
 
     for _, row in df_summary.iterrows():
         df = pd.DataFrame([
-            {'Status': 'Concluído', 'Valor': row['Conteudos_Concluidos']},
+            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
             {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
         ])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
@@ -390,7 +390,7 @@ def on_checkbox_change(worksheet, row_number, key):
         st.toast("Status atualizado!", icon="✅")
         # Limpa o cache para forçar a recarga dos dados e atualizar todos os gráficos
         load_data_with_row_indices.clear()
-        st.rerun() # Força a re-execução para a UI atualizar imediatamente
+        # Não precisa de st.rerun() aqui, o script roda automaticamente.
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -399,9 +399,6 @@ def display_conteudos_com_checkboxes(df):
     if not worksheet:
         return
     
-    st.subheader("✅ Checklist de Conteúdos")
-    st.write("Marque os tópicos conforme conclui seus estudos. O progresso é atualizado automaticamente.")
-
     # Campo de busca para UX aprimorada
     search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM...").strip().upper()
     
@@ -429,7 +426,7 @@ def display_conteudos_com_checkboxes(df):
 
                 # Renderiza o checkbox
                 st.checkbox(
-                    label=row['Conteúdos'], 
+                    label=row['Conteúdos'],
                     value=st.session_state[key],
                     key=key,
                     on_change=on_checkbox_change,
@@ -487,11 +484,12 @@ def bar_questoes_padronizado(ed_data):
         fillOpacity=0
     )
 
-# --- Gráfico de Barras de Relevância (solução) ---
-def bar_relevancia_padronizado(ed_data):
+# --- Gráfico de Barras de Relevância (versão aprimorada) ---
+def bar_relevancia_customizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
+    df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
     # Escala de cores azul claro → azul escuro
     color_scale = alt.Scale(
@@ -499,7 +497,7 @@ def bar_relevancia_padronizado(ed_data):
         range=['#cce6ff', '#004c99']
     )
 
-    # --- Barras ---
+    # --- Camada 1: Barras ---
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
@@ -518,8 +516,8 @@ def bar_relevancia_padronizado(ed_data):
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
     )
-    
-    # --- Rótulos de Disciplina e Percentual ---
+
+    # --- Camada 2: Rótulos de texto com nome e percentual ---
     text = bars.mark_text(
         align='left',
         baseline='middle',
@@ -529,7 +527,7 @@ def bar_relevancia_padronizado(ed_data):
         fontSize=12,
         font='Helvetica Neue'
     ).encode(
-        text=alt.Text('Percentual:Q', format='.1f', title='Percentual')
+        text='custom_label:N'
     )
 
     return (bars + text).properties(
@@ -561,12 +559,12 @@ def rodape_motivacional():
 # --- Função Principal da Aplicação ---
 def main():
     st.set_page_config(
-        page_title="📚 Dashboard de Estudos - Concurso TAE UFG", 
-        page_icon="📚", 
+        page_title="📚 Dashboard de Estudos - Concurso TAE UFG",
+        page_icon="📚",
         layout="wide",
         initial_sidebar_state="collapsed"
     )
-    
+
     st.markdown("""
     <style>
         /* Estilos gerais */
@@ -575,7 +573,7 @@ def main():
             color: #333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
-        
+
         /* Oculta o fundo padrão dos gráficos */
         .stApp [data-testid="stVegaLiteChart"] > div {
             background-color: transparent !important;
@@ -592,7 +590,7 @@ def main():
             margin-bottom: 2rem !important;
             border: 0.1px solid #d3d3d3; /* Stroke fino */
         }
-        
+
         .top-container h1, .top-container p {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
@@ -615,7 +613,7 @@ def main():
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.08) !important;
         }
-        
+
         .title-container h2 {
             font-weight: 700 !important;
             font-size: 1.5rem !important;
@@ -631,7 +629,7 @@ def main():
 
         .stCheckbox > label {
             transition: background-color 0.2s ease;
-            padding: 0.3rem 0.5rem;
+            padding: 0.1rem 0.5rem; /* Ajustado para deixar os itens mais próximos */
             border-radius: 5px;
             font-weight: 400;
         }
@@ -654,12 +652,12 @@ def main():
         .stCheckbox > label > div:first-child:hover {
             border-color: #3498db;
         }
-        
+
         .stCheckbox > label > input[type="checkbox"]:checked + div:first-child {
             background-color: #2ecc71;
             border-color: #2ecc71;
         }
-        
+
         .stCheckbox > label > input[type="checkbox"]:checked + div::after {
             content: '✓';
             color: white;
@@ -668,43 +666,43 @@ def main():
         }
     </style>
     """, unsafe_allow_html=True)
-    
+
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
-    
+
     df = load_data_with_row_indices()
 
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
-        
+
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
 
     display_progress_bar(progresso_geral)
-    
+
     display_simple_metrics(stats)
 
     st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-    
+
     st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
-    
+
     st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
-    
+
     st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(bar_relevancia_padronizado(ED_DATA), use_container_width=True)
-    
+        st.altair_chart(bar_relevancia_customizado(ED_DATA), use_container_width=True)
+
     rodape_motivacional()
 
 if __name__ == "__main__":
