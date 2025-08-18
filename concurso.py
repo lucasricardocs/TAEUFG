@@ -228,7 +228,7 @@ def render_topbar_with_logo(dias_restantes):
     <div class="top-container">
         <div class="top-container-left">
             <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
-            <div>
+            <div style="display: flex; flex-direction: column; justify-content: center;">
                 <h1 style="
                     color: #2c3e50;
                     margin: 0;
@@ -250,21 +250,21 @@ def render_topbar_with_logo(dias_restantes):
                 </p>
             </div>
         </div>
-        <div class="top-container-center">
+        <div class="top-container-right">
             <p class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </p>
-        </div>
-        <div class="top-container-right">
-            <p style="
-                margin: 0.1rem 0 0.5rem 0;
-                color: #777;
-                font-size: 0.9rem;
-                font-weight: 400;
-                font-family: 'Helvetica Neue', sans-serif;
-            ">
-                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-            </p>
+            <div style="text-align: right; margin-top: auto;">
+                <p style="
+                    margin: 0.1rem 0 0.5rem 0;
+                    color: #777;
+                    font-size: 0.9rem;
+                    font-weight: 400;
+                    font-family: 'Helvetica Neue', sans-serif;
+                ">
+                    Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+                </p>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -657,16 +657,11 @@ def main():
             align-items: center;
             flex: 1;
         }
-        .top-container-center {
-            flex: 1;
-            text-align: center;
-        }
         .top-container-right {
             flex: 1;
-            text-align: right;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
+            align-items: flex-end;
         }
 
         /* ==================================== */
@@ -685,6 +680,7 @@ def main():
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
+            text-align: right;
         }
         
         /* ==================================== */
@@ -704,6 +700,24 @@ def main():
             font-size: 1.6rem;
             color: #2c3e50;
             margin: 0;
+        }
+        
+        /* ==================================== */
+        /* ======== CORREÇÃO DOS EXPANDERS ======== */
+        /* ==================================== */
+        /* Substitui as setas padrão por setas personalizadas */
+        .streamlit-expanderHeader::before {
+            content: "▶";
+            margin-right: 8px;
+            font-size: 0.8rem;
+            color: #9b59b6;
+        }
+        .streamlit-expanderHeader[aria-expanded="true"]::before {
+            content: "▼";
+        }
+        /* Oculta o ícone padrão do expander */
+        .streamlit-expanderHeader svg {
+            display: none !important;
         }
         
         /* ==================================== */
