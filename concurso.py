@@ -224,9 +224,11 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
 def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiânia, BR')
     
-    st.markdown("""
+    # Adicione a animação pulse diretamente no estilo do elemento que a usa.
+    # O HTML e o CSS estão em um único bloco de markdown.
+    st.markdown(f"""
     <style>
-        .responsive-topbar {
+        .responsive-topbar {{
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
@@ -238,74 +240,70 @@ def render_topbar_with_logo(dias_restantes):
             margin-bottom: 1.5rem;
             border: 1px solid #d3d3d3;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
+        }}
         
-        .topbar-logo {
+        .topbar-logo {{
             flex: 1 1 100px;
             min-width: 100px;
             display: flex;
             justify-content: flex-start;
-        }
+        }}
         
-        .topbar-titles {
+        .topbar-titles {{
             flex: 3 1 250px;
             text-align: center;
             padding: 0 0.5rem;
-        }
+        }}
         
-        .topbar-info {
+        .topbar-info {{
             flex: 2 1 200px;
             text-align: right;
-        }
+        }}
         
-        @media (max-width: 768px) {
-            .responsive-topbar {
+        @media (max-width: 768px) {{
+            .responsive-topbar {{
                 flex-direction: column;
                 text-align: center;
-            }
-            .topbar-logo, .topbar-titles, .topbar-info {
+            }}
+            .topbar-logo, .topbar-titles, .topbar-info {{
                 width: 100%;
                 text-align: center;
-            }
-        }
+            }}
+        }}
         
-        /* Títulos menores */
-        .main-title {
+        .main-title {{
             margin: 0;
             font-size: clamp(1.5rem, 2.5vw, 2rem);
             color: #2c3e50;
             line-height: 1.2;
-        }
+        }}
         
-        .sub-title {
+        .sub-title {{
             margin: 0.3rem 0 0;
             font-size: clamp(1rem, 1.8vw, 1.4rem);
             color: #555;
-        }
+        }}
         
-        .weather-info {
+        .weather-info {{
             font-size: clamp(0.8rem, 1.3vw, 1rem);
             color: #777;
-        }
+        }}
         
-        .days-countdown {
+        .days-countdown {{
             color: #e74c3c;
             font-weight: 800;
             font-size: clamp(1.5rem, 3vw, 2.5rem);
             margin-top: 0.3rem;
             animation: pulse 2s infinite ease-in-out;
             display: inline-block;
-        }
+        }}
         
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        @keyframes pulse {{
+            0% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
+        }}
     </style>
-    """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
     <div class="responsive-topbar">
         <div class="topbar-logo">
             <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: auto; max-width: 100%; max-height: 80px;"/>
@@ -326,6 +324,8 @@ def render_topbar_with_logo(dias_restantes):
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
