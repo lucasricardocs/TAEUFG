@@ -589,48 +589,57 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # CSS global
-    st.markdown(
-        """
-        <style>
-        * {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    # Configura um tema vazio para garantir fundos transparentes nos gráficos Altair
+    alt.themes.enable('none')
     
-    alt.themes.register("transparent", lambda: {
-        "config": {
-            "view": {"strokeWidth": 0, "fill": "transparent"},
-            "axis": {"domain": False, "grid": False}
-        }
-    })
-    alt.themes.enable("transparent")
-
-    # CSS com animações e estilos do topo
+    # CSS com animações e efeitos
     st.markdown("""
     <style>
+        /* Tipografia e cores globais */
         .stApp {
             background-color: #f7f9fc;
             color: #333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
+        
+        /* Oculta o fundo padrão dos gráficos */
         .stApp [data-testid="stVegaLiteChart"] > div {
             background-color: transparent !important;
         }
 
-        /* ====================== TOPO ====================== */
+        /* Animação de Fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animated-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* Efeito de hover suave */
+        .title-container, .top-container, [data-testid="stMetricValue"] {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .title-container:hover, .top-container:hover, [data-testid="stMetricValue"]:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* ==================================== */
+        /* ======== CONTAINER DO TOPO APRIMORADO ======== */
+        /* ==================================== */
         .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
-            padding: 1.8rem 3rem 1.6rem 3rem; /* padding ajustado */
+            padding: 2rem 3rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
+            position: relative;
+            overflow: hidden;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; /* puxa tudo pro topo */
+            align-items: center;
         }
         .top-container-left {
             display: flex;
@@ -640,53 +649,135 @@ def main():
             text-align: right;
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
+            justify-content: flex-start; /* Alinhamento do conteúdo no topo */
+            height: 100%;
         }
 
-        /* ====================== TEXTO DO CLIMA/DATA ====================== */
-        .top-info {
-            margin: 0;
-            color: #666;
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding-top: 0.2rem; /* sobe mais ainda */
+        .top-container h1, .top-container p {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            position: relative;
+            z-index: 2;
         }
-
-        /* ====================== CONTADOR DE DIAS ====================== */
+        
+        /* ==================================== */
+        /* ======== ANIMAÇÃO CONTADOR DE DIAS ======== */
+        /* ==================================== */
         @keyframes pulse {
-            0% { transform: scale(1); text-shadow: 0 0 6px rgba(231,76,60,0.3); }
-            50% { transform: scale(1.08); text-shadow: 0 0 14px rgba(231,76,60,0.6); }
-            100% { transform: scale(1); text-shadow: 0 0 6px rgba(231,76,60,0.3); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         .days-countdown {
-            animation: pulse 2.5s infinite;
-            font-weight: 800;
-            font-size: 5rem; /* ainda maior */
-            margin-top: 0.2rem;
-            margin-bottom: 0;
-            background: linear-gradient(90deg, #e74c3c, #ff7675);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.1;
+            animation: pulse 2s infinite;
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: 4.5rem; /* Aumentado para maior destaque */
+            margin: 0;
+            font-family: 'Helvetica Neue', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
+            line-height: 1.2;
+        }
+        .top-container-right p:first-child {
+            margin-bottom: 0.5rem;
+            margin-top: 0.1rem; /* Altera a margem superior para subir */
+        }
+        
+        /* ==================================== */
+        /* ======== TÍTULOS MELHORADOS ======== */
+        /* ==================================== */
+        .title-container {
+            border-left: 6px solid #8e44ad;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0 1.5rem 0;
+            background: linear-gradient(to right, #ffffff, #f9f9f9);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }
+        
+        .title-container h2 {
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #2c3e50;
+        }
+        
+        /* ==================================== */
+        /* ======== MÉTRICAS EM DESTAQUE ======== */
+        /* ==================================== */
+        [data-testid="stMetricValue"] {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+        }
+        
+        /* ==================================== */
+        /* ======== CHECKBOXES ESTILIZADOS ======== */
+        /* ==================================== */
+        .stCheckbox {
+            padding: 0.2rem 0;
+            margin: 0;
+        }
+
+        .stCheckbox > label {
+            transition: background-color 0.2s ease;
+            padding: 0.1rem 0.5rem;
+            border-radius: 5px;
+            font-weight: 400;
+        }
+
+        .stCheckbox > label:hover {
+            background-color: #f0f2f6;
+        }
+
+        .stCheckbox > label > div:first-child {
+            border: 1px solid #d3d3d3;
+            border-radius: 4px;
+            width: 18px !important;
+            height: 18px !important;
+            background-color: #f7f7f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stCheckbox > label > div:first-child:hover {
+            border-color: #3498db;
+        }
+
+        .stCheckbox > label > input[type="checkbox"]:checked + div:first-child {
+            background-color: #2ecc71;
+            border-color: #2ecc71;
+        }
+
+        .stCheckbox > label > input[type="checkbox"]:checked + div::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            line-height: 1;
         }
     </style>
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
+    
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" 
-                 alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
             <div>
                 <h1 style="
                     color: #2c3e50;
                     margin: 0;
                     font-size: 2.2rem;
-                    font-weight: 600;
+                    font-weight: 500;
                     line-height: 1.2;
+                    font-family: 'Helvetica Neue', sans-serif;
                 ">
                     Dashboard de Estudos
                 </h1>
@@ -701,7 +792,12 @@ def main():
             </div>
         </div>
         <div class="top-container-right">
-            <p class="top-info">
+            <p style="
+                margin: 0.1rem 0 0.5rem 0;
+                color: #777;
+                font-size: 0.9rem;
+                font-weight: 400;
+            ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </p>
             <p class="days-countdown">
@@ -712,6 +808,7 @@ def main():
     """, unsafe_allow_html=True)
 
     df = load_data_with_row_indices()
+
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
