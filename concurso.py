@@ -172,11 +172,9 @@ def calculate_stats(df_summary):
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
-
 # --- Funções para buscar dados de clima real (usando requests) ---
 @st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
-    # api_key já está definida como constante global
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
     try:
@@ -257,7 +255,7 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0;
+                margin: 0 0 0.5rem 0; /* Ajustado para mover para cima */
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
@@ -596,6 +594,11 @@ def main():
             color: #333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
+        
+        /* Oculta o fundo padrão dos gráficos */
+        .stApp [data-testid="stVegaLiteChart"] > div {
+            background-color: transparent !important;
+        }
 
         /* Animação de Fade-in */
         @keyframes fadeIn {
@@ -637,6 +640,10 @@ def main():
         }
         .top-container-right {
             text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
         }
 
         .top-container h1, .top-container p {
@@ -660,10 +667,6 @@ def main():
             font-size: 3.0rem; /* Aumentado para maior destaque */
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
-        }
-        /* Ajuste do layout para alinhar o texto do clima e data */
-        .top-container-right > p:nth-child(2) {
-            margin-top: 0.5rem;
         }
 
         /* ==================================== */
