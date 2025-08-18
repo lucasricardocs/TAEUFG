@@ -255,7 +255,7 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0 0 0.5rem 0;
+                margin: 0.1rem 0 0.5rem 0; /* Ajustado para subir o texto */
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
@@ -316,8 +316,6 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        # A lógica foi simplificada para sempre usar preto para maior clareza
-        # e para atender ao pedido do usuário de usar rótulos pretos.
         if row['Percentual'] > 0:
             return 'black'
         return 'transparent'
@@ -358,8 +356,8 @@ def create_altair_stacked_bar(df_summary):
             color='#000000'
         )
     ).configure_view(
-        stroke=None, # Remove a borda do gráfico
-        fill='transparent' # Garante o fundo transparente
+        stroke=None,
+        fill='transparent'
     )
 
 def create_progress_donut(source_df, title):
@@ -373,9 +371,6 @@ def create_progress_donut(source_df, title):
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
         size=24,
@@ -392,6 +387,9 @@ def create_progress_donut(source_df, title):
             dy=-10,
             color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -530,7 +528,7 @@ def bar_relevancia_customizado(ed_data):
         strokeWidth=1,
         size=40
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=None),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
@@ -551,6 +549,8 @@ def bar_relevancia_customizado(ed_data):
         fontSize=12,
         font='Helvetica Neue'
     ).encode(
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
+        x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
 
@@ -649,7 +649,7 @@ def main():
             text-align: right;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* Alinhamento do conteúdo no topo */
             height: 100%;
         }
 
@@ -675,11 +675,13 @@ def main():
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
+            line-height: 1.2;
         }
         .top-container-right p:first-child {
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            margin-top: 0.1rem; /* Altera a margem superior para subir */
         }
-
+        
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -791,7 +793,7 @@ def main():
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0;
+                margin: 0.1rem 0 0.5rem 0;
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
