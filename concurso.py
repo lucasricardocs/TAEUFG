@@ -227,12 +227,12 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 200px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem;"/>
             <div class="titles-container">
-                <h1 style="margin: 0;">
+                <h1 style="margin: 0; line-height: 1.1;">
                     Dashboard de Estudos
                 </h1>
-                <p style="margin: 0;">
+                <p style="margin: 0; margin-top: 0.2rem;">
                     Concurso TAE UFG 2025
                 </p>
             </div>
@@ -406,12 +406,13 @@ def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-def on_checkbox_change(worksheet, row_number, key):
+def on_checkbox_change(worksheet, row_number, key, expander_key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
+        # Mantém o expander aberto
+        st.session_state[expander_key] = True
         load_data_with_row_indices.clear()
-        
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -434,7 +435,14 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
+        # Usar um estado para cada expander
+        expander_key = f"expander_{disc}"
+        if expander_key not in st.session_state:
+            st.session_state[expander_key] = True  # Por padrão, expandido
+
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expander_key]):
+            # Atualiza o estado para manter expandido mesmo quando o checkbox é alterado
+            st.session_state[expander_key] = True
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
@@ -447,11 +455,7 @@ def display_conteudos_com_checkboxes(df):
                     value=st.session_state[key],
                     key=key,
                     on_change=on_checkbox_change,
-                    kwargs={
-                        'worksheet': worksheet,
-                        'row_number': row['sheet_row'],
-                        'key': key
-                    }
+                    args=(worksheet, row['sheet_row'], key, expander_key)
                 )
 
 # --- Gráficos ---
@@ -642,17 +646,21 @@ def main():
         }
         .titles-container {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .titles-container h1 {
             color: #2c3e50;
             margin: 0;
             font-size: 2.8rem;
             font-weight: 700;
-            line-height: 1.2;
+            line-height: 1.1; /* Reduzir espaçamento entre linhas */
         }
         .titles-container p {
             color: #555;
             margin: 0;
+            margin-top: 0.2rem; /* Reduzir espaçamento superior */
             font-size: 1.6rem;
             font-weight: 500;
         }
@@ -680,10 +688,10 @@ def main():
             100% { transform: scale(1); }
         }
         .days-countdown {
-            animation: pulse 3s infinite;
+            animation: pulse 2s infinite;
             color: #e74c3c;
-            font-weight: 500;
-            font-size: 3rem;
+            font-weight: 800;
+            font-size: 4rem;
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
@@ -709,16 +717,23 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== REMOÇÃO COMPLETA DAS SETAS ======== */
+        /* ======== SOLUÇÃO DEFINITIVA PARA AS SETAS ======== */
         /* ==================================== */
-        .streamlit-expanderHeader::before {
+        /* Remove completamente o ícone padrão */
+        .streamlit-expanderHeader .st-emotion-cache-1p1m4ay {
             display: none;
         }
-        .streamlit-expanderHeader svg {
-            display: none !important;
+        /* Adiciona um ícone personalizado */
+        .streamlit-expanderHeader::before {
+            content: "+";
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #9b59b6;
         }
-        .streamlit-expanderHeader {
-            padding-left: 1rem !important;
+        .streamlit-expanderHeader[aria-expanded="true"]::before {
+            content: "-";
         }
         
         /* ==================================== */
