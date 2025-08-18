@@ -9,7 +9,7 @@ from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
 import random
-from pyowm import OWM
+import requests
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -172,32 +172,44 @@ def calculate_stats(df_summary):
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
-# --- Funções para buscar dados de clima real ---
+
+# --- Funções para buscar dados de clima real (usando requests) ---
 @st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
+    # api_key já está definida como constante global
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
+
     try:
-        owm = OWM(API_KEY)
-        observation = owm.weather_at_place(city_name)
-        w = observation.weather
+        response = requests.get(url)
+        response.raise_for_status()
+        weather_data = response.json()
+
+        if weather_data.get("cod") == 200:
+            main_data = weather_data.get("main")
+            status = weather_data.get("weather")[0].get("main")
+            temperature = main_data.get("temp")
+
+            weather_emojis = {
+                'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
+                'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
+                'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
+                'Smoke': '💨', 'Dust': '💨', 'Sand': '💨',
+                'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
+            }
+            emoji = weather_emojis.get(status, '🌍')
+            
+            return {
+                "temperature": f"{temperature:.0f}°C",
+                "emoji": emoji
+            }
         
-        temperature = w.temperature('celsius')['temp']
-        status = w.status
-        
-        weather_emojis = {
-            'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
-            'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
-            'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
-            'Smoke': '💨', 'Dust': '💨', 'Sand': '💨',
-            'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
-        }
-        emoji = weather_emojis.get(status, '🌍')
-        
-        return {
-            "temperature": f"{temperature:.0f}°C",
-            "emoji": emoji
-        }
-    except Exception as e:
-        # Se a API falhar, retorne dados padrão para não quebrar o app
+        else:
+            return {
+                "temperature": "N/A",
+                "emoji": "🤷"
+            }
+
+    except requests.exceptions.RequestException as e:
         return {
             "temperature": "N/A",
             "emoji": "🤷"
@@ -645,7 +657,7 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 2.25rem; /* Aumentado para maior destaque */
+            font-size: 2.25rem;
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
         }
