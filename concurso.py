@@ -534,7 +534,7 @@ def bar_relevancia_customizado(ed_data):
         size=40
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
-        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
+        x=alt.X('Relevancia:Q', sort='-y', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
