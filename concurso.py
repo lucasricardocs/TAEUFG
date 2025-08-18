@@ -187,6 +187,8 @@ def get_weather_data(city_name):
             'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
             'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
             'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
+            'Smoke': '💨', 'Dust': '💨', 'Sand': '💨',
+            'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
         }
         emoji = weather_emojis.get(status, '🌍')
         
@@ -248,7 +250,7 @@ def render_topbar_with_logo(dias_restantes):
             <p style="
                 margin: 0;
                 color: #777;
-                font-size: 1.9rem;
+                font-size: 0.9rem;
                 font-weight: 400;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
@@ -643,7 +645,7 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 1.65rem;
+            font-size: 2.25rem; /* Aumentado para maior destaque */
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
         }
@@ -790,15 +792,12 @@ def main():
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
     
-    st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
-    st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
