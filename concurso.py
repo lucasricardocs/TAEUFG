@@ -239,6 +239,7 @@ def render_topbar_with_logo(dias_restantes):
                     font-size: 2.2rem;
                     font-weight: 500;
                     line-height: 1.2;
+                    font-family: 'Helvetica Neue', sans-serif;
                 ">
                     Dashboard de Estudos
                 </h1>
@@ -254,7 +255,7 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0 0 0.5rem 0;
+                margin: 0.1rem 0 0.5rem 0; /* Ajustado para subir o texto */
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
@@ -588,27 +589,9 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # CSS global: aplica Helvetica Neue em todo o app
-    st.markdown(
-        """
-        <style>
-        * {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    # Configura um tema vazio para garantir fundos transparentes nos gráficos Altair
+    alt.themes.enable('none')
     
-    # Tema Altair: fundo transparente em todos os gráficos
-    alt.themes.register("transparent", lambda: {
-        "config": {
-            "view": {"strokeWidth": 0, "fill": "transparent"},
-            "axis": {"domain": False, "grid": False}
-        }
-    })
-    alt.themes.enable("transparent")
-
     # CSS com animações e efeitos
     st.markdown("""
     <style>
@@ -616,6 +599,7 @@ def main():
         .stApp {
             background-color: #f7f9fc;
             color: #333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
         /* Oculta o fundo padrão dos gráficos */
@@ -670,6 +654,7 @@ def main():
         }
 
         .top-container h1, .top-container p {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             position: relative;
             z-index: 2;
         }
@@ -688,6 +673,7 @@ def main():
             font-weight: 700;
             font-size: 4.5rem; /* Aumentado para maior destaque */
             margin: 0;
+            font-family: 'Helvetica Neue', sans-serif;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
             line-height: 1.2;
         }
@@ -791,6 +777,7 @@ def main():
                     font-size: 2.2rem;
                     font-weight: 500;
                     line-height: 1.2;
+                    font-family: 'Helvetica Neue', sans-serif;
                 ">
                     Dashboard de Estudos
                 </h1>
@@ -857,3 +844,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
