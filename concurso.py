@@ -251,19 +251,11 @@ def render_topbar_with_logo(dias_restantes):
             </div>
         </div>
         <div class="top-container-right">
-            <p class="days-countdown">
+            <div class="weather-info">
+                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </div>
+            <div class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
-            </p>
-            <div style="text-align: right; margin-top: auto;">
-                <p style="
-                    margin: 0.1rem 0 0.5rem 0;
-                    color: #777;
-                    font-size: 0.9rem;
-                    font-weight: 400;
-                    font-family: 'Helvetica Neue', sans-serif;
-                ">
-                    Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-                </p>
             </div>
         </div>
     </div>
@@ -651,6 +643,7 @@ def main():
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 120px; /* Altura fixa para melhor alinhamento */
         }
         .top-container-left {
             display: flex;
@@ -658,10 +651,17 @@ def main():
             flex: 1;
         }
         .top-container-right {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .weather-info {
+            font-size: 0.9rem;
+            color: #777;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
         }
 
         /* ==================================== */
@@ -676,11 +676,10 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 800;
-            font-size: 5.5rem;
+            font-size: 3.5rem; /* Tamanho ajustado para caber melhor */
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
-            text-align: right;
         }
         
         /* ==================================== */
@@ -705,7 +704,6 @@ def main():
         /* ==================================== */
         /* ======== CORREÇÃO DOS EXPANDERS ======== */
         /* ==================================== */
-        /* Substitui as setas padrão por setas personalizadas */
         .streamlit-expanderHeader::before {
             content: "▶";
             margin-right: 8px;
@@ -715,7 +713,6 @@ def main():
         .streamlit-expanderHeader[aria-expanded="true"]::before {
             content: "▼";
         }
-        /* Oculta o ícone padrão do expander */
         .streamlit-expanderHeader svg {
             display: none !important;
         }
