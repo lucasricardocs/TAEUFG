@@ -20,6 +20,8 @@ except:
     pass
 
 # --- Constantes de Configuração ---
+# CUIDADO: Por segurança, o SPREADSHEET_ID e WORKSHEET_NAME devem ser secretos no ambiente de produção.
+# Aqui eles estão fixos apenas para demonstração.
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
@@ -207,7 +209,6 @@ def render_topbar_with_logo(dias_restantes):
     """, unsafe_allow_html=True)
 
 def display_progress_bar(progresso_geral):
-    # Barra de progresso azul com gradiente
     st.markdown(f"""
     <div style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
@@ -256,7 +257,7 @@ def create_altair_stacked_bar(df_summary):
             return 'transparent'
         elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
             return 'white'
-        elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
+        elif row['Status'] == 'Pendente' and df_row['Concluido (%)'] == 100:
             return 'transparent'
         else:
             return 'white'
@@ -270,8 +271,8 @@ def create_altair_stacked_bar(df_summary):
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
-                         scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                         legend=None)
+                        scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        legend=None)
     )
 
     labels = alt.Chart(df_melted).mark_text(
@@ -329,7 +330,7 @@ def create_progress_donut(source_df, title):
             color='#2c3e50'
         )
     ).configure_view(
-        strokeOpacity=0,  # Remove a borda do gráfico
+        strokeOpacity=0, 
         fillOpacity=0
     )
 
@@ -357,70 +358,73 @@ def display_donuts_grid(df_summary, progresso_geral):
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
 
-# Lógica de manuseio do checkbox aprimorada
-def handle_checkbox_change(worksheet, row_number, key, conteudo_nome):
+# Lógica de manuseio do checkbox aprimorada (UX)
+def on_checkbox_change(worksheet, row_number, key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
+        # Limpa o cache para forçar a recarga dos dados e atualizar todos os gráficos
         load_data_with_row_indices.clear()
+        st.rerun() # Força a re-execução para a UI atualizar imediatamente
     else:
-        st.toast(f"Falha ao atualizar '{conteudo_nome}'.", icon="❌")
-        st.session_state[key] = not novo_status
+        st.toast(f"Falha ao atualizar.", icon="❌")
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if not worksheet:
         return
+    
+    st.subheader("✅ Checklist de Conteúdos")
+    st.write("Marque os tópicos conforme conclui seus estudos. O progresso é atualizado automaticamente.")
 
-    # Usar st.session_state para agrupar o estado dos expanders
-    if 'expander_states' not in st.session_state:
-        st.session_state['expander_states'] = {disc: False for disc in sorted(df['Disciplinas'].unique())}
+    # Campo de busca para UX aprimorada
+    search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM...").strip().upper()
+    
+    # Filtra o DataFrame com base na busca
+    if search_query:
+        df_filtered = df[df.apply(lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(), axis=1)]
+    else:
+        df_filtered = df
 
-    for disc in sorted(df['Disciplinas'].unique()):
-        conteudos_disciplina = df[df['Disciplinas'] == disc]
+    for disc in sorted(df_filtered['Disciplinas'].unique()):
+        conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
         
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        with st.expander(f"{disc.title()} - {concluidos}/{total} ({progresso:.1f}%)", 
-                         expanded=st.session_state['expander_states'].get(disc, False)):
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
             
-            # Ao expandir, salva o estado como True
-            st.session_state['expander_states'][disc] = True
-
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
+                
+                # Garante que o estado do checkbox na UI seja lido da planilha
+                if key not in st.session_state:
+                    st.session_state[key] = bool(row['Status'])
+
+                # Renderiza o checkbox
                 st.checkbox(
                     label=row['Conteúdos'], 
-                    value=bool(row['Status']), 
+                    value=st.session_state[key],
                     key=key,
-                    on_change=handle_checkbox_change,
+                    on_change=on_checkbox_change,
                     kwargs={
-                        'worksheet': worksheet, 
-                        'row_number': row['sheet_row'], 
-                        'key': key, 
-                        'conteudo_nome': row['Conteúdos']
+                        'worksheet': worksheet,
+                        'row_number': row['sheet_row'],
+                        'key': key
                     }
                 )
 
 # --- Paleta de cores base ---
-PALETA_CORES = ['#4c9ed9', '#3b7bbf', '#2a5ca4', '#1b3d89', '#0a1f6e']  # tons de azul
+# Ajustado para uma paleta de cores mais profissional
+PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
 # --- Gráfico de Colunas (Questões) ---
 def bar_questoes_padronizado(ed_data):
-    import pandas as pd
-    import altair as alt
-
     df = pd.DataFrame(ed_data)
 
-    # Definir cores fixas para cada disciplina
-    disciplinas = df['Disciplinas'].unique().tolist()
-    cores = ['#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6', '#1abc9c']  # adicione ou repita cores conforme necessário
-    color_scale = alt.Scale(domain=disciplinas, range=cores)
-
     # --- Barras ---
-    chart = alt.Chart(df).mark_bar(
+    bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
         stroke='#d3d3d3',
@@ -428,8 +432,22 @@ def bar_questoes_padronizado(ed_data):
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
-        color=alt.Color('Disciplinas:N', scale=color_scale, legend=None)
-    ).properties(
+        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
+    )
+
+    # --- Labels acima das barras ---
+    labels = bars.mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5,
+        color='#2c3e50',
+        fontWeight='bold',
+        font='Helvetica Neue'
+    ).encode(
+        text='Questões:Q'
+    )
+
+    return (bars + labels).properties(
         width=500,
         height=500,
         title=alt.TitleParams(
@@ -439,36 +457,16 @@ def bar_questoes_padronizado(ed_data):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    )
-
-    # --- Labels acima das barras ---
-    labels = chart.mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-5,
-        color='#2c3e50',
-        fontWeight='bold',
-        font='Helvetica Neue'
-    ).encode(
-        x='Disciplinas:N',
-        y='Questões:Q',
-        text='Questões:Q'
-    )
-
-    return alt.layer(chart, labels).configure_view(
+    ).configure_view(
         strokeOpacity=0,
         fillOpacity=0
     )
 
-# --- Treemap Relevância ---
-def treemap_relevancia_vertical_rotulo_fora(ed_data):
-    import pandas as pd
-    import altair as alt
-
+# --- Gráfico de Barras de Relevância (solução) ---
+def bar_relevancia_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['custom_text'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
 
     # Escala de cores azul claro → azul escuro
     color_scale = alt.Scale(
@@ -476,25 +474,40 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
         range=['#cce6ff', '#004c99']
     )
 
-    # --- Barras com cantos arredondados à direita e stroke ---
+    # --- Barras ---
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
         stroke='#d3d3d3',
         strokeWidth=1,
-        size=80  # grossura da barra
+        size=40
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, axis=None),
-        x=alt.X('Relevancia:Q', axis=None),
-        color=alt.Color('Relevancia:Q', scale=color_scale),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=None),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
+        color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
             alt.Tooltip('Disciplinas:N'),
             alt.Tooltip('Peso:Q'),
             alt.Tooltip('Questões:Q'),
-            alt.Tooltip('Relevancia:Q', title='Peso × Questões'),
+            alt.Tooltip('Relevancia:Q', title='Relevância'),
             alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
         ]
-    ).properties(
+    )
+    
+    # --- Rótulos de Disciplina e Percentual ---
+    text = bars.mark_text(
+        align='left',
+        baseline='middle',
+        dx=3, # Deslocamento para fora da barra
+        color='#2c3e50',
+        fontWeight='bold',
+        fontSize=12,
+        font='Helvetica Neue'
+    ).encode(
+        text=alt.Text('Percentual:Q', format='.1f', title='Percentual')
+    )
+
+    return (bars + text).properties(
         width=500,
         height=500,
         title=alt.TitleParams(
@@ -504,28 +517,11 @@ def treemap_relevancia_vertical_rotulo_fora(ed_data):
             font='Helvetica Neue',
             color='#2c3e50'
         )
-    )
-
-    # --- Rótulos de percentual à frente da barra ---
-    labels = alt.Chart(df).mark_text(
-        align='left',
-        baseline='middle',
-        dx=5,
-        color='#2c3e50',
-        fontWeight='bold',
-        fontSize=12,
-        font='Helvetica Neue'
-    ).encode(
-        y=alt.Y('Disciplinas:N', sort=None),
-        x=alt.X('Relevancia:Q'),
-        text='custom_text:N'
-    )
-
-    # --- Combina barras e rótulos ---
-    return alt.layer(bars, labels).configure_view(
+    ).configure_view(
         strokeOpacity=0,
         fillOpacity=0
     )
+
 def rodape_motivacional():
     st.markdown("---")
     st.markdown("""
@@ -599,47 +595,50 @@ def main():
             font-size: 1.5rem !important;
         }
 
-        /* ========================= */
-        /*   CHECKBOX TOTALMENTE NEUTRO   */
-        /* ========================= */
+        /* ==================================== */
+        /* ======== CHECKBOXES ESTILIZADOS ======== */
+        /* ==================================== */
+        .stCheckbox {
+            padding: 0.2rem 0;
+            margin: 0;
+        }
+
         .stCheckbox > label {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 1rem;
-            font-weight: normal;
-            background: none !important;
-            border: none !important;
-            padding: 0 !important;
-            margin-bottom: 0rem;
-            cursor: pointer;
+            transition: background-color 0.2s ease;
+            padding: 0.3rem 0.5rem;
+            border-radius: 5px;
+            font-weight: 400;
         }
 
         .stCheckbox > label:hover {
-            background: none !important;
-            border: none !important;
+            background-color: #f0f2f6;
         }
 
-        /* A caixinha mantém o padrão do navegador/Streamlit */
         .stCheckbox > label > div:first-child {
-            width: auto !important;
-            height: auto !important;
-            border: none !important;
-            background: none !important;
-            padding: 0 !important;
+            border: 1px solid #d3d3d3;
+            border-radius: 4px;
+            width: 18px !important;
+            height: 18px !important;
+            background-color: #f7f7f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .stCheckbox > label > div > svg {
-            display: none !important;
+        .stCheckbox > label > div:first-child:hover {
+            border-color: #3498db;
         }
-
-        .stCheckbox > label > input[type="checkbox"]:checked + div {
-            background: none !important;
-            border: none !important;
+        
+        .stCheckbox > label > input[type="checkbox"]:checked + div:first-child {
+            background-color: #2ecc71;
+            border-color: #2ecc71;
         }
-
+        
         .stCheckbox > label > input[type="checkbox"]:checked + div::after {
-            content: none !important;
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            line-height: 1;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -660,23 +659,25 @@ def main():
     
     display_simple_metrics(stats)
 
+    st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
-    
+    st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
     
+    st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
+    st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
     with colB:
-        st.altair_chart(treemap_relevancia_vertical_rotulo_fora(ED_DATA), use_container_width=True)
+        st.altair_chart(bar_relevancia_padronizado(ED_DATA), use_container_width=True)
     
     rodape_motivacional()
 
