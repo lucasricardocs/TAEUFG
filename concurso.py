@@ -227,7 +227,7 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 120px; margin-right: 1.5rem;"/>
             <div class="titles-container">
                 <h1 style="margin: 0;">
                     Dashboard de Estudos
