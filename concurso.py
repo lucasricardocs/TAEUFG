@@ -233,7 +233,7 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 110px; margin-right: 1rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
             <div>
                 <h1 style="
                     color: #2c3e50;
@@ -256,9 +256,6 @@ def render_topbar_with_logo(dias_restantes):
             </div>
         </div>
         <div class="top-container-right">
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
-            </p>
             <p style="
                 margin: 0;
                 color: #777;
@@ -266,6 +263,9 @@ def render_topbar_with_logo(dias_restantes):
                 font-weight: 400;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </p>
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
             </p>
         </div>
     </div>
@@ -657,9 +657,13 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 2.25rem;
+            font-size: 3.0rem; /* Aumentado para maior destaque */
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
+        }
+        /* Ajuste do layout para alinhar o texto do clima e data */
+        .top-container-right > p:nth-child(2) {
+            margin-top: 0.5rem;
         }
 
         /* ==================================== */
@@ -749,7 +753,7 @@ def main():
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 110px; margin-right: 1rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
             <div>
                 <h1 style="
                     color: #2c3e50;
@@ -772,9 +776,6 @@ def main():
             </div>
         </div>
         <div class="top-container-right">
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
-            </p>
             <p style="
                 margin: 0;
                 color: #777;
@@ -782,6 +783,9 @@ def main():
                 font-weight: 400;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </p>
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
             </p>
         </div>
     </div>
