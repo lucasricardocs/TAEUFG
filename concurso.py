@@ -225,7 +225,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         </h2>
     </div>""", unsafe_allow_html=True)
 
-def render_topbar_with_logo(dias_restantes):
+def render_topbar_with_logo():
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
@@ -239,7 +239,6 @@ def render_topbar_with_logo(dias_restantes):
                     font-size: 2.2rem;
                     font-weight: 500;
                     line-height: 1.2;
-                    font-family: 'Helvetica Neue', sans-serif;
                 ">
                     Dashboard de Estudos
                 </h1>
@@ -255,17 +254,23 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0.1rem 0 0.1rem 0; /* Ajustado para subir o texto */
+                margin: 0;
                 color: #777;
-                font-size: 0.5rem;
-                font-weight: 200;
+                font-size: 0.9rem;
+                font-weight: 400;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </p>
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
-            </p>
         </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def display_days_countdown(dias_restantes):
+    st.markdown(f"""
+    <div class="countdown-container animated-fade-in">
+        <p class="days-countdown">
+            ⏰ Faltam {dias_restantes} dias!
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -316,9 +321,10 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        if row['Percentual'] > 0:
-            return 'black'
-        return 'transparent'
+        # Lógica para garantir contraste: branco em fundo escuro, preto em fundo claro
+        if row['Status'] == 'Pendente':
+            return 'white'
+        return 'black'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
@@ -355,9 +361,6 @@ def create_altair_stacked_bar(df_summary):
             font='Helvetica Neue',
             color='#000000'
         )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
     )
 
 def create_progress_donut(source_df, title):
@@ -387,9 +390,6 @@ def create_progress_donut(source_df, title):
             dy=-10,
             color='#000000'
         )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -505,9 +505,6 @@ def bar_questoes_padronizado(ed_data):
             font='Helvetica Neue',
             color='#000000'
         )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -564,9 +561,6 @@ def bar_relevancia_customizado(ed_data):
             font='Helvetica Neue',
             color='#000000'
         )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
     )
 
 def rodape_motivacional():
@@ -589,9 +583,27 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Configura um tema vazio para garantir fundos transparentes nos gráficos Altair
-    alt.themes.enable('none')
+    # CSS global: aplica Helvetica Neue em todo o app
+    st.markdown(
+        """
+        <style>
+        * {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     
+    # Tema Altair: fundo transparente em todos os gráficos
+    alt.themes.register("transparent", lambda: {
+        "config": {
+            "view": {"strokeWidth": 0, "fill": "transparent"},
+            "axis": {"domain": False, "grid": False}
+        }
+    })
+    alt.themes.enable("transparent")
+
     # CSS com animações e efeitos
     st.markdown("""
     <style>
@@ -599,7 +611,6 @@ def main():
         .stApp {
             background-color: #f7f9fc;
             color: #333;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
         /* Oculta o fundo padrão dos gráficos */
@@ -649,12 +660,11 @@ def main():
             text-align: right;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Alinhamento do conteúdo no topo */
+            justify-content: flex-start;
             height: 100%;
         }
 
         .top-container h1, .top-container p {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             position: relative;
             z-index: 2;
         }
@@ -671,15 +681,14 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 4.5rem; /* Aumentado para maior destaque */
+            font-size: 4.5rem;
             margin: 0;
-            font-family: 'Helvetica Neue', sans-serif;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
             line-height: 1.2;
         }
         .top-container-right p:first-child {
             margin-bottom: 0.5rem;
-            margin-top: 0.1rem; /* Altera a margem superior para subir */
+            margin-top: 0.1rem;
         }
         
         /* ==================================== */
@@ -766,46 +775,7 @@ def main():
     
     weather_data = get_weather_data('Goiania, BR')
     
-    st.markdown(f"""
-    <div class="top-container">
-        <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
-            <div>
-                <h1 style="
-                    color: #2c3e50;
-                    margin: 0;
-                    font-size: 2.2rem;
-                    font-weight: 500;
-                    line-height: 1.2;
-                    font-family: 'Helvetica Neue', sans-serif;
-                ">
-                    Dashboard de Estudos
-                </h1>
-                <p style="
-                    color: #555;
-                    margin: 0;
-                    font-size: 1.1rem;
-                    font-weight: 500;
-                ">
-                    Concurso TAE UFG 2025
-                </p>
-            </div>
-        </div>
-        <div class="top-container-right">
-            <p style="
-                margin: 0.1rem 0 0.5rem 0;
-                color: #777;
-                font-size: 0.9rem;
-                font-weight: 400;
-            ">
-                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-            </p>
-            <p class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    render_topbar_with_logo(dias_restantes)
 
     df = load_data_with_row_indices()
 
