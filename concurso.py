@@ -227,6 +227,7 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem;"/>
             <div class="titles-container">
                 <h1 style="margin: 0;">
                     Dashboard de Estudos
@@ -519,7 +520,7 @@ def bar_relevancia_customizado(ed_data):
         strokeWidth=1,
         size=40
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),  # Remover rótulos do eixo Y
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
@@ -630,29 +631,29 @@ def main():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 400px; /* Altura fixa de 400px */
+            height: 250px; /* Altura fixa de 250px */
         }
         .top-container-left {
             display: flex;
             align-items: center;
             flex: 1;
             height: 100%;
-            justify-content: center; /* Centraliza horizontalmente */
+            justify-content: center;
         }
         .titles-container {
-            text-align: center; /* Centraliza o texto */
+            text-align: center;
         }
         .titles-container h1 {
             color: #2c3e50;
             margin: 0;
-            font-size: 3.5rem; /* Tamanho aumentado */
+            font-size: 2.8rem;
             font-weight: 700;
             line-height: 1.2;
         }
         .titles-container p {
             color: #555;
             margin: 0;
-            font-size: 1.8rem; /* Tamanho aumentado */
+            font-size: 1.6rem;
             font-weight: 500;
         }
         .top-container-right {
@@ -682,7 +683,7 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 800;
-            font-size: 4.5rem; /* Tamanho ajustado */
+            font-size: 4rem;
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
@@ -708,19 +709,16 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== CORREÇÃO DOS EXPANDERS ======== */
+        /* ======== REMOÇÃO COMPLETA DAS SETAS ======== */
         /* ==================================== */
         .streamlit-expanderHeader::before {
-            content: "▶";
-            margin-right: 8px;
-            font-size: 0.8rem;
-            color: #9b59b6;
-        }
-        .streamlit-expanderHeader[aria-expanded="true"]::before {
-            content: "▼";
+            display: none;
         }
         .streamlit-expanderHeader svg {
             display: none !important;
+        }
+        .streamlit-expanderHeader {
+            padding-left: 1rem !important;
         }
         
         /* ==================================== */
