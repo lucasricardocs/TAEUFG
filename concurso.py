@@ -255,7 +255,7 @@ def render_topbar_with_logo(dias_restantes):
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0 0 0.5rem 0; /* Ajustado para mover para cima */
+                margin: 0 0 0.5rem 0;
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
@@ -316,16 +316,11 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        if row['Status'] == 'Concluido' and df_row['Concluido (%)'] == 100:
-            return 'white'
-        elif row['Status'] == 'Concluido' and df_row['Pendente (%)'] == 100:
-            return 'transparent'
-        elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
-            return 'white'
-        elif row['Status'] == 'Pendente' and df_row['Concluido (%)'] == 100:
-            return 'transparent'
-        else:
-            return 'white'
+        # A lógica foi simplificada para sempre usar preto para maior clareza
+        # e para atender ao pedido do usuário de usar rótulos pretos.
+        if row['Percentual'] > 0:
+            return 'black'
+        return 'transparent'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
@@ -333,7 +328,7 @@ def create_altair_stacked_bar(df_summary):
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Helvetica Neue')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Helvetica Neue')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -360,8 +355,11 @@ def create_altair_stacked_bar(df_summary):
             anchor='middle',
             fontSize=18,
             font='Helvetica Neue',
-            color='#2c3e50'
+            color='#000000'
         )
+    ).configure_view(
+        stroke=None, # Remove a borda do gráfico
+        fill='transparent' # Garante o fundo transparente
     )
 
 def create_progress_donut(source_df, title):
@@ -375,11 +373,14 @@ def create_progress_donut(source_df, title):
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
                         legend=None),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
         size=24,
         fontWeight='bold',
-        color='#2c3e50',
+        color='#000000',
         font='Helvetica Neue'
     ).encode(text='text:N')
 
@@ -389,7 +390,7 @@ def create_progress_donut(source_df, title):
             anchor='middle',
             fontSize=26,
             dy=-10,
-            color='#2c3e50'
+            color='#000000'
         )
     )
 
@@ -480,7 +481,7 @@ def bar_questoes_padronizado(ed_data):
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue')),
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Helvetica Neue', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
@@ -489,7 +490,7 @@ def bar_questoes_padronizado(ed_data):
         align='center',
         baseline='bottom',
         dy=-5,
-        color='#2c3e50',
+        color='#000000',
         fontWeight='bold',
         font='Helvetica Neue'
     ).encode(
@@ -504,8 +505,11 @@ def bar_questoes_padronizado(ed_data):
             anchor='middle',
             fontSize=18,
             font='Helvetica Neue',
-            color='#2c3e50'
+            color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -542,7 +546,7 @@ def bar_relevancia_customizado(ed_data):
         align='left',
         baseline='middle',
         dx=3,
-        color='#2c3e50',
+        color='#000000',
         fontWeight='bold',
         fontSize=12,
         font='Helvetica Neue'
@@ -558,8 +562,11 @@ def bar_relevancia_customizado(ed_data):
             anchor='middle',
             fontSize=18,
             font='Helvetica Neue',
-            color='#2c3e50'
+            color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def rodape_motivacional():
@@ -664,9 +671,13 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 3.0rem; /* Aumentado para maior destaque */
+            font-size: 4.5rem; /* Aumentado para maior destaque */
             margin: 0;
             font-family: 'Helvetica Neue', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
+        }
+        .top-container-right p:first-child {
+            margin-bottom: 1rem;
         }
 
         /* ==================================== */
