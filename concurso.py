@@ -1,3 +1,6 @@
+Aqui está o código completo e arrumado, com a solução do CSS para esconder a seta do st.expander já aplicada.
+O seletor [data-testid="stExpander-header-action-icon"] é o mais robusto e atualizado para atingir o ícone de seta do Streamlit.
+Copie e cole este código no seu arquivo .py.
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -257,7 +260,6 @@ def render_topbar_with_logo(dias_restantes):
     </style>
     
     <div class="responsive-topbar">
-        <!-- Conteúdo anterior -->
         <div class="topbar-info">
             <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
@@ -734,8 +736,8 @@ def main():
         /* Animação do contador de dias */
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
         }
 
         /* ==================================== */
@@ -760,12 +762,13 @@ def main():
         /* ==================================== */
         /* ======== SOLUÇÃO PARA AS SETAS ======== */
         /* ==================================== */
-        /* Remove completamente o ícone padrão */
-        .streamlit-expanderHeader .st-emotion-cache-1p1m4ay {
+        /* Esconde o ícone de SVG padrão no cabeçalho do expander */
+        .st-expander-header [data-testid="stExpander-header-action-icon"] {
             display: none;
         }
-        /* Adiciona um ícone personalizado */
-        .streamlit-expanderHeader::before {
+
+        /* Adiciona o ícone de + */
+        .st-expander-header button::before {
             content: "+";
             display: inline-block;
             margin-right: 8px;
@@ -773,7 +776,9 @@ def main():
             font-weight: bold;
             color: #9b59b6;
         }
-        .streamlit-expanderHeader[aria-expanded="true"]::before {
+
+        /* Adiciona o ícone de - quando o expander está expandido */
+        .st-expander-header[aria-expanded="true"] button::before {
             content: "-";
         }
         
@@ -850,3 +855,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
