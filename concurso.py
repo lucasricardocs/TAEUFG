@@ -724,7 +724,7 @@ def main():
         }
         /* Adiciona um ícone personalizado */
         .streamlit-expanderHeader::before {
-            content: "+";
+            content: "";
             display: inline-block;
             margin-right: 8px;
             font-size: 1.2rem;
@@ -732,7 +732,7 @@ def main():
             color: #9b59b6;
         }
         .streamlit-expanderHeader[aria-expanded="true"]::before {
-            content: "-";
+            content: "";
         }
         
         /* ==================================== */
