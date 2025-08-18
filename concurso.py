@@ -449,6 +449,7 @@ def display_conteudos_com_checkboxes(df):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
+                # Verifica se a chave já existe no estado da sessão
                 if key not in st.session_state:
                     st.session_state[key] = bool(row['Status'])
 
@@ -708,6 +709,8 @@ def main():
             font-size: 3.5rem;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             animation: pulse 2s infinite;
+            line-height: 1.2;
+            text-align: center;
         }
         
         /* Animação do contador de dias */
@@ -778,6 +781,14 @@ def main():
         }
         .stCheckbox > label:hover {
             background-color: inherit;
+        }
+        
+        /* ==================================== */
+        /* ======== CORREÇÃO DE LAYOUT ======== */
+        /* ==================================== */
+        .st-emotion-cache-1v0mbdj {
+            display: block;
+            margin: 0 auto;
         }
     </style>
     """, unsafe_allow_html=True)
