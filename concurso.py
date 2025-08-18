@@ -8,6 +8,7 @@ from google.oauth2.service_account import Credentials
 from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import altair as alt
+import random
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -32,6 +33,30 @@ ED_DATA = {
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
 }
+
+# Lista de frases motivacionais
+FRASES_MOTIVACIONAIS = [
+    "A aprovação é uma maratona, não um sprint. Mantenha o seu ritmo.",
+    "Cada tópico estudado é um passo mais perto do seu futuro cargo.",
+    "A persistência de hoje é a sua recompensa de amanhã.",
+    "Foque no processo, não apenas no resultado. O sucesso virá.",
+    "Seu maior concorrente é a sua distração. Vença-a todos os dias.",
+    "A disciplina é a ponte entre seus objetivos e a sua realização.",
+    "Acredite no seu potencial. Você é mais forte do que pensa.",
+    "Pequenos progressos diários somam-se a grandes resultados.",
+    "O sacrifício de hoje é a celebração de amanhã. Continue firme.",
+    "Não desista. O caminho pode ser difícil, mas a vitória vale a pena.",
+    "Sua dedicação é o que vai te diferenciar dos demais. Estude com paixão.",
+    "Concentre-se em dominar um tópico de cada vez. O aprendizado é cumulativo.",
+    "A melhor maneira de prever o futuro é criá-lo com seus estudos.",
+    "O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
+    "Quando a vontade de desistir for grande, lembre-se do porquê começou.",
+    "Sua aprovação está esperando por você no final dessa jornada.",
+    "Visualize seu nome na lista de aprovados. É a sua motivação final.",
+    "A preparação é a chave para a confiança. Estude, revise, vença.",
+    "Transforme o 'e se' em 'e daí, eu consegui!'.",
+    "Não estude até dar certo. Estude até não ter mais como dar errado."
+]
 
 # --- Funções de Conexão com Google Sheets ---
 
@@ -257,7 +282,7 @@ def create_altair_stacked_bar(df_summary):
             return 'transparent'
         elif row['Status'] == 'Pendente' and df_row['Pendente (%)'] == 100:
             return 'white'
-        elif row['Status'] == 'Pendente' and df_row['Concluido (%)'] == 100:
+        elif row['Status'] == 'Pendente' and df_row['Concluído (%)'] == 100:
             return 'transparent'
         else:
             return 'white'
@@ -523,11 +548,12 @@ def bar_relevancia_padronizado(ed_data):
     )
 
 def rodape_motivacional():
+    frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
     st.markdown("---")
-    st.markdown("""
+    st.markdown(f"""
     <div style="text-align: center; margin: 1.5rem 0; padding: 1rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0;'>
-            🚀 Cada tópico estudado é um passo mais perto da sua aprovação! Mantenha o foco! ✨
+            🚀 {frase_aleatoria} ✨
         </p>
     </div>
     """, unsafe_allow_html=True)
