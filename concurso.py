@@ -680,10 +680,10 @@ def main():
             100% { transform: scale(1); }
         }
         .days-countdown {
-            animation: pulse 2s infinite;
+            animation: pulse 3s infinite;
             color: #e74c3c;
-            font-weight: 800;
-            font-size: 4rem;
+            font-weight: 500;
+            font-size: 3rem;
             margin: 0;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             line-height: 1.1;
