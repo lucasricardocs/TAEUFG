@@ -225,7 +225,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         </h2>
     </div>""", unsafe_allow_html=True)
 
-def render_topbar_with_logo():
+def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
@@ -254,23 +254,17 @@ def render_topbar_with_logo():
         </div>
         <div class="top-container-right">
             <p style="
-                margin: 0;
+                margin: 0 0 0.5rem 0;
                 color: #777;
                 font-size: 0.9rem;
                 font-weight: 400;
             ">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </p>
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
+            </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def display_days_countdown(dias_restantes):
-    st.markdown(f"""
-    <div class="countdown-container animated-fade-in">
-        <p class="days-countdown">
-            ⏰ Faltam {dias_restantes} dias!
-        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -321,10 +315,9 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        # Lógica para garantir contraste: branco em fundo escuro, preto em fundo claro
-        if row['Status'] == 'Pendente':
-            return 'white'
-        return 'black'
+        if row['Percentual'] > 0:
+            return 'black'
+        return 'transparent'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
@@ -361,6 +354,9 @@ def create_altair_stacked_bar(df_summary):
             font='Helvetica Neue',
             color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def create_progress_donut(source_df, title):
@@ -390,6 +386,9 @@ def create_progress_donut(source_df, title):
             dy=-10,
             color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def display_donuts_grid(df_summary, progresso_geral):
@@ -505,6 +504,9 @@ def bar_questoes_padronizado(ed_data):
             font='Helvetica Neue',
             color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -561,6 +563,9 @@ def bar_relevancia_customizado(ed_data):
             font='Helvetica Neue',
             color='#000000'
         )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
     )
 
 def rodape_motivacional():
@@ -660,7 +665,7 @@ def main():
             text-align: right;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
+            justify-content: flex-start; /* Alinhamento do conteúdo no topo */
             height: 100%;
         }
 
@@ -681,14 +686,14 @@ def main():
             animation: pulse 2s infinite;
             color: #e74c3c;
             font-weight: 700;
-            font-size: 4.5rem;
+            font-size: 4.5rem; /* Aumentado para maior destaque */
             margin: 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* Sombra para o texto */
             line-height: 1.2;
         }
         .top-container-right p:first-child {
             margin-bottom: 0.5rem;
-            margin-top: 0.1rem;
+            margin-top: 0.1rem; /* Altera a margem superior para subir */
         }
         
         /* ==================================== */
@@ -775,7 +780,45 @@ def main():
     
     weather_data = get_weather_data('Goiania, BR')
     
-    render_topbar_with_logo(dias_restantes)
+    st.markdown(f"""
+    <div class="top-container">
+        <div class="top-container-left">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1rem;"/>
+            <div>
+                <h1 style="
+                    color: #2c3e50;
+                    margin: 0;
+                    font-size: 2.2rem;
+                    font-weight: 500;
+                    line-height: 1.2;
+                ">
+                    Dashboard de Estudos
+                </h1>
+                <p style="
+                    color: #555;
+                    margin: 0;
+                    font-size: 1.1rem;
+                    font-weight: 500;
+                ">
+                    Concurso TAE UFG 2025
+                </p>
+            </div>
+        </div>
+        <div class="top-container-right">
+            <p style="
+                margin: 0.1rem 0 0.5rem 0;
+                color: #777;
+                font-size: 0.9rem;
+                font-weight: 400;
+            ">
+                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </p>
+            <p class="days-countdown">
+                ⏰ Faltam {dias_restantes} dias!
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     df = load_data_with_row_indices()
 
