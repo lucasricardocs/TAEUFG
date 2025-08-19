@@ -594,9 +594,14 @@ def bar_relevancia_customizado(ed_data):
 
 def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
-    st.markdown("---")
+    st.markdown(
+        """
+        <hr style="margin: 0.5rem 0; border: 1px solid #ddd;">
+        """,
+        unsafe_allow_html=True
+    )
     st.markdown(f"""
-    <div style="text-align: center; margin: 0.5rem 0; padding: 0.3rem; color: #555;">
+    <div style="text-align: center; margin: 0.3rem 0; padding: 0.2rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
             🚀 {frase_aleatoria} ✨
         </p>
