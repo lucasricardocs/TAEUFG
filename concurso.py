@@ -226,14 +226,14 @@ def render_topbar_with_logo(dias_restantes):
     
     st.markdown(f"""
     <div class="top-container">
-        <div class="top-container-main">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px;"/>
-            <div class="titles-container">
-                <h1>Dashboard de Estudos</h1>
-                <p>Concurso TAE UFG 2025</p>
-            </div>
+        <div class="logo-container">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" class="logo-ufg"/>
         </div>
-        <div class="top-container-info">
+        <div class="titles-container">
+            <h1>Dashboard de Estudos</h1>
+            <p>Concurso TAE UFG 2025</p>
+        </div>
+        <div class="info-container">
             <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
@@ -406,7 +406,6 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Marca que esta disciplina deve ficar aberta
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
         st.rerun()
@@ -444,40 +443,34 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
 
-        # 📊 Header com barra de progresso estilizada
-        st.markdown(f"""
-            <div style="margin: 0.5rem 0;">
-                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
-                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
-                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
         # Verifica se esta disciplina deve ficar expandida
         expanded_key = f"expanded_{disc}"
-        is_expanded = st.session_state.get(expanded_key, False)
+        if expanded_key not in st.session_state:
+            st.session_state[expanded_key] = False
 
-        # 📂 Container customizado que substitui o expander
-        with st.container():
-            # Botão para expandir/contrair
-            if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
-                st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
-                st.rerun()
+        # 📂 Expander sem setas (CSS aplicado antes)
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expanded_key]):
+            # A partir de agora, o st.session_state[expanded_key] é True, então o conteúdo é exibido.
+            # O st.rerun no callback já garante que o estado é mantido.
             
-            # Mostra o conteúdo se estiver expandido
-            if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
-                for _, row in conteudos_disciplina.iterrows():
-                    key = f"cb_{row['sheet_row']}"
-                    st.checkbox(
-                        label=row['Conteúdos'],
-                        value=bool(row['Status']),
-                        key=key,
-                        on_change=on_checkbox_change,
-                        args=(worksheet, row['sheet_row'], key, disc)
-                    )
-                st.markdown('</div>', unsafe_allow_html=True)
+            # st.markdown(f"""
+            #     <div style="margin: 0.5rem 0;">
+            #         <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
+            #         <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
+            #             <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+            #         </div>
+            #     </div>
+            # """, unsafe_allow_html=True)
+            
+            for _, row in conteudos_disciplina.iterrows():
+                key = f"cb_{row['sheet_row']}"
+                st.checkbox(
+                    label=row['Conteúdos'],
+                    value=bool(row['Status']),
+                    key=key,
+                    on_change=on_checkbox_change,
+                    args=(worksheet, row['sheet_row'], key, disc)
+                )
 
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
@@ -489,7 +482,7 @@ def bar_questoes_padronizado(ed_data):
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
         stroke='#d3d3d3',
-        strokeWidth=1
+        strokeWidth=2
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
@@ -542,7 +535,7 @@ def bar_relevancia_customizado(ed_data):
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
         stroke='#d3d3d3',
-        strokeWidth=1,
+        strokeWidth=2,
         size=40
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
@@ -643,33 +636,45 @@ def main():
         .animated-fade-in {
             animation: fadeIn 0.8s ease-out;
         }
-
+        
         /* ==================================== */
         /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
         .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
-            padding: 0.5rem 2rem;
+            padding: 1.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            display: grid;
+            grid-template-areas:
+                "logo main-title weather"
+                ". . countdown";
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto 1fr;
+            height: 250px;
+            gap: 1rem;
             align-items: center;
-            gap: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .top-container-main {
+        .top-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        .logo-container {
+            grid-area: logo;
             display: flex;
+            justify-content: flex-start;
             align-items: center;
-            flex-grow: 1;
         }
         .titles-container {
+            grid-area: main-title;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            margin-left: 3rem;
+            align-items: center;
+            text-align: center;
         }
         .titles-container h1 {
             color: #2c3e50;
@@ -685,27 +690,29 @@ def main():
             font-size: clamp(1.2rem, 1.8vw, 1.4rem);
             font-weight: 500;
         }
-        .top-container-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: flex-start;  /* ← ADICIONADO: alinha ao topo */
-            text-align: right;
-            flex-grow: 1;
-        }
         .weather-info {
+            grid-area: weather;
             font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
             font-weight: 400;
-            margin-bottom: 0.2rem;
+            text-align: right;
+            align-self: flex-start;
         }
         .days-countdown {
-            animation: pulse 4s infinite ease-in-out;
+            grid-area: countdown;
+            animation: pulse 2s infinite ease-in-out;
             color: #e74c3c;
-            font-weight: 500;
+            font-weight: 800;
             font-size: clamp(1.5rem, 3vw, 2.5rem);
             line-height: 1.1;
+            text-align: center;
+            align-self: flex-end;
+            justify-self: center;
         }
+        .logo-ufg {
+            height: 90px;
+        }
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -714,19 +721,21 @@ def main():
         
         @media (max-width: 768px) {
             .top-container {
+                display: flex;
                 flex-direction: column;
-                text-align: center;
+                height: auto;
+                padding: 1rem;
                 gap: 1rem;
             }
-            .top-container-main, .top-container-info {
+            .logo-container, .titles-container, .weather-info, .days-countdown {
+                display: flex;
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
                 width: 100%;
             }
-            .titles-container {
-                align-items: center;
-                margin-left: 0;
+            .logo-container {
+                justify-content: center;
             }
         }
 
@@ -778,31 +787,10 @@ def main():
             display: block;
             margin: 0 auto;
         }
-
-        /* ==================================== */
-        /* ======== ESTILOS PARA BOTÕES CUSTOMIZADOS ======== */
-        /* ==================================== */
-        .stButton > button {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
         
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-        
-        .stButton > button:active {
-            transform: translateY(0);
+        /* Oculta o ícone padrão do expander */
+        .streamlit-expanderHeader > div:first-child {
+            display: none;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -822,15 +810,19 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
+    st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
+    st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
     
+    st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
+    st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
