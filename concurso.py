@@ -302,7 +302,7 @@ def create_altair_stacked_bar(df_summary):
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     bars = alt.Chart(df_melted).mark_bar(
-        stroke='#d3d3d3',
+        stroke='black',
         strokeWidth=2
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
@@ -349,7 +349,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
 
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='black', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -489,7 +489,7 @@ def bar_questoes_padronizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
-        stroke='#d3d3d3',
+        stroke='black',
         strokeWidth=1
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
@@ -542,7 +542,7 @@ def bar_relevancia_customizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
-        stroke='#d3d3d3',
+        stroke='black',
         strokeWidth=1,
         size=40
     ).encode(
@@ -662,7 +662,7 @@ def main():
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            border: 1px solid #d3d3d3;
+            border: 1px solid black;
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
@@ -833,7 +833,7 @@ def main():
         /* NOVO: TÍTULOS COM ANIMAÇÃO E BORDA/SOMBRA */
         /* ==================================== */
         .title-container {
-            border: 1px solid #d3d3d3; /* NOVA: Borda fina */
+            border: 1px solid black; /* NOVA: Borda fina */
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
             border-radius: 12px;
