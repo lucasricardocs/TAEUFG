@@ -580,7 +580,6 @@ def display_conteudos_com_checkboxes(df):
             is_expanded = st.session_state.get(f"expanded_{disc}", False)
             if st.button(f"📁 {'Fechar' if is_expanded else 'Ver'} conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[f"expanded_{disc}"] = not is_expanded
-                # Esta chamada a st.rerun é OK, pois não está em um callback de widget
                 st.rerun()
             
             if st.session_state.get(f"expanded_{disc}", False):
@@ -640,10 +639,9 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # 🚨 PONTO CRÍTICO: Gerencia o estado dos dados no st.session_state
     if 'df_data' not in st.session_state:
         st.session_state['df_data'] = load_data_with_row_indices()
-
+    
     df = st.session_state['df_data']
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
