@@ -647,89 +647,140 @@ def main():
         /* ==================================== */
         /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
-        .top-container {
-            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 18px;
-            padding: 0.5rem 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            border: 1px solid #d3d3d3;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .top-container-main {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-        .titles-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-left: 1.5rem;
-        }
-        .titles-container h1 {
-            color: #2c3e50;
-            margin: 0;
-            font-size: clamp(1.8rem, 3vw, 2.5rem);
-            font-weight: 700;
-            line-height: 1.1;
-        }
-        .titles-container p {
-            color: #555;
-            margin: 0;
-            margin-top: 0.2rem;
-            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
-            font-weight: 500;
-        }
-        .top-container-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: flex-start;  /* ← ADICIONADO: alinha ao topo */
-            text-align: right;
-            flex-grow: 1;
-        }
-        .weather-info {
-            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-            color: #777;
-            font-weight: 400;
-            margin-bottom: 0.5rem;
-        }
-        .days-countdown {
-            animation: pulse 4s infinite ease-in-out;
-            color: #e74c3c;
-            font-weight: 800;
-            font-size: clamp(1.5rem, 3vw, 2.5rem);
-            line-height: 1.1;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        @media (max-width: 768px) {
-            .top-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-            .top-container-main, .top-container-info {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                width: 100%;
-            }
-            .titles-container {
-                align-items: center;
-                margin-left: 0;
-            }
-        }
+        top-container {
+    background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
+    border-radius: 18px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    border: 1px solid #d3d3d3;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    
+    /* ← NOVA PROPRIEDADE: altura fixa */
+    height: 250px;
+    /* ← ADICIONADO: garante que o conteúdo não ultrapasse a altura */
+    overflow: hidden;
+}
 
+.top-container-main {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    /* ← ADICIONADO: garante que não ultrapasse a altura do container */
+    height: 100%;
+}
+
+.titles-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 1.5rem;
+    /* ← ADICIONADO: previne overflow de texto */
+    flex: 1;
+    min-width: 0;
+}
+
+.titles-container h1 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    /* ← ADICIONADO: previne quebra de texto */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.titles-container p {
+    color: #555;
+    margin: 0;
+    margin-top: 0.2rem;
+    font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+    font-weight: 500;
+    /* ← ADICIONADO: previne quebra de texto */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top-container-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center; /* ← ALTERADO: centraliza verticalmente */
+    text-align: right;
+    flex-grow: 1;
+    /* ← ADICIONADO: garante altura total */
+    height: 100%;
+}
+
+.weather-info {
+    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+    color: #777;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+    /* ← ADICIONADO: previne quebra de linha */
+    white-space: nowrap;
+}
+
+.days-countdown {
+    animation: pulse 2s infinite ease-in-out;
+    color: #e74c3c;
+    font-weight: 800;
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    line-height: 1.1;
+    /* ← ADICIONADO: previne quebra de texto */
+    white-space: nowrap;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* ← ATUALIZADO: responsividade mantendo altura fixa */
+@media (max-width: 768px) {
+    .top-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        /* ← MANTÉM altura fixa mesmo em mobile */
+        height: 250px;
+        justify-content: center;
+    }
+    
+    .top-container-main, .top-container-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        height: auto; /* ← permite altura automática nos sub-containers em mobile */
+    }
+    
+    .titles-container {
+        align-items: center;
+        margin-left: 0;
+    }
+    
+    /* ← ADICIONADO: ajusta tamanhos em mobile para caber na altura fixa */
+    .titles-container h1 {
+        font-size: clamp(1.4rem, 4vw, 1.8rem);
+    }
+    
+    .titles-container p {
+        font-size: clamp(1rem, 3vw, 1.2rem);
+    }
+    
+    .days-countdown {
+        font-size: clamp(1.2rem, 4vw, 1.8rem);
+    }
+}
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
