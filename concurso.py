@@ -630,16 +630,9 @@ def main():
             font-family: 'Nunito', sans-serif !important;
         }
         
-        /* NOVO: Fundo gradiente animado */
-        @keyframes gradient-animation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        /* Fundo claro e sutil */
         .stApp {
-            background: linear-gradient(-45deg, #e0f0ff, #f0f8ff, #f7f9fc, #f5f5f5);
-            background-size: 400% 400%;
-            animation: gradient-animation 15s ease infinite;
+            background: #fafbfc;
             color: #333;
         }
         
