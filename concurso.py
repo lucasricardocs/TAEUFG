@@ -224,51 +224,41 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
 def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiânia, BR')
     
-    # Adicione a animação pulse diretamente no estilo do elemento que a usa.
-    # O HTML e o CSS estão em um único bloco de markdown.
     st.markdown(f"""
     <style>
         .responsive-topbar {{
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 2rem;
+            justify-content: space-between;
+            gap: 1.5rem; /* Aumenta o espaçamento entre os itens */
+            padding: 1.5rem 2rem;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 12px;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            min-height: 100px; /* Garante uma altura mínima para o container */
         }}
-        
+
+        /* Seção do Logo */
         .topbar-logo {{
             flex: 1 1 100px;
-            min-width: 100px;
             display: flex;
-            justify-content: flex-start;
+            justify-content: center; /* Centraliza a logo no mobile */
         }}
-        
+
+        .topbar-logo img {{
+            height: auto;
+            max-width: 100%;
+            max-height: 80px;
+        }}
+
+        /* Seção dos Títulos */
         .topbar-titles {{
             flex: 3 1 250px;
             text-align: center;
             padding: 0 0.5rem;
-        }}
-        
-        .topbar-info {{
-            flex: 2 1 200px;
-            text-align: right;
-        }}
-        
-        @media (max-width: 768px) {{
-            .responsive-topbar {{
-                flex-direction: column;
-                text-align: center;
-            }}
-            .topbar-logo, .topbar-titles, .topbar-info {{
-                width: 100%;
-                text-align: center;
-            }}
         }}
         
         .main-title {{
@@ -282,6 +272,13 @@ def render_topbar_with_logo(dias_restantes):
             margin: 0.3rem 0 0;
             font-size: clamp(1rem, 1.8vw, 1.4rem);
             color: #555;
+        }}
+
+        /* Seção de Informações (Clima e Contagem) */
+        .topbar-info {{
+            flex: 2 1 200px;
+            text-align: right;
+            min-width: 150px; /* Evita que a coluna de info fique muito pequena */
         }}
         
         .weather-info {{
@@ -298,15 +295,29 @@ def render_topbar_with_logo(dias_restantes):
             display: inline-block;
         }}
         
+        /* Animação de Pulsar */
         @keyframes pulse {{
             0% {{ transform: scale(1); }}
             50% {{ transform: scale(1.05); }}
             100% {{ transform: scale(1); }}
         }}
+
+        /* Responsividade para Telas Pequenas */
+        @media (max-width: 768px) {{
+            .responsive-topbar {{
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }}
+            .topbar-logo, .topbar-titles, .topbar-info {{
+                width: 100%;
+                text-align: center;
+            }}
+        }}
     </style>
     <div class="responsive-topbar">
         <div class="topbar-logo">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: auto; max-width: 100%; max-height: 80px;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG"/>
         </div>
         
         <div class="topbar-titles">
@@ -324,7 +335,6 @@ def render_topbar_with_logo(dias_restantes):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
 
 
 def display_progress_bar(progresso_geral):
@@ -484,13 +494,13 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-def on_checkbox_change(worksheet, row_number, key, expander_key):
+# --- Funções de Checklist de Conteúdos ---
+def on_checkbox_change(worksheet, row_number, key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Mantém o expander aberto
-        st.session_state[expander_key] = True
         load_data_with_row_indices.clear()
+        st.rerun()
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -499,10 +509,12 @@ def display_conteudos_com_checkboxes(df):
     if not worksheet:
         return
     
-    search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM...").strip().upper()
+    search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Legislação, Informática...").strip().upper()
     
     if search_query:
         df_filtered = df[df.apply(lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(), axis=1)]
+        if df_filtered.empty:
+            st.warning("Nenhum conteúdo encontrado com a sua busca.")
     else:
         df_filtered = df
 
@@ -513,25 +525,16 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        expander_key = f"expander_{disc}"
-        if expander_key not in st.session_state:
-            st.session_state[expander_key] = True
-
-        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expander_key]):
-            st.session_state[expander_key] = True
-            
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
-                if key not in st.session_state:
-                    st.session_state[key] = bool(row['Status'])
-
                 st.checkbox(
                     label=row['Conteúdos'],
-                    value=st.session_state[key],
+                    value=bool(row['Status']),
                     key=key,
                     on_change=on_checkbox_change,
-                    args=(worksheet, row['sheet_row'], key, expander_key)
+                    args=(worksheet, row['sheet_row'], key)
                 )
 
 # --- Gráficos ---
@@ -707,24 +710,6 @@ def main():
             font-size: 1.6rem;
             color: #2c3e50;
             margin: 0;
-        }
-        
-        /* SOLUÇÃO PARA ESCONDER E SUBSTITUIR AS SETAS DO EXPANDER */
-        .st-expander-header [data-testid="stExpander-header-action-icon"] {
-            display: none;
-        }
-
-        .st-expander-header button::before {
-            content: "+";
-            display: inline-block;
-            margin-right: 8px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #9b59b6;
-        }
-
-        .st-expander-header[aria-expanded="true"] button::before {
-            content: "-";
         }
         
         [data-testid="stMetricValue"] {
