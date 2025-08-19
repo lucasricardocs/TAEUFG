@@ -543,8 +543,8 @@ def bar_relevancia_customizado(ed_data):
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
         stroke='black',
-        strokeWidth=1,
-        size=40
+        strokeWidth=2,
+        size=70
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
