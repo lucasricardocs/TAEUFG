@@ -220,168 +220,39 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         </h2>
     </div>""", unsafe_allow_html=True)
 
-def render_topbar_with_logo(dias_restantes):
-    weather_data = get_weather_data('Goiania, BR')
-    
-    st.markdown(f"""
-    <link href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        .top-container {{
-            height: 300px;
-            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 18px;
-            padding: 1rem 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            border: 1px solid #d3d3d3;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            overflow: hidden;
-            font-family: 'Livvic', sans-serif;
-        }}
-        
-        .ufg-logo {{
-            height: 90px;
-            margin-right: 2rem;
-            align-self: center;
-        }}
-        
-        .center-content {{
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 2;
-            width: 100%;
-        }}
-        
-        .center-content h1 {{
-            color: #2c3e50;
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: 'Livvic', sans-serif;
-        }}
-        
-        .center-content p {{
-            color: #555;
-            margin: 0;
-            margin-top: 0.5rem;
-            font-size: 1.4rem;
-            font-weight: 500;
-            font-family: 'Livvic', sans-serif;
-        }}
-        
-        .weather-info {{
-            position: absolute;
-            top: 1rem;
-            right: 2rem;
-            font-size: 1.1rem;
-            color: #777;
-            font-weight: 400;
-            z-index: 3;
-            font-family: 'Livvic', sans-serif;
-        }}
-        
-        .days-countdown {{
-            position: relative;
-            z-index: 2;
-            animation: pulse 2s infinite ease-in-out;
-            color: #e74c3c;
-            font-weight: 800;
-            font-size: 2.5rem;
-            margin-top: 1rem;
-            font-family: 'Livvic', sans-serif;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }}
-        
-        @keyframes pulse {{
-            0% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }}
-        
-        .flames {{
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 100px;
-            background: radial-gradient(ellipse at center, rgba(255, 87, 34, 0.8) 0%, rgba(255, 152, 0, 0.6) 20%, transparent 70%);
-            filter: blur(5px);
-            z-index: 1;
-            animation: flicker 2s infinite alternate;
-        }}
-        
-        @keyframes flicker {{
-            0% {{ opacity: 0.7; height: 80px; }}
-            25% {{ opacity: 0.9; height: 90px; }}
-            50% {{ opacity: 0.8; height: 85px; }}
-            75% {{ opacity: 0.95; height: 95px; }}
-            100% {{ opacity: 0.75; height: 85px; }}
-        }}
-        
-        .pennants {{
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 40px;
-            display: flex;
-            justify-content: space-between;
-            z-index: 2;
-        }}
-        
-        .pennant {{
-            width: 30px;
-            height: 40px;
-            background: #e74c3c;
-            clip-path: polygon(0 0, 100% 0, 50% 100%);
-            animation: wave 3s infinite ease-in-out;
-        }}
-        
-        .pennant:nth-child(1) {{ animation-delay: 0s; }}
-        .pennant:nth-child(2) {{ animation-delay: 0.2s; }}
-        .pennant:nth-child(3) {{ animation-delay: 0.4s; }}
-        .pennant:nth-child(4) {{ animation-delay: 0.6s; }}
-        .pennant:nth-child(5) {{ animation-delay: 0.8s; }}
-        
-        @keyframes wave {{
-            0%, 100% {{ transform: translateY(0) rotate(0deg); }}
-            50% {{ transform: translateY(-5px) rotate(5deg); }}
-        }}
-    </style>
-    
-    <div class="top-container">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/7/79/Marca_da_UFG.png" alt="Logo UFG" class="ufg-logo"/>
-        
-        <div class="center-content">
+
+def render_top_container():
+    st.markdown(
+        """
+        <link href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+            .header-simple {
+                width: 100%;
+                height: 300px;
+                background: #F0F8FF;
+                border-radius: 20px;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+                border: 1px solid #d3d3d3;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 2rem;
+                font-family: 'Livvic', sans-serif;
+            }
+            .header-simple h1 {
+                font-size: 3rem;
+                font-weight: 800;
+                color: #000;
+            }
+        </style>
+        <div class="header-simple">
             <h1>Dashboard de Estudos</h1>
-            <p>Concurso TAE UFG 2025</p>
-            <div class="days-countdown">FALTAM {dias_restantes} DIAS</div>
         </div>
-        
-        <div class="weather-info">
-            Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-        </div>
-        
-        <div class="pennants">
-            <div class="pennant"></div>
-            <div class="pennant"></div>
-            <div class="pennant"></div>
-            <div class="pennant"></div>
-            <div class="pennant"></div>
-        </div>
-        
-        <div class="flames"></div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
+
+
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
@@ -942,7 +813,7 @@ def main():
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    render_topbar_with_logo(dias_restantes)
+    render_top_container()
 
     df = load_data_with_row_indices()
 
