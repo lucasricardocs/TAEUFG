@@ -242,7 +242,7 @@ def render_top_container(dias_restantes):
                 <div class="days-countdown pulse-effect">
                     <div class="fire-effect"></div>
                     <div class="flag-effect"></div>
-                    FALTAM {dias_restantes} DIAS
+                    ⏰ Faltam {dias_restantes} dias!
                 </div>
             </div>
         </div>
@@ -652,7 +652,7 @@ def main():
         /* ==================================== */
         .header-container {
             width: 100%;
-            height: 300px;
+            height: 250px;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
