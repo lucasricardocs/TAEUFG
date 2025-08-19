@@ -226,22 +226,19 @@ def render_topbar_with_logo(dias_restantes):
     
     st.markdown(f"""
     <div class="top-container">
-        <!-- Coluna Esquerda: Logo -->
-        <div class="top-column left-column">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" class="logo-img"/>
-        </div>
-        
-        <!-- Coluna Central: Títulos -->
-        <div class="top-column center-column">
+        <div class="top-container-left">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem;"/>
             <div class="titles-container">
-                <h1>Dashboard de Estudos</h1>
-                <p>Concurso TAE UFG 2025</p>
+                <h1 style="margin: 0; line-height: 1.1;">
+                    Dashboard de Estudos
+                </h1>
+                <p style="margin: 0; margin-top: 0.2rem;">
+                    Concurso TAE UFG 2025
+                </p>
             </div>
         </div>
-        
-        <!-- Coluna Direita: Informações -->
-        <div class="top-column right-column">
-            <div class="info-top">
+        <div class="top-container-right">
+            <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
             <div class="days-countdown">
@@ -407,6 +404,7 @@ def display_donuts_grid(df_summary, progresso_geral):
                     donut = create_progress_donut(chart_info['df'], chart_info['title'])
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 def on_checkbox_change(worksheet, row_number, key, expander_key):
     novo_status = st.session_state[key]
@@ -625,98 +623,80 @@ def main():
         }
 
         /* ==================================== */
-        /* ======== NOVO CONTAINER DO TOPO ======== */
+        /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
         .top-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
             padding: 1.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
-            height: 250px;
-        }
-        
-        /* Colunas do topo */
-        .top-column {
             display: flex;
-            height: 100%;
-            padding: 0 15px;
+            justify-content: space-between;
+            align-items: center;
+            height: 250px; /* Altura fixa de 250px */
         }
-        
-        /* Coluna Esquerda: Logo */
-        .left-column {
+        .top-container-left {
+            display: flex;
+            align-items: center;
             flex: 1;
+            height: 100%;
             justify-content: center;
-            align-items: center;
-        }
-        .logo-img {
-            height: 120px;
-            max-width: 100%;
-            object-fit: contain;
-        }
-        
-        /* Coluna Central: Títulos */
-        .center-column {
-            flex: 2;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            border-left: 1px solid #d3d3d3;
-            border-right: 1px solid #d3d3d3;
         }
         .titles-container {
-            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .titles-container h1 {
             color: #2c3e50;
             margin: 0;
             font-size: 2.8rem;
             font-weight: 700;
-            line-height: 1.1;
+            line-height: 1.1; /* Reduzir espaçamento entre linhas */
         }
         .titles-container p {
             color: #555;
             margin: 0;
-            margin-top: 0.8rem;
-            font-size: 1.8rem;
+            margin-top: 0.2rem; /* Reduzir espaçamento superior */
+            font-size: 1.6rem;
             font-weight: 500;
         }
-        
-        /* Coluna Direita: Informações */
-        .right-column {
-            flex: 1;
+        .top-container-right {
+            display: flex;
             flex-direction: column;
+            align-items: flex-end;
             justify-content: space-between;
+            height: 100%;
+            flex: 1;
         }
-        .info-top {
+        .weather-info {
             font-size: 1.1rem;
             color: #777;
-            text-align: right;
+            margin-bottom: 0.5rem;
             font-weight: 400;
         }
-        .days-countdown {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #e74c3c;
-            font-weight: 800;
-            font-size: 3.5rem;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
-            animation: pulse 2s infinite;
-        }
-        
-        /* Animação do contador de dias */
+
+        /* ==================================== */
+        /* ======== DESTAQUE PARA CONTADOR DE DIAS ======== */
+        /* ==================================== */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-
+        .days-countdown {
+            animation: pulse 2s infinite;
+            color: #e74c3c;
+            font-weight: 800;
+            font-size: 4rem;
+            margin: 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
+            line-height: 1.1;
+        }
+        
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -737,7 +717,7 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== SOLUÇÃO PARA AS SETAS ======== */
+        /* ======== SOLUÇÃO DEFINITIVA PARA AS SETAS ======== */
         /* ==================================== */
         /* Remove completamente o ícone padrão */
         .streamlit-expanderHeader .st-emotion-cache-1p1m4ay {
