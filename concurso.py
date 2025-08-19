@@ -28,7 +28,7 @@ CONCURSO_DATE = datetime(2025, 9, 28)
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
 
 ED_DATA = {
-    'Disciplinas': ['PORTUGUES', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'ESPECÍFICOS'],
+    'Disciplinas': ['Língua Portuguesa', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'Conhecimentos Específicos'],
     'Total_Conteudos': [17, 14, 14, 11, 21],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
@@ -168,7 +168,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
+@st.cache_data(ttl=10)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
