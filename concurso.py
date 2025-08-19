@@ -168,7 +168,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=10)  # Armazena em cache por 10 segundos
+@st.cache_data(ttl=10)
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -221,7 +221,7 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_topbar_with_logo(dias_restantes):
-    weather_data = get_weather_data('Goiania, BR')
+    weather_data = get_weather_data('Goiânia, BR')
     
     st.markdown(f"""
     <div style="
@@ -425,7 +425,7 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         # Marca que esta disciplina deve ficar aberta
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        st.rerun() # É necessário forçar o rerun para atualizar todos os gráficos
+        st.rerun()
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
