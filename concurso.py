@@ -650,7 +650,7 @@ def main():
         .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
-            padding: 1.5rem 2rem;
+            padding: 0.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
