@@ -544,7 +544,7 @@ def bar_relevancia_customizado(ed_data):
         cornerRadiusBottomRight=2,
         stroke='black',
         strokeWidth=2,
-        size=70
+        size=80
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
@@ -567,7 +567,7 @@ def bar_relevancia_customizado(ed_data):
         fontSize=12,
         font='Nunito'
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='black')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
