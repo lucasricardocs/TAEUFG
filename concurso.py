@@ -227,7 +227,7 @@ def render_top_container(dias_restantes):
     st.markdown(f"""
     <div class="header-container animated-fade-in">
         <div class="header-left">
-            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 100px;"/>
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 230px;"/>
         </div>
         <div class="header-center">
             <h1>Dashboard de Estudos</h1>
@@ -684,7 +684,7 @@ def main():
         }
         
         .header-left img {
-            max-width: 150px;
+            max-width: 250px;
             height: auto;
             object-fit: contain;
         }
