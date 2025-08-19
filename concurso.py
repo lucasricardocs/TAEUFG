@@ -490,7 +490,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
 
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='fffff', strokeWidth=3).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='white', strokeWidth=3).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -630,7 +630,7 @@ def bar_questoes_padronizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
-        stroke='fffff',
+        stroke='white',
         strokeWidth=3
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Livvic', labelColor='#000000')),
@@ -683,7 +683,7 @@ def bar_relevancia_customizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
-        stroke='fffff',
+        stroke='white',
         strokeWidth=3,
         size=40
     ).encode(
