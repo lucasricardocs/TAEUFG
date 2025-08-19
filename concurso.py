@@ -235,7 +235,8 @@ def render_top_container(dias_restantes):
         </div>
         <div class="header-right">
             <div class="header-info-top">
-                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
+                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
+                <span class="weather-info">| {weather_data['emoji']} {weather_data['temperature']}</span>
             </div>
             <div class="header-info-bottom">
                 <div class="faltamxdias">
