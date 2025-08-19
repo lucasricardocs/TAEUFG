@@ -631,7 +631,7 @@ def bar_questoes_padronizado(ed_data):
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
         stroke='fff',
-        strokeWidth=1
+        strokeWidth=3
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Livvic', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
@@ -684,7 +684,7 @@ def bar_relevancia_customizado(ed_data):
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
         stroke='fff',
-        strokeWidth=1,
+        strokeWidth=3,
         size=40
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
