@@ -51,7 +51,6 @@ FRASES_MOTIVACIONAIS = [
     "O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
     "Quando a vontade de desistir for grande, lembre-se do porquê começou.",
     "Sua aprovação está esperando por você no final dessa jornada.",
-    "Visualize seu nome na lista de aprovados. É a sua motivação final.",
     "A preparação é a chave para a confiança. Estude, revise, vença.",
     "Transforme o 'e se' em 'e daí, eu consegui!'.",
     "Não estude até dar certo. Estude até não ter mais como dar errado."
@@ -169,7 +168,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=3600)  # Armazena em cache por 1 hora
+@st.cache_data(ttl=3600)   # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -401,24 +400,25 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
+# --- Funções de Lógica e Cálculos (Versão corrigida) ---
 def on_checkbox_change(worksheet, row_number, key, disciplina):
     """Atualiza status no Google Sheets e recarrega dados, mantendo a seção aberta"""
     novo_status = st.session_state.get(key, False)
-    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-        st.toast("Status atualizado!", icon="✅")
-        # Marca que esta disciplina deve ficar aberta
-        st.session_state[f"expanded_{disciplina}"] = True
-        load_data_with_row_indices.clear()
-        st.rerun()
-    else:
-        st.toast("Falha ao atualizar.", icon="❌")
+    
+    with st.spinner(f"Atualizando {disciplina}..."):
+        if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+            st.toast("Status atualizado! Recarregando dados...", icon="✅")
+            st.session_state[f"expanded_{disciplina}"] = True
+            load_data_with_row_indices.clear()
+            st.rerun()
+        else:
+            st.toast("Falha ao atualizar. Verifique as permissões da planilha.", icon="❌")
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if not worksheet:
         return
     
-    # 🔍 Barra de busca
     search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
     
     if search_query:
@@ -433,18 +433,15 @@ def display_conteudos_com_checkboxes(df):
     else:
         df_filtered = df
 
-    # Garante que Status seja boolean
     df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
-
-    # 🔄 Itera pelas disciplinas
+    
     for disc in sorted(df_filtered['Disciplinas'].unique()):
         conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
-
+        
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
-
-        # 📊 Header com barra de progresso estilizada
+        
         st.markdown(f"""
             <div style="margin: 0.5rem 0;">
                 <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
@@ -453,19 +450,14 @@ def display_conteudos_com_checkboxes(df):
                 </div>
             </div>
         """, unsafe_allow_html=True)
-
-        # Verifica se esta disciplina deve ficar expandida
+        
         expanded_key = f"expanded_{disc}"
-        is_expanded = st.session_state.get(expanded_key, False)
-
-        # 📂 Container customizado que substitui o expander
+        
         with st.container():
-            # Botão para expandir/contrair
             if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
                 st.rerun()
             
-            # Mostra o conteúdo se estiver expandido
             if st.session_state.get(expanded_key, False):
                 st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
@@ -602,7 +594,7 @@ def rodape_motivacional():
     </div>
     """, unsafe_allow_html=True)
 
-# --- Função Principal da Aplicação ---
+# --- Função Principal da Aplicação (Versão corrigida) ---
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso TAE UFG",
@@ -611,10 +603,8 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Configura um tema vazio para garantir fundos transparentes
     alt.themes.enable('none')
     
-    # CSS com animações e efeitos
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -810,10 +800,15 @@ def main():
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
 
-    df = load_data_with_row_indices()
+    with st.spinner("Carregando dados..."):
+        df = load_data_with_row_indices()
 
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
+        
+        if st.button("Recarregar Planilha"):
+            load_data_with_row_indices.clear()
+            st.rerun()
         st.stop()
         
     df_summary, progresso_geral = calculate_progress(df)
@@ -822,14 +817,14 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
+    display_conteudos_com_checkboxes(df)
+
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
-    
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-    display_conteudos_com_checkboxes(df)
     
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
