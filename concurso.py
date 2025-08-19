@@ -227,21 +227,14 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-main">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px;"/>
             <div class="titles-container">
-                <h1 style="margin: 0; line-height: 1.1; font-size: 1.8rem;">
-                    Dashboard de Estudos
-                </h1>
-                <p style="margin: 0; margin-top: 0.2rem; font-size: 1.2rem;">
-                    Concurso TAE UFG 2025
-                </p>
-                <div class="weather-info-mobile">
-                    Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
-                </div>
+                <h1>Dashboard de Estudos</h1>
+                <p>Concurso TAE UFG 2025</p>
             </div>
         </div>
         <div class="top-container-info">
-            <div class="weather-info-desktop">
+            <div class="weather-info">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
             <div class="days-countdown">
@@ -408,18 +401,12 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Funções de Checklist de Conteúdos ---
-def on_checkbox_change(worksheet, row_number, key, expander_key):
+def on_checkbox_change(worksheet, row_number, key):
     novo_status = st.session_state[key]
-    
-    # Atualiza o estado do expander para TRUE antes de atualizar a planilha
-    # Isso garante que ele permaneça aberto após a interação
-    st.session_state[expander_key] = True
-
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Limpa o cache para que os dados sejam recarregados na próxima execução
         load_data_with_row_indices.clear()
+        st.rerun()
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -444,11 +431,7 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        expander_key = f"expander_{disc}"
-        if expander_key not in st.session_state:
-            st.session_state[expander_key] = True
-
-        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expander_key]):
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
@@ -457,7 +440,7 @@ def display_conteudos_com_checkboxes(df):
                     value=bool(row['Status']),
                     key=key,
                     on_change=on_checkbox_change,
-                    args=(worksheet, row['sheet_row'], key, expander_key)
+                    args=(worksheet, row['sheet_row'], key)
                 )
 
 # --- Gráficos ---
@@ -636,35 +619,26 @@ def main():
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            justify-content: space-between;
             align-items: center;
-            text-align: center;
             gap: 1.5rem;
         }
         .top-container-main {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
-        }
-        .top-container-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
+            flex-grow: 1;
         }
         .titles-container {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            text-align: center;
             justify-content: center;
-            margin-top: 1rem;
+            margin-left: 1.5rem;
         }
         .titles-container h1 {
             color: #2c3e50;
             margin: 0;
-            font-size: 1.8rem;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
             font-weight: 700;
             line-height: 1.1;
         }
@@ -672,19 +646,27 @@ def main():
             color: #555;
             margin: 0;
             margin-top: 0.2rem;
-            font-size: 1.2rem;
+            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
             font-weight: 500;
         }
+        .top-container-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            flex-grow: 1;
+        }
         .weather-info {
-            font-size: 0.9rem;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
             font-weight: 400;
+            margin-bottom: 0.5rem;
         }
         .days-countdown {
             animation: pulse 2s infinite ease-in-out;
             color: #e74c3c;
             font-weight: 800;
-            font-size: 1.5rem;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
             line-height: 1.1;
         }
         @keyframes pulse {
@@ -693,22 +675,21 @@ def main():
             100% {{ transform: scale(1); }}
         }
         
-        @media (min-width: 768px) {
+        @media (max-width: 768px) {
             .top-container {
-                flex-direction: row;
-                justify-content: space-between;
-                text-align: left;
-            }
-            .top-container-main {
-                flex-direction: row;
+                flex-direction: column;
+                text-align: center;
                 gap: 1rem;
             }
-            .titles-container {
-                align-items: flex-start;
-                margin-top: 0;
+            .top-container-main, .top-container-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                width: 100%;
             }
-            .top-container-info {
-                align-items: flex-end;
+            .titles-container {
+                align-items: center;
+                margin-left: 0;
             }
         }
 
@@ -732,17 +713,9 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== ÍCONES PERSONALIZADOS PARA EXPANDERS ======== */
+        /* ======== Ícones Expander: Solução Robusta ======== */
         /* ==================================== */
-        /* Remove o ícone padrão do expander */
-        .st-emotion-cache-1p1m4ay {
-            display: none;
-        }
-
-        /* Remove o espaço reservado para o ícone */
-        .streamlit-expanderHeader > div {
-            min-width: 0.5rem;
-        }
+        /* Não é necessário CSS adicional, o carregamento da fonte Material Icons resolve o problema. */
         
         /* ==================================== */
         /* ======== MÉTRICAS EM DESTAQUE ======== */
