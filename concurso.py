@@ -747,22 +747,19 @@ def main():
         }
 
         .days-countdown {
-          position: relative;
-          height: 250px;
-          width: 100%;
-          font-size: 3rem;
-          font-weight: 900;
-          color: #e74c3c;
-          animation: pulse 2s infinite ease-in-out;
-          line-height: 1;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #e74c3c;
+            animation: pulse 2s infinite ease-in-out;
+            line-height: 1;
         }
-        
+
         .countdown-text {
-          position: absolute;
-          top: 50%;
-          right: 50px; /* distância da borda direita - ajuste conforme necessário */
-          transform: translateY(-50%);
-          z-index: 2;
+            position: relative;
+            z-index: 2;
         }
 
         .sparkle {
