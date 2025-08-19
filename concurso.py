@@ -26,6 +26,7 @@ SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
+UFG_LOGO_URL = "https://upload.wikimedia.org/wikipedia/commons/7/79/Marca_da_UFG.png"
 
 ED_DATA = {
     'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
@@ -168,7 +169,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=10)  # Armazena em cache por 1 hora
+@st.cache_data(ttl=10) # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -220,28 +221,34 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         </h2>
     </div>""", unsafe_allow_html=True)
 
-def render_topbar_with_logo(dias_restantes):
+def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
-    <div class="top-container">
-        <div class="top-container-main">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px;"/>
-            <div class="titles-container">
-                <h1>Dashboard de Estudos</h1>
-                <p>Concurso TAE UFG 2025</p>
-            </div>
+    <div class="header-container animated-fade-in">
+        <div class="header-left">
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 100px;"/>
         </div>
-        <div class="top-container-info">
-            <div class="weather-info">
-                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+        <div class="header-center">
+            <h1>Dashboard de Estudos</h1>
+            <h2>Concurso TAE UFG 2025</h2>
+        </div>
+        <div class="header-right">
+            <div class="header-info-top">
+                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
+                <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
             </div>
-            <div class="days-countdown">
-                ⏰ Faltam {dias_restantes} dias!
+            <div class="header-info-bottom">
+                <div class="days-countdown pulse-effect">
+                    <div class="fire-effect"></div>
+                    <div class="flag-effect"></div>
+                    FALTAM {dias_restantes} DIAS
+                </div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
@@ -639,93 +646,178 @@ def main():
         .animated-fade-in {
             animation: fadeIn 0.8s ease-out;
         }
-
+        
         /* ==================================== */
-        /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
+        /* ======== CONTAINER DO TOPO NOVO ======== */
         /* ==================================== */
-        .top-container {
+        .header-container {
+            width: 100%;
+            height: 300px;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 18px;
-            padding: 0.5rem 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             border: 1px solid #d3d3d3;
+            padding: 20px 40px;
             display: flex;
-            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 1.5rem;
+            overflow: hidden; /* Garante que os efeitos fiquem dentro do container */
+            position: relative;
+            margin-bottom: 2rem;
         }
-        .top-container-main {
+        
+        .header-left, .header-center, .header-right {
             display: flex;
             align-items: center;
-            flex-grow: 1;
+            height: 100%;
         }
-        .titles-container {
-            display: flex;
+
+        .header-left {
+            flex-grow: 1;
+            justify-content: flex-start;
+        }
+        
+        .header-left img {
+            max-width: 150px;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        .header-center {
+            flex-grow: 2;
             flex-direction: column;
             justify-content: center;
-            margin-left: 3rem;
+            text-align: center;
+            line-height: 1;
         }
-        .titles-container h1 {
+        
+        .header-center h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
             color: #2c3e50;
             margin: 0;
-            font-size: clamp(1.8rem, 3vw, 2.5rem);
-            font-weight: 700;
-            line-height: 1.1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
         }
-        .titles-container p {
+        
+        .header-center h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
             color: #555;
             margin: 0;
-            margin-top: 0.2rem;
-            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
-            font-weight: 500;
         }
-        .top-container-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: flex-start;  /* ← ADICIONADO: alinha ao topo */
-            text-align: right;
+
+        .header-right {
             flex-grow: 1;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            text-align: right;
+            position: relative;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
-        .weather-info {
-            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+        
+        .header-info-top, .header-info-bottom {
+            width: 100%;
+        }
+
+        .location-date, .weather-info {
+            font-size: 1rem;
             color: #777;
             font-weight: 400;
-            margin-bottom: 0.2rem;
         }
+        
+        .weather-info {
+            margin-left: 10px;
+        }
+        
         .days-countdown {
-            animation: pulse 4s infinite ease-in-out;
+            font-size: 3rem;
+            font-weight: 900;
             color: #e74c3c;
-            font-weight: 500;
-            font-size: clamp(1.5rem, 3vw, 2.5rem);
-            line-height: 1.1;
+            line-height: 1;
+            position: relative;
+            display: inline-block;
+            overflow: visible;
         }
+        
+        /* Animação de pulso */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+        .pulse-effect {
+            animation: pulse 2s infinite ease-in-out;
+        }
         
-        @media (max-width: 768px) {
-            .top-container {
+        /* Animação de "fogo" - Sutil para evitar poluir o layout */
+        .fire-effect {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 20px;
+            background: radial-gradient(ellipse at center, rgba(255,100,0,0.8) 0%, rgba(255,200,0,0.5) 50%, transparent 70%);
+            z-index: -1;
+            filter: blur(8px);
+            animation: fire-flicker 2s infinite ease-in-out;
+            opacity: 0.7;
+        }
+        @keyframes fire-flicker {
+            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
+            25% { opacity: 0.9; transform: scale(1.05) translateX(-50%); }
+            50% { opacity: 0.8; transform: scale(1.02) translateX(-50%); }
+            75% { opacity: 0.85; transform: scale(1.03) translateX(-50%); }
+        }
+
+        /* Animação de "flâmulas" - Linhas sutis para simular a bandeira */
+        .flag-effect {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 120%;
+            height: 100%;
+            transform: translateX(-50%);
+            z-index: -2;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
+            background-size: 20px 20px, 20px 20px;
+            animation: flag-wave 6s infinite linear;
+        }
+        @keyframes flag-wave {
+            from { background-position: 0 0; }
+            to { background-position: -200px -200px; }
+        }
+
+        @media (max-width: 1200px) {
+            .header-container {
                 flex-direction: column;
+                height: auto;
+                padding: 20px;
                 text-align: center;
-                gap: 1rem;
+                gap: 20px;
             }
-            .top-container-main, .top-container-info {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
+            .header-left, .header-center, .header-right {
+                flex-grow: initial;
+                justify-content: center;
                 width: 100%;
             }
-            .titles-container {
+            .header-right {
                 align-items: center;
+            }
+            .header-info-top {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .weather-info {
                 margin-left: 0;
             }
         }
-
+        
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -804,7 +896,7 @@ def main():
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    render_topbar_with_logo(dias_restantes)
+    render_top_container(dias_restantes)
 
     df = load_data_with_row_indices()
 
