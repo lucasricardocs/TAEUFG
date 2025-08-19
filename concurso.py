@@ -408,7 +408,7 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         # Marca que esta disciplina deve ficar aberta
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        st.rerun()
+        # st.rerun() # Não é mais necessário, Streamlit já reinicia automaticamente
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
@@ -469,6 +469,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
             # Botão para expandir/contrair
             if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
+                # O rerun aqui é mantido para alternar o estado do container, é uma exceção
                 st.rerun()
             
             # Mostra o conteúdo se estiver expandido
