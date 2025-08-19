@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -226,43 +225,26 @@ def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
-    <style>
-        /* Container principal - mantido */
-        .responsive-topbar {{
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-        }}
+    <div class="top-container">
+        <!-- Coluna Esquerda: Logo -->
+        <div class="top-column left-column">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" class="logo-img"/>
+        </div>
         
-        /* ANIMAÇÃO FUNCIONAL */
-        @keyframes pulse {{
-            0% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }}
+        <!-- Coluna Central: Títulos -->
+        <div class="top-column center-column">
+            <div class="titles-container">
+                <h1>Dashboard de Estudos</h1>
+                <p>Concurso TAE UFG 2025</p>
+            </div>
+        </div>
         
-        .days-countdown {{
-            color: #e74c3c;
-            font-weight: 800;
-            font-size: clamp(1.5rem, 3vw, 2.5rem);
-            margin: 0.5rem 0;
-            animation: pulse 2s infinite ease-in-out;
-            display: inline-block;
-            transform-origin: center;
-        }}
-    </style>
-    
-    <div class="responsive-topbar">
-        <div class="topbar-info">
-            <div class="weather-info">
+        <!-- Coluna Direita: Informações -->
+        <div class="top-column right-column">
+            <div class="info-top">
                 Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
             </div>
-            <div class="days-countdown" style="animation: pulse 2s infinite;">
+            <div class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
         </div>
@@ -467,7 +449,6 @@ def display_conteudos_com_checkboxes(df):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
-                # Verifica se a chave já existe no estado da sessão
                 if key not in st.session_state:
                     st.session_state[key] = bool(row['Status'])
 
@@ -727,15 +708,13 @@ def main():
             font-size: 3.5rem;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
             animation: pulse 2s infinite;
-            line-height: 1.2;
-            text-align: center;
         }
         
         /* Animação do contador de dias */
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
         /* ==================================== */
@@ -760,13 +739,12 @@ def main():
         /* ==================================== */
         /* ======== SOLUÇÃO PARA AS SETAS ======== */
         /* ==================================== */
-        /* Esconde o ícone de SVG padrão no cabeçalho do expander */
-        .st-expander-header [data-testid="stExpander-header-action-icon"] {
+        /* Remove completamente o ícone padrão */
+        .streamlit-expanderHeader .st-emotion-cache-1p1m4ay {
             display: none;
         }
-
-        /* Adiciona o ícone de + */
-        .st-expander-header button::before {
+        /* Adiciona um ícone personalizado */
+        .streamlit-expanderHeader::before {
             content: "+";
             display: inline-block;
             margin-right: 8px;
@@ -774,9 +752,7 @@ def main():
             font-weight: bold;
             color: #9b59b6;
         }
-
-        /* Adiciona o ícone de - quando o expander está expandido */
-        .st-expander-header[aria-expanded="true"] button::before {
+        .streamlit-expanderHeader[aria-expanded="true"]::before {
             content: "-";
         }
         
@@ -802,14 +778,6 @@ def main():
         }
         .stCheckbox > label:hover {
             background-color: inherit;
-        }
-        
-        /* ==================================== */
-        /* ======== CORREÇÃO DE LAYOUT ======== */
-        /* ==================================== */
-        .st-emotion-cache-1v0mbdj {
-            display: block;
-            margin: 0 auto;
         }
     </style>
     """, unsafe_allow_html=True)
