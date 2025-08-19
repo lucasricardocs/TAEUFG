@@ -750,28 +750,33 @@ def main():
             position: relative;
             display: inline-flex;
             align-items: center;
+            height: 250px;
+            width: 100%;
             font-size: 3rem;
             font-weight: 900;
             color: #e74c3c;
             animation: pulse 2s infinite ease-in-out;
             line-height: 1;
         }
-
+        
         .countdown-text {
-            position: relative;
+            position: absolute;
+            top: 50%;
+            right: 60px; /* ajuste este valor para mais ou menos à esquerda */
+            transform: translateY(-50%);
             z-index: 2;
         }
-
+        
         .sparkle {
             position: absolute;
-            top: -15px;
-            right: -25px;
+            top: calc(50% - 15px); /* centralizado verticalmente com offset */
+            right: 35px; /* posicionado em relação ao texto */
             font-size: 3rem;
             color: #f1c40f;
             z-index: 1;
             animation: sparkle-anim 1.5s infinite ease-in-out;
         }
-
+        
         @keyframes sparkle-anim {
             0%, 100% {
                 transform: scale(0.8) rotate(0deg);
@@ -782,13 +787,13 @@ def main():
                 opacity: 1;
             }
         }
-
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-
+        
         @media (max-width: 1200px) {
             .header-container {
                 flex-direction: column;
@@ -815,6 +820,12 @@ def main():
             }
             .days-countdown {
                 font-size: 2.5rem;
+            }
+            .countdown-text {
+                right: 40px; /* ajuste para mobile */
+            }
+            .sparkle {
+                right: 15px; /* ajuste para mobile */
             }
         }
         
