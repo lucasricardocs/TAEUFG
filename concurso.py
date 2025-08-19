@@ -406,8 +406,8 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Marca que esta disciplina deve ficar aberta
-        st.session_state[f"expanded_{disciplina}"] = True
+        # st.rerun() não é necessário aqui, a página já recarrega no fim do callback
+        # Manter o expander aberto já é o comportamento padrão do Streamlit
         load_data_with_row_indices.clear()
         st.rerun()
     else:
@@ -444,40 +444,27 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
 
-        # 📊 Header com barra de progresso estilizada
-        st.markdown(f"""
-            <div style="margin: 0.5rem 0;">
-                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
-                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
-                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+        # 📂 Expander sem setas (CSS aplicado antes)
+        with st.expander("", expanded=True):
+            # 📊 Header com barra de progresso estilizada (dentro do expander)
+            st.markdown(f"""
+                <div style="margin: 0.5rem 0;">
+                    <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
+                    <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
+                        <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+                    </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # Verifica se esta disciplina deve ficar expandida
-        expanded_key = f"expanded_{disc}"
-        is_expanded = st.session_state.get(expanded_key, False)
-
-        # 📂 Container customizado que substitui o expander
-        with st.container():
-            # Botão para expandir/contrair
-            if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
-                st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
-                st.rerun()
+            """, unsafe_allow_html=True)
             
-            # Mostra o conteúdo se estiver expandido
-            if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
-                for _, row in conteudos_disciplina.iterrows():
-                    key = f"cb_{row['sheet_row']}"
-                    st.checkbox(
-                        label=row['Conteúdos'],
-                        value=bool(row['Status']),
-                        key=key,
-                        on_change=on_checkbox_change,
-                        args=(worksheet, row['sheet_row'], key, disc)
-                    )
-                st.markdown('</div>', unsafe_allow_html=True)
+            for _, row in conteudos_disciplina.iterrows():
+                key = f"cb_{row['sheet_row']}"
+                st.checkbox(
+                    label=row['Conteúdos'],
+                    value=bool(row['Status']),
+                    key=key,
+                    on_change=on_checkbox_change,
+                    args=(worksheet, row['sheet_row'], key, disc)
+                )
 
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
@@ -647,140 +634,89 @@ def main():
         /* ==================================== */
         /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
-        top-container {
-    background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-    border-radius: 18px;
-    padding: 1.5rem 2rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-    border: 1px solid #d3d3d3;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
-    
-    /* ← NOVA PROPRIEDADE: altura fixa */
-    height: 250px;
-    /* ← ADICIONADO: garante que o conteúdo não ultrapasse a altura */
-    overflow: hidden;
-}
+        .top-container {
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
+            border-radius: 18px;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid #d3d3d3;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            height: 250px;
+        }
+        .top-container-main {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            margin-bottom: 1rem;
+        }
+        .titles-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 1.5rem;
+        }
+        .titles-container h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .titles-container p {
+            color: #555;
+            margin: 0;
+            margin-top: 0.2rem;
+            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+            font-weight: 500;
+        }
+        .top-container-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            flex-grow: 1;
+        }
+        .weather-info {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #777;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+        .days-countdown {
+            animation: pulse 2s infinite ease-in-out;
+            color: #e74c3c;
+            font-weight: 800;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            line-height: 1.1;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
+        }
+        
+        @media (max-width: 768px) {
+            .top-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            .top-container-main, .top-container-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                width: 100%;
+            }
+            .titles-container {
+                align-items: center;
+                margin-left: 0;
+            }
+        }
 
-.top-container-main {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    /* ← ADICIONADO: garante que não ultrapasse a altura do container */
-    height: 100%;
-}
-
-.titles-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin-left: 1.5rem;
-    /* ← ADICIONADO: previne overflow de texto */
-    flex: 1;
-    min-width: 0;
-}
-
-.titles-container h1 {
-    color: #2c3e50;
-    margin: 0;
-    font-size: clamp(1.8rem, 3vw, 2.5rem);
-    font-weight: 700;
-    line-height: 1.1;
-    /* ← ADICIONADO: previne quebra de texto */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.titles-container p {
-    color: #555;
-    margin: 0;
-    margin-top: 0.2rem;
-    font-size: clamp(1.2rem, 1.8vw, 1.4rem);
-    font-weight: 500;
-    /* ← ADICIONADO: previne quebra de texto */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.top-container-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center; /* ← ALTERADO: centraliza verticalmente */
-    text-align: right;
-    flex-grow: 1;
-    /* ← ADICIONADO: garante altura total */
-    height: 100%;
-}
-
-.weather-info {
-    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-    color: #777;
-    font-weight: 400;
-    margin-bottom: 1.5rem;
-    /* ← ADICIONADO: previne quebra de linha */
-    white-space: nowrap;
-}
-
-.days-countdown {
-    animation: pulse 2s infinite ease-in-out;
-    color: #e74c3c;
-    font-weight: 800;
-    font-size: clamp(1.5rem, 3vw, 2.5rem);
-    line-height: 1.1;
-    /* ← ADICIONADO: previne quebra de texto */
-    white-space: nowrap;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-/* ← ATUALIZADO: responsividade mantendo altura fixa */
-@media (max-width: 768px) {
-    .top-container {
-        flex-direction: column;
-        text-align: center;
-        gap: 1rem;
-        /* ← MANTÉM altura fixa mesmo em mobile */
-        height: 250px;
-        justify-content: center;
-    }
-    
-    .top-container-main, .top-container-info {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        width: 100%;
-        height: auto; /* ← permite altura automática nos sub-containers em mobile */
-    }
-    
-    .titles-container {
-        align-items: center;
-        margin-left: 0;
-    }
-    
-    /* ← ADICIONADO: ajusta tamanhos em mobile para caber na altura fixa */
-    .titles-container h1 {
-        font-size: clamp(1.4rem, 4vw, 1.8rem);
-    }
-    
-    .titles-container p {
-        font-size: clamp(1rem, 3vw, 1.2rem);
-    }
-    
-    .days-countdown {
-        font-size: clamp(1.2rem, 4vw, 1.8rem);
-    }
-}
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -829,31 +765,10 @@ def main():
             display: block;
             margin: 0 auto;
         }
-
-        /* ==================================== */
-        /* ======== ESTILOS PARA BOTÕES CUSTOMIZADOS ======== */
-        /* ==================================== */
-        .stButton > button {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
         
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-        
-        .stButton > button:active {
-            transform: translateY(0);
+        /* Oculta o ícone padrão do expander */
+        .streamlit-expanderHeader > div:first-child {
+            display: none;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -873,15 +788,19 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
+    st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
+    st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
     
+    st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
+    st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
