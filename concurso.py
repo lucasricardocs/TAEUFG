@@ -227,7 +227,7 @@ def render_top_container(dias_restantes):
     st.markdown(f"""
     <div class="header-container animated-fade-in">
         <div class="header-left">
-            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 600px;"/>
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 500px;"/>
         </div>
         <div class="header-center">
             <h1>Dashboard de Estudos</h1>
@@ -239,10 +239,8 @@ def render_top_container(dias_restantes):
                 <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
             </div>
             <div class="header-info-bottom">
-                <div class="days-countdown pulse-effect">
-                    <div class="fire-effect"></div>
-                    <div class="flag-effect"></div>
-                    FALTAM {dias_restantes} DIAS
+                <div class="faltamxdias">
+                    <h1 class="neon-text">⏰ Faltam {dias_restantes} dias!</h1>
                 </div>
             </div>
         </div>
@@ -731,67 +729,31 @@ def main():
             margin-left: 10px;
         }
         
-        .days-countdown {
-            font-size: 3rem;
-            font-weight: 900;
-            color: #e74c3c;
-            line-height: 1;
-            position: relative;
-            display: inline-block;
-            overflow: visible;
-        }
-        
-        /* Animação de pulso */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .pulse-effect {
-            animation: pulse 2s infinite ease-in-out;
-        }
-        
-        /* Animação de "fogo" - Sutil para evitar poluir o layout */
-        .fire-effect {
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
+        /* EFEITO NEON APLICADO AQUI */
+        .faltamxdias {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             width: 100%;
-            height: 20px;
-            background: radial-gradient(ellipse at center, rgba(255,100,0,0.8) 0%, rgba(255,200,0,0.5) 50%, transparent 70%);
-            z-index: -1;
-            filter: blur(8px);
-            animation: fire-flicker 2s infinite ease-in-out;
-            opacity: 0.7;
-        }
-        @keyframes fire-flicker {
-            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
-            25% { opacity: 0.9; transform: scale(1.05) translateX(-50%); }
-            50% { opacity: 0.8; transform: scale(1.02) translateX(-50%); }
-            75% { opacity: 0.85; transform: scale(1.03) translateX(-50%); }
-        }
-
-        /* Animação de "flâmulas" - Linhas sutis para simular a bandeira */
-        .flag-effect {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 120%;
             height: 100%;
-            transform: translateX(-50%);
-            z-index: -2;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
-            background-size: 20px 20px, 20px 20px;
-            animation: flag-wave 6s infinite linear;
-        }
-        @keyframes flag-wave {
-            from { background-position: 0 0; }
-            to { background-position: -200px -200px; }
         }
 
+        .neon-text {
+            font-size: 4rem;
+            color: #fff;
+            text-shadow: 0 0 5px #ff005e, 0 0 10px #ff005e, 0 0 20px #ff005e, 0 0 40px #ff005e, 0 0 80px #ff005e;
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% {
+                text-shadow: 0 0 5px #ff005e, 0 0 10px #ff005e, 0 0 20px #ff005e, 0 0 40px #ff005e, 0 0 80px #ff005e;
+            }
+            100% {
+                text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff, 0 0 40px #00d4ff, 0 0 80px #00d4ff, 0 0 160px #00d4ff;
+            }
+        }
+        
         @media (max-width: 1200px) {
             .header-container {
                 flex-direction: column;
@@ -815,6 +777,9 @@ def main():
             }
             .weather-info {
                 margin-left: 0;
+            }
+            .neon-text {
+                font-size: 2.5rem;
             }
         }
         
