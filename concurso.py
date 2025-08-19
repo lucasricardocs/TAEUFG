@@ -439,7 +439,7 @@ def create_altair_stacked_bar(df_summary):
         stroke='#white',
         strokeWidth=3
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Livvic')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='white', labelFont='Livvic')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
