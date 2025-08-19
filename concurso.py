@@ -662,7 +662,7 @@ def main():
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            border: 1px solid black;
+            border: 1px solid #D3D3D3;
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
@@ -833,7 +833,7 @@ def main():
         /* NOVO: TÍTULOS COM ANIMAÇÃO E BORDA/SOMBRA */
         /* ==================================== */
         .title-container {
-            border: 1px solid black; /* NOVA: Borda fina */
+            border: 1px solid #D3D3D3; /* NOVA: Borda fina */
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
             border-radius: 12px;
