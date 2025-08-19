@@ -26,7 +26,6 @@ SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
-UFG_LOGO_URL = "https://upload.wikimedia.org/wikipedia/commons/7/79/Marca_da_UFG.png"
 
 ED_DATA = {
     'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
@@ -169,7 +168,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=10) # Armazena em cache por 1 hora
+@st.cache_data(ttl=10)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -216,46 +215,186 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         border-left: 6px solid {cor_lateral};
         background: linear-gradient(to right, #fdfdfe, #f9f9f9);
     ">
-        <h2 style="color: #2c3e50; font-family: 'Nunito', sans-serif;">
+        <h2 style="color: #2c3e50; font-family: 'Livvic', sans-serif; font-weight: 700;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
 
-def render_top_container(dias_restantes):
+def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
-    <div class="header-container animated-fade-in">
-        <div class="header-left">
-            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 5000px;"/>
-        </div>
-        <div class="header-center">
+    <link href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        .top-container {{
+            height: 300px;
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
+            border-radius: 18px;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            border: 1px solid #d3d3d3;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Livvic', sans-serif;
+        }}
+        
+        .ufg-logo {{
+            height: 90px;
+            margin-right: 2rem;
+            align-self: center;
+        }}
+        
+        .center-content {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+            width: 100%;
+        }}
+        
+        .center-content h1 {{
+            color: #2c3e50;
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'Livvic', sans-serif;
+        }}
+        
+        .center-content p {{
+            color: #555;
+            margin: 0;
+            margin-top: 0.5rem;
+            font-size: 1.4rem;
+            font-weight: 500;
+            font-family: 'Livvic', sans-serif;
+        }}
+        
+        .weather-info {{
+            position: absolute;
+            top: 1rem;
+            right: 2rem;
+            font-size: 1.1rem;
+            color: #777;
+            font-weight: 400;
+            z-index: 3;
+            font-family: 'Livvic', sans-serif;
+        }}
+        
+        .days-countdown {{
+            position: relative;
+            z-index: 2;
+            animation: pulse 2s infinite ease-in-out, flame 3s infinite ease-in-out;
+            color: #e74c3c;
+            font-weight: 800;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+            margin-top: 1rem;
+            font-family: 'Livvic', sans-serif;
+        }}
+        
+        @keyframes pulse {{
+            0% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
+        }}
+        
+        @keyframes flame {{
+            0% {{ text-shadow: 0 0 5px #ff5722, 0 0 10px #ff5722, 0 0 15px #ff5722, 0 0 20px #ff5722; }}
+            50% {{ text-shadow: 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 30px #ff9800, 0 0 40px #ff9800; }}
+            100% {{ text-shadow: 0 0 5px #ff5722, 0 0 10px #ff5722, 0 0 15px #ff5722, 0 0 20px #ff5722; }}
+        }}
+        
+        .flames {{
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 100px;
+            background: radial-gradient(ellipse at center, rgba(255, 87, 34, 0.8) 0%, rgba(255, 152, 0, 0.6) 20%, transparent 70%);
+            filter: blur(5px);
+            z-index: 1;
+            animation: flicker 2s infinite alternate;
+        }}
+        
+        @keyframes flicker {{
+            0% {{ opacity: 0.7; height: 80px; }}
+            25% {{ opacity: 0.9; height: 90px; }}
+            50% {{ opacity: 0.8; height: 85px; }}
+            75% {{ opacity: 0.95; height: 95px; }}
+            100% {{ opacity: 0.75; height: 85px; }}
+        }}
+        
+        .pennants {{
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 2;
+        }}
+        
+        .pennant {{
+            width: 30px;
+            height: 40px;
+            background: #e74c3c;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            animation: wave 3s infinite ease-in-out;
+        }}
+        
+        .pennant:nth-child(1) {{ animation-delay: 0s; }}
+        .pennant:nth-child(2) {{ animation-delay: 0.2s; }}
+        .pennant:nth-child(3) {{ animation-delay: 0.4s; }}
+        .pennant:nth-child(4) {{ animation-delay: 0.6s; }}
+        .pennant:nth-child(5) {{ animation-delay: 0.8s; }}
+        
+        @keyframes wave {{
+            0%, 100% {{ transform: translateY(0) rotate(0deg); }}
+            50% {{ transform: translateY(-5px) rotate(5deg); }}
+        }}
+    </style>
+    
+    <div class="top-container">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/7/79/Marca_da_UFG.png" alt="Logo UFG" class="ufg-logo"/>
+        
+        <div class="center-content">
             <h1>Dashboard de Estudos</h1>
-            <h2>Concurso TAE UFG 2025</h2>
+            <p>Concurso TAE UFG 2025</p>
+            <div class="days-countdown">FALTAM {dias_restantes} DIAS</div>
         </div>
-        <div class="header-right">
-            <div class="header-info-top">
-                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
-                <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
-            </div>
-            <div class="header-info-bottom">
-                <div class="days-countdown pulse-effect">
-                    <div class="fire-effect"></div>
-                    <div class="flag-effect"></div>
-                    ⏰ Faltam {dias_restantes} dias!
-                </div>
-            </div>
+        
+        <div class="weather-info">
+            Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
         </div>
+        
+        <div class="pennants">
+            <div class="pennant"></div>
+            <div class="pennant"></div>
+            <div class="pennant"></div>
+            <div class="pennant"></div>
+            <div class="pennant"></div>
+        </div>
+        
+        <div class="flames"></div>
     </div>
     """, unsafe_allow_html=True)
-
 
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-            <span style="font-weight: 500; color: #3498db; font-family: 'Nunito', sans-serif;">Progresso Geral</span>
-            <span style="font-weight: 600; color: #2c3e50; font-family: 'Nunito', sans-serif;">{progresso_geral:.1f}%</span>
+            <span style="font-weight: 500; color: #3498db; font-family: 'Livvic', sans-serif;">Progresso Geral</span>
+            <span style="font-weight: 600; color: #2c3e50; font-family: 'Livvic', sans-serif;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="height: 100%; width: {progresso_geral}%;
@@ -307,7 +446,7 @@ def create_altair_stacked_bar(df_summary):
         stroke='#d3d3d3',
         strokeWidth=2
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Livvic')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -319,7 +458,7 @@ def create_altair_stacked_bar(df_summary):
         baseline='middle',
         fontWeight='bold',
         fontSize=12,
-        font='Nunito'
+        font='Livvic'
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
@@ -333,7 +472,7 @@ def create_altair_stacked_bar(df_summary):
             text="Percentual de Conclusão por Disciplina",
             anchor='middle',
             fontSize=18,
-            font='Nunito',
+            font='Livvic',
             color='#000000'
         )
     ).configure_view(
@@ -342,8 +481,8 @@ def create_altair_stacked_bar(df_summary):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
+        labelFont='Livvic',
+        titleFont='Livvic'
     )
 
 def create_progress_donut(source_df, title):
@@ -362,7 +501,7 @@ def create_progress_donut(source_df, title):
         size=24,
         fontWeight='bold',
         color='#000000',
-        font='Nunito'
+        font='Livvic'
     ).encode(text='text:N')
 
     return (base + text).properties(
@@ -372,7 +511,7 @@ def create_progress_donut(source_df, title):
             fontSize=26,
             dy=-10,
             color='#000000',
-            font='Nunito'
+            font='Livvic'
         )
     ).configure_view(
         stroke=None,
@@ -447,7 +586,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
 
         # 📊 Header com barra de progresso estilizada
         st.markdown(f"""
-            <div style="margin: 0.5rem 0;">
+            <div style="margin: 0.5rem 0; font-family: 'Livvic', sans-serif;">
                 <b>{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
                 <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
                     <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
@@ -469,7 +608,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
             
             # Mostra o conteúdo se estiver expandido
             if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
+                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px; font-family: \'Livvic\', sans-serif;">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
                     st.checkbox(
@@ -494,7 +633,7 @@ def bar_questoes_padronizado(ed_data):
         stroke='#d3d3d3',
         strokeWidth=1
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Livvic', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
@@ -505,7 +644,7 @@ def bar_questoes_padronizado(ed_data):
         dy=-5,
         color='#000000',
         fontWeight='bold',
-        font='Nunito'
+        font='Livvic'
     ).encode(
         text='Questões:Q'
     )
@@ -517,7 +656,7 @@ def bar_questoes_padronizado(ed_data):
             text='Distribuição de Questões',
             anchor='middle',
             fontSize=18,
-            font='Nunito',
+            font='Livvic',
             color='#000000'
         )
     ).configure_view(
@@ -526,8 +665,8 @@ def bar_questoes_padronizado(ed_data):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
+        labelFont='Livvic',
+        titleFont='Livvic'
     )
 
 def bar_relevancia_customizado(ed_data):
@@ -567,7 +706,7 @@ def bar_relevancia_customizado(ed_data):
         color='#000000',
         fontWeight='bold',
         fontSize=12,
-        font='Nunito'
+        font='Livvic'
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
         x=alt.X('Relevancia:Q'),
@@ -581,7 +720,7 @@ def bar_relevancia_customizado(ed_data):
             text='Relevância das Disciplinas',
             anchor='middle',
             fontSize=18,
-            font='Nunito',
+            font='Livvic',
             color='#000000'
         )
     ).configure_view(
@@ -590,16 +729,16 @@ def bar_relevancia_customizado(ed_data):
     ).configure(
         background='transparent'
     ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
+        labelFont='Livvic',
+        titleFont='Livvic'
     )
 
 def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
     st.markdown("---")
     st.markdown(f"""
-    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
-        <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
+    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555; font-family: 'Livvic', sans-serif;">
+        <p style='font-size: 0.9rem; margin: 0; font-weight: 500;'>
             🚀 {frase_aleatoria} ✨
         </p>
     </div>
@@ -619,12 +758,11 @@ def main():
     
     # CSS com animações e efeitos
     st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Livvic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* Tipografia e cores globais */
         * {
-            font-family: 'Nunito', sans-serif !important;
+            font-family: 'Livvic', sans-serif !important;
         }
         
         .stApp {
@@ -646,178 +784,93 @@ def main():
         .animated-fade-in {
             animation: fadeIn 0.8s ease-out;
         }
-        
+
         /* ==================================== */
-        /* ======== CONTAINER DO TOPO NOVO ======== */
+        /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
         /* ==================================== */
-        .header-container {
-            width: 100%;
-            height: 250px;
+        .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border-radius: 18px;
+            padding: 0.5rem 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
-            padding: 20px 40px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            overflow: hidden; /* Garante que os efeitos fiquem dentro do container */
-            position: relative;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
         }
-        
-        .header-left, .header-center, .header-right {
+        .top-container-main {
             display: flex;
             align-items: center;
-            height: 100%;
-        }
-
-        .header-left {
             flex-grow: 1;
-            justify-content: flex-start;
         }
-        
-        .header-left img {
-            max-width: 150px;
-            height: auto;
-            object-fit: contain;
-        }
-        
-        .header-center {
-            flex-grow: 2;
+        .titles-container {
+            display: flex;
             flex-direction: column;
             justify-content: center;
-            text-align: center;
-            line-height: 1;
+            margin-left: 3rem;
         }
-        
-        .header-center h1 {
-            font-size: 3.5rem;
-            font-weight: 800;
+        .titles-container h1 {
             color: #2c3e50;
             margin: 0;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            font-weight: 700;
+            line-height: 1.1;
         }
-        
-        .header-center h2 {
-            font-size: 1.8rem;
-            font-weight: 600;
+        .titles-container p {
             color: #555;
             margin: 0;
+            margin-top: 0.2rem;
+            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+            font-weight: 500;
         }
-
-        .header-right {
-            flex-grow: 1;
+        .top-container-info {
+            display: flex;
             flex-direction: column;
-            justify-content: space-between;
             align-items: flex-end;
+            justify-content: flex-start;
             text-align: right;
-            position: relative;
-            padding-top: 10px;
-            padding-bottom: 10px;
+            flex-grow: 1;
         }
-        
-        .header-info-top, .header-info-bottom {
-            width: 100%;
-        }
-
-        .location-date, .weather-info {
-            font-size: 1rem;
+        .weather-info {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
             font-weight: 400;
+            margin-bottom: 0.2rem;
         }
-        
-        .weather-info {
-            margin-left: 10px;
-        }
-        
         .days-countdown {
-            font-size: 3rem;
-            font-weight: 900;
+            animation: pulse 4s infinite ease-in-out;
             color: #e74c3c;
-            line-height: 1;
-            position: relative;
-            display: inline-block;
-            overflow: visible;
+            font-weight: 700;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            line-height: 1.1;
         }
-        
-        /* Animação de pulso */
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        .pulse-effect {
-            animation: pulse 2s infinite ease-in-out;
-        }
         
-        /* Animação de "fogo" - Sutil para evitar poluir o layout */
-        .fire-effect {
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            height: 20px;
-            background: radial-gradient(ellipse at center, rgba(255,100,0,0.8) 0%, rgba(255,200,0,0.5) 50%, transparent 70%);
-            z-index: -1;
-            filter: blur(8px);
-            animation: fire-flicker 2s infinite ease-in-out;
-            opacity: 0.7;
-        }
-        @keyframes fire-flicker {
-            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
-            25% { opacity: 0.9; transform: scale(1.05) translateX(-50%); }
-            50% { opacity: 0.8; transform: scale(1.02) translateX(-50%); }
-            75% { opacity: 0.85; transform: scale(1.03) translateX(-50%); }
-        }
-
-        /* Animação de "flâmulas" - Linhas sutis para simular a bandeira */
-        .flag-effect {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 120%;
-            height: 100%;
-            transform: translateX(-50%);
-            z-index: -2;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
-            background-size: 20px 20px, 20px 20px;
-            animation: flag-wave 6s infinite linear;
-        }
-        @keyframes flag-wave {
-            from { background-position: 0 0; }
-            to { background-position: -200px -200px; }
-        }
-
-        @media (max-width: 1200px) {
-            .header-container {
+        @media (max-width: 768px) {
+            .top-container {
                 flex-direction: column;
-                height: auto;
-                padding: 20px;
                 text-align: center;
-                gap: 20px;
+                gap: 1rem;
             }
-            .header-left, .header-center, .header-right {
-                flex-grow: initial;
-                justify-content: center;
+            .top-container-main, .top-container-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
                 width: 100%;
             }
-            .header-right {
+            .titles-container {
                 align-items: center;
-            }
-            .header-info-top {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            .weather-info {
                 margin-left: 0;
             }
         }
-        
+
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -896,7 +949,7 @@ def main():
     """, unsafe_allow_html=True)
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
-    render_top_container(dias_restantes)
+    render_topbar_with_logo(dias_restantes)
 
     df = load_data_with_row_indices()
 
