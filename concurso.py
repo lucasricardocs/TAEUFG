@@ -22,7 +22,7 @@ except:
     pass
 
 # --- Constantes de Configuração ---
-SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwKgrmLNmGM'
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 CONCURSO_DATE = datetime(2025, 9, 28)
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
@@ -168,7 +168,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=10)  # Armazena em cache por 10 segundos
+@st.cache_data(ttl=10)  # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -224,36 +224,19 @@ def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
-    <div style="
-        background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-        border-radius: 18px;
-        padding: 1rem 2rem;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-        border: 1px solid #d3d3d3;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 2rem;
-        flex-wrap: wrap;
-    ">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 60px;"/>
-            <div style="line-height: 1.2;">
-                <h1 style="font-size: 1.8rem; margin: 0; color: #2c3e50;">Dashboard de Estudos</h1>
-                <p style="font-size: 1rem; margin: 0; color: #555;">Concurso TAE UFG 2025</p>
+    <div class="top-container">
+        <div class="top-container-main">
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px;"/>
+            <div class="titles-container">
+                <h1>Dashboard de Estudos</h1>
+                <p>Concurso TAE UFG 2025</p>
             </div>
         </div>
-        <div style="
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            text-align: right;
-            line-height: 1.2;
-        ">
-            <span style="font-size: 0.9rem; color: #777;">{datetime.now().strftime('%d de %B de %Y')}</span>
-            <span style="font-size: 1.2rem; font-weight: 500; color: #555;">{weather_data['emoji']} {weather_data['temperature']}</span>
-            <div style="font-size: 1.5rem; font-weight: bold; color: #e74c3c; animation: pulse 4s infinite ease-in-out;">
+        <div class="top-container-info">
+            <div class="weather-info">
+                Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+            </div>
+            <div class="days-countdown">
                 ⏰ Faltam {dias_restantes} dias!
             </div>
         </div>
@@ -425,7 +408,7 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         # Marca que esta disciplina deve ficar aberta
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        st.rerun() # É necessário forçar o rerun para atualizar todos os gráficos
+        # Não é mais necessário, Streamlit já reinicia automaticamente
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
@@ -663,45 +646,84 @@ def main():
         .top-container {
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 18px;
-            padding: 1rem 2rem;
+            padding: 0.5rem 2rem;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
             border: 1px solid #d3d3d3;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 2rem;
-            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+        .top-container-main {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
         }
         .titles-container {
-            line-height: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 3rem;
         }
         .titles-container h1 {
-            font-size: 1.8rem;
-            margin: 0;
             color: #2c3e50;
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            font-weight: 700;
+            line-height: 1.1;
         }
         .titles-container p {
-            font-size: 1rem;
-            margin: 0;
             color: #555;
+            margin: 0;
+            margin-top: 0.2rem;
+            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+            font-weight: 500;
         }
-        .info-container {
+        .top-container-info {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            justify-content: flex-start;  /* ← ADICIONADO: alinha ao topo */
             text-align: right;
-            line-height: 1.2;
+            flex-grow: 1;
         }
         .weather-info {
-            font-size: 0.9rem;
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
+            font-weight: 400;
+            margin-bottom: 0.2rem;
         }
         .days-countdown {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #e74c3c;
             animation: pulse 4s infinite ease-in-out;
+            color: #e74c3c;
+            font-weight: 500;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            line-height: 1.1;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 768px) {
+            .top-container {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            .top-container-main, .top-container-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                width: 100%;
+            }
+            .titles-container {
+                align-items: center;
+                margin-left: 0;
+            }
         }
 
         /* ==================================== */
