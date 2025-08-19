@@ -760,7 +760,7 @@ def main():
             height: 100%;
             width: 100%;
             font-size: clamp(1.5rem, 3vw, 3rem);
-            font-weight: 900;
+            font-weight: 700;
             color: #e74c3c;
             animation: pulse 2s infinite ease-in-out;
             line-height: 1;
