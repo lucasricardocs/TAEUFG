@@ -28,7 +28,7 @@ CONCURSO_DATE = datetime(2025, 9, 28)
 API_KEY = 'fc586eb9b69183a570e10a840b4edf09'
 
 ED_DATA = {
-    'Disciplinas': ['Língua Portuguesa', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'Conhecimentos Específicos'],
+    'Disciplinas': ['LÍNGUA PORTUGUESA', 'RLM', 'INFORMÁTICA', 'LEGISLAÇÃO', 'CONHECIMENTOS ESPECÍFICOS'],
     'Total_Conteudos': [17, 14, 14, 11, 21],
     'Peso': [2, 1, 1, 1, 3],
     'Questões': [10, 5, 5, 10, 20]
