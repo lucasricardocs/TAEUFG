@@ -385,12 +385,12 @@ class UIComponents:
                 background-color: inherit;
             }
             
+            /* 🎯 CONTAINER PRINCIPAL - ALTERE AQUI A ALTURA */
             .responsive-topbar {
                 display: flex;
-                flex-wrap: wrap;
                 justify-content: space-between;
                 align-items: center;
-                gap: 1rem;
+                height: 120px; /* 👈 ALTERE ESTA LINHA PARA MUDAR A ALTURA */
                 padding: 1rem 2rem;
                 background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
                 border-radius: 12px;
@@ -399,35 +399,69 @@ class UIComponents:
                 box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             }
             
+            /* 🖼️ LOGO - OCUPA 20% E FICA NO CANTO ESQUERDO */
             .topbar-logo {
-                flex: 1 1 100px;
-                min-width: 100px;
+                width: 20%; /* 👈 LOGO OCUPA 20% DO ESPAÇO */
+                height: 100%;
                 display: flex;
-                justify-content: flex-start;
+                align-items: center;
+                justify-content: flex-start; /* 👈 ALINHA NO CANTO ESQUERDO */
             }
             
+            /* 📝 TÍTULOS - CENTRALIZADOS HORIZONTAL E VERTICALMENTE */
             .topbar-titles {
-                flex: 3 1 250px;
+                width: 50%; /* 👈 TÍTULOS OCUPAM 50% DO ESPAÇO */
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: center; /* 👈 CENTRALIZA VERTICALMENTE */
+                align-items: center; /* 👈 CENTRALIZA HORIZONTALMENTE */
                 text-align: center;
-                padding: 0 0.5rem;
             }
             
+            /* 🌤️ INFO DIREITA - LAYOUT VERTICAL */
             .topbar-info {
-                flex: 2 1 200px;
-                text-align: right;
+                width: 30%; /* 👈 INFO OCUPA 30% DO ESPAÇO */
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between; /* 👈 DISTRIBUI ELEMENTOS */
+                align-items: flex-end; /* 👈 ALINHA À DIREITA */
             }
             
+            /* 🏙️ INFORMAÇÕES DE CIDADE/CLIMA - CANTO SUPERIOR DIREITO */
+            .weather-info {
+                font-size: clamp(0.8rem, 1.3vw, 1rem);
+                color: #777;
+                text-align: right; /* 👈 ALINHA TEXTO À DIREITA */
+                margin-top: 0; /* 👈 COLA NO TOPO */
+            }
+            
+            /* ⏰ CONTADOR DE DIAS - CENTRO DO CANTO DIREITO */
+            .days-countdown {
+                color: #e74c3c;
+                font-weight: 800;
+                font-size: clamp(1.5rem, 3vw, 2.5rem);
+                animation: pulse 2s infinite ease-in-out;
+                text-align: center; /* 👈 CENTRALIZA O TEXTO */
+                align-self: center; /* 👈 CENTRALIZA NO EIXO VERTICAL DA ÁREA DIREITA */
+            }
+            
+            /* 📱 RESPONSIVIDADE PARA MOBILE */
             @media (max-width: 768px) {
                 .responsive-topbar {
                     flex-direction: column;
-                    text-align: center;
+                    height: auto; /* 👈 ALTURA AUTOMÁTICA NO MOBILE */
+                    padding: 1rem;
                 }
                 .topbar-logo, .topbar-titles, .topbar-info {
                     width: 100%;
                     text-align: center;
+                    margin-bottom: 1rem;
                 }
             }
             
+            /* 🎨 ESTILOS DOS TÍTULOS */
             .main-title {
                 margin: 0;
                 font-size: clamp(1.5rem, 2.5vw, 2rem);
@@ -441,20 +475,6 @@ class UIComponents:
                 color: #555;
             }
             
-            .weather-info {
-                font-size: clamp(0.8rem, 1.3vw, 1rem);
-                color: #777;
-            }
-            
-            .days-countdown {
-                color: #e74c3c;
-                font-weight: 800;
-                font-size: clamp(1.5rem, 3vw, 2.5rem);
-                margin-top: 0.3rem;
-                animation: pulse 2s infinite ease-in-out;
-                display: inline-block;
-            }
-            
             @keyframes pulse {
                 0% { transform: scale(1); }
                 50% { transform: scale(1.05); }
@@ -465,7 +485,7 @@ class UIComponents:
     
     @staticmethod
     def render_topbar(dias_restantes: int):
-        """Renderiza a barra superior com informações"""
+        """Renderiza a barra superior com layout customizado"""
         weather_data = WeatherService.get_weather_data('Goiânia, BR')
         
         st.markdown(f"""
@@ -473,7 +493,7 @@ class UIComponents:
             <div class="topbar-logo">
                 <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" 
                      alt="Logo UFG" 
-                     style="height: auto; max-width: 100%; max-height: 80px;"/>
+                     style="height: auto; max-width: 100%; max-height: 100%;"/>
             </div>
             
             <div class="topbar-titles">
