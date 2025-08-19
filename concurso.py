@@ -299,7 +299,7 @@ def create_altair_stacked_bar(df_summary):
 
     bars = alt.Chart(df_melted).mark_bar(
         stroke='#d3d3d3',
-        strokewidth=2
+        strokewidth=1
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
