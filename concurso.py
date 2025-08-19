@@ -415,26 +415,32 @@ def display_conteudos_com_checkboxes(df):
     if not worksheet:
         return
     
-    search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM...").strip().upper()
+    # 🔍 Barra de busca simples e robusta
+    search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
     
     if search_query:
-        df_filtered = df[df.apply(lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(), axis=1)]
+        df_filtered = df[df.apply(
+            lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(),
+            axis=1
+        )]
         if df_filtered.empty:
-            st.warning("Nenhum conteúdo encontrado com a sua busca.")
+            st.warning("Nenhum conteúdo encontrado.")
+            return
     else:
         df_filtered = df
 
+    # 🔄 Itera pelas disciplinas em ordem alfabética
     for disc in sorted(df_filtered['Disciplinas'].unique()):
         conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
-        
+
         concluidos = conteudos_disciplina['Status'].sum()
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
-        
-        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
+
+        # 📂 Expander nativo do Streamlit (sem ícones extras, sem CSS customizado)
+        with st.expander(f"{disc.title()}  ({concluidos}/{total} - {progresso:.1f}%)", expanded=False):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
-                
                 st.checkbox(
                     label=row['Conteúdos'],
                     value=bool(row['Status']),
@@ -442,7 +448,6 @@ def display_conteudos_com_checkboxes(df):
                     on_change=on_checkbox_change,
                     args=(worksheet, row['sheet_row'], key)
                 )
-
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
