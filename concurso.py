@@ -400,77 +400,6 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Funções de Lógica e Cálculos (Versão corrigida) ---
-def on_checkbox_change(worksheet, row_number, key, disciplina):
-    """Atualiza status no Google Sheets e recarrega dados, mantendo a seção aberta"""
-    novo_status = st.session_state.get(key, False)
-    
-    with st.spinner(f"Atualizando {disciplina}..."):
-        if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-            st.toast("Status atualizado! Recarregando dados...", icon="✅")
-            st.session_state[f"expanded_{disciplina}"] = True
-            load_data_with_row_indices.clear()
-            st.rerun()
-        else:
-            st.toast("Falha ao atualizar. Verifique as permissões da planilha.", icon="❌")
-
-def display_conteudos_com_checkboxes(df):
-    worksheet = get_worksheet()
-    if not worksheet:
-        return
-    
-    search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
-    
-    if search_query:
-        df_filtered = df[df.apply(
-            lambda row: (search_query in row['Disciplinas'].upper()) or 
-                        (search_query in row['Conteúdos'].upper()),
-            axis=1
-        )]
-        if df_filtered.empty:
-            st.warning("Nenhum conteúdo encontrado.")
-            return
-    else:
-        df_filtered = df
-
-    df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
-    
-    for disc in sorted(df_filtered['Disciplinas'].unique()):
-        conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
-        
-        concluidos = conteudos_disciplina['Status'].sum()
-        total = len(conteudos_disciplina)
-        progresso = (concluidos / total) * 100 if total > 0 else 0
-        
-        st.markdown(f"""
-            <div style="margin: 0.5rem 0;">
-                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
-                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
-                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        expanded_key = f"expanded_{disc}"
-        
-        with st.container():
-            if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
-                st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
-                st.rerun()
-            
-            if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
-                for _, row in conteudos_disciplina.iterrows():
-                    key = f"cb_{row['sheet_row']}"
-                    st.checkbox(
-                        label=row['Conteúdos'],
-                        value=bool(row['Status']),
-                        key=key,
-                        on_change=on_checkbox_change,
-                        args=(worksheet, row['sheet_row'], key, disc)
-                    )
-                st.markdown('</div>', unsafe_allow_html=True)
-
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
@@ -594,7 +523,81 @@ def rodape_motivacional():
     </div>
     """, unsafe_allow_html=True)
 
-# --- Função Principal da Aplicação (Versão corrigida) ---
+# --- Funções de Lógica e Cálculos (Versão reescrita e aprimorada) ---
+def update_df_and_rerun(df_new):
+    """Armazena o novo DataFrame no st.session_state e força o re-render"""
+    st.session_state['df_data'] = df_new
+    st.rerun()
+
+def on_checkbox_change(worksheet, row_number, key):
+    """Atualiza o Google Sheets e o DataFrame local no st.session_state."""
+    novo_status = st.session_state.get(key, False)
+    
+    with st.spinner("Atualizando planilha..."):
+        if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+            st.toast("Status atualizado!", icon="✅")
+            # Atualiza o DataFrame na sessão para re-renderizar
+            df_updated = st.session_state['df_data'].copy()
+            df_updated.loc[df_updated['sheet_row'] == row_number, 'Status'] = novo_status
+            update_df_and_rerun(df_updated)
+        else:
+            st.toast("Falha ao atualizar a planilha.", icon="❌")
+
+def display_conteudos_com_checkboxes(df):
+    worksheet = get_worksheet()
+    if not worksheet: return
+    
+    search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
+    
+    df_filtered = df
+    if search_query:
+        df_filtered = df[df.apply(
+            lambda row: (search_query in row['Disciplinas'].upper()) or 
+                        (search_query in row['Conteúdos'].upper()),
+            axis=1
+        )]
+        if df_filtered.empty:
+            st.warning("Nenhum conteúdo encontrado.")
+            return
+
+    df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
+    
+    for disc in sorted(df_filtered['Disciplinas'].unique()):
+        conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
+        
+        concluidos = conteudos_disciplina['Status'].sum()
+        total = len(conteudos_disciplina)
+        progresso = (concluidos / total) * 100 if total > 0 else 0
+        
+        st.markdown(f"""
+            <div style="margin: 0.5rem 0;">
+                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
+                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
+                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container():
+            is_expanded = st.session_state.get(f"expanded_{disc}", False)
+            if st.button(f"📁 {'Fechar' if is_expanded else 'Ver'} conteúdos de {disc.title()}", key=f"btn_{disc}"):
+                st.session_state[f"expanded_{disc}"] = not is_expanded
+                st.rerun()
+            
+            if st.session_state.get(f"expanded_{disc}", False):
+                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
+                for _, row in conteudos_disciplina.iterrows():
+                    key = f"cb_{row['sheet_row']}"
+                    st.checkbox(
+                        label=row['Conteúdos'],
+                        value=bool(row['Status']),
+                        key=key,
+                        on_change=on_checkbox_change,
+                        args=(worksheet, row['sheet_row'], key)
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Função Principal da Aplicação (Versão reescrita e aprimorada) ---
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso TAE UFG",
@@ -609,205 +612,48 @@ def main():
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* Tipografia e cores globais */
-        * {
-            font-family: 'Nunito', sans-serif !important;
-        }
-        
-        .stApp {
-            background-color: #f7f9fc;
-            color: #333;
-        }
-        
-        /* Fundo transparente para todos os gráficos */
-        .stApp [data-testid="stVegaLiteChart"] > div,
-        .vega-embed.has-actions {
-            background-color: transparent !important;
-        }
-
-        /* Animação de Fade-in */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animated-fade-in {
-            animation: fadeIn 0.8s ease-out;
-        }
-
-        /* ==================================== */
-        /* ======== CONTAINER DO TOPO REORGANIZADO ======== */
-        /* ==================================== */
-        .top-container {
-            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
-            border-radius: 18px;
-            padding: 0.5rem 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            border: 1px solid #d3d3d3;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .top-container-main {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-        .titles-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-left: 3rem;
-        }
-        .titles-container h1 {
-            color: #2c3e50;
-            margin: 0;
-            font-size: clamp(1.8rem, 3vw, 2.5rem);
-            font-weight: 700;
-            line-height: 1.1;
-        }
-        .titles-container p {
-            color: #555;
-            margin: 0;
-            margin-top: 0.2rem;
-            font-size: clamp(1.2rem, 1.8vw, 1.4rem);
-            font-weight: 500;
-        }
-        .top-container-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: flex-start;  /* ← ADICIONADO: alinha ao topo */
-            text-align: right;
-            flex-grow: 1;
-        }
-        .weather-info {
-            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-            color: #777;
-            font-weight: 400;
-            margin-bottom: 0.2rem;
-        }
-        .days-countdown {
-            animation: pulse 4s infinite ease-in-out;
-            color: #e74c3c;
-            font-weight: 500;
-            font-size: clamp(1.5rem, 3vw, 2.5rem);
-            line-height: 1.1;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        @media (max-width: 768px) {
-            .top-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-            .top-container-main, .top-container-info {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                width: 100%;
-            }
-            .titles-container {
-                align-items: center;
-                margin-left: 0;
-            }
-        }
-
-        /* ==================================== */
-        /* ======== TÍTULOS MELHORADOS ======== */
-        /* ==================================== */
-        .title-container {
-            border-left: 6px solid #8e44ad;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            margin: 2rem 0 1.5rem 0;
-            background: linear-gradient(to right, #ffffff, #f9f9f9);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-        }
-        
-        .title-container h2 {
-            font-weight: 700;
-            font-size: 1.6rem;
-            color: #2c3e50;
-            margin: 0;
-        }
-        
-        /* ==================================== */
-        /* ======== MÉTRICAS EM DESTAQUE ======== */
-        /* ==================================== */
-        [data-testid="stMetricValue"] {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #333;
-        }
-        [data-testid="stMetricLabel"] {
-            font-size: 1rem;
-            font-weight: 500;
-            color: #666;
-        }
-        
-        /* ==================================== */
-        /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
-        /* ==================================== */
-        .stCheckbox > label {
-            transition: none !important;
-        }
-        .stCheckbox > label:hover {
-            background-color: inherit;
-        }
-        
-        /* Centralização de altair charts */
-        .st-emotion-cache-1v0mbdj {
-            display: block;
-            margin: 0 auto;
-        }
-
-        /* ==================================== */
-        /* ======== ESTILOS PARA BOTÕES CUSTOMIZADOS ======== */
-        /* ==================================== */
-        .stButton > button {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-        
-        .stButton > button:active {
-            transform: translateY(0);
-        }
+        /* (Seu CSS original aqui) */
+        * { font-family: 'Nunito', sans-serif !important; }
+        .stApp { background-color: #f7f9fc; color: #333; }
+        .stApp [data-testid="stVegaLiteChart"] > div, .vega-embed.has-actions { background-color: transparent !important; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animated-fade-in { animation: fadeIn 0.8s ease-out; }
+        .top-container { background: linear-gradient(135deg, #e0f0ff, #f0f8ff); border-radius: 18px; padding: 0.5rem 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.1); margin-bottom: 2rem; border: 1px solid #d3d3d3; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.5rem; }
+        .top-container-main { display: flex; align-items: center; flex-grow: 1; }
+        .titles-container { display: flex; flex-direction: column; justify-content: center; margin-left: 3rem; }
+        .titles-container h1 { color: #2c3e50; margin: 0; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 700; line-height: 1.1; }
+        .titles-container p { color: #555; margin: 0; margin-top: 0.2rem; font-size: clamp(1.2rem, 1.8vw, 1.4rem); font-weight: 500; }
+        .top-container-info { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start;  text-align: right; flex-grow: 1; }
+        .weather-info { font-size: clamp(0.9rem, 1.5vw, 1.1rem); color: #777; font-weight: 400; margin-bottom: 0.2rem; }
+        .days-countdown { animation: pulse 4s infinite ease-in-out; color: #e74c3c; font-weight: 500; font-size: clamp(1.5rem, 3vw, 2.5rem); line-height: 1.1; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @media (max-width: 768px) { .top-container { flex-direction: column; text-align: center; gap: 1rem; } .top-container-main, .top-container-info { flex-direction: column; align-items: center; text-align: center; width: 100%; } .titles-container { align-items: center; margin-left: 0; } }
+        .title-container { border-left: 6px solid #8e44ad; padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0; background: linear-gradient(to right, #ffffff, #f9f9f9); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        .title-container h2 { font-weight: 700; font-size: 1.6rem; color: #2c3e50; margin: 0; }
+        [data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: bold; color: #333; }
+        [data-testid="stMetricLabel"] { font-size: 1rem; font-weight: 500; color: #666; }
+        .stCheckbox > label { transition: none !important; }
+        .stCheckbox > label:hover { background-color: inherit; }
+        .st-emotion-cache-1v0mbdj { display: block; margin: 0 auto; }
+        .stButton > button { width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
+        .stButton > button:active { transform: translateY(0); }
     </style>
     """, unsafe_allow_html=True)
     
+    # Gerencia o estado dos dados
+    if 'df_data' not in st.session_state:
+        st.session_state['df_data'] = load_data_with_row_indices()
+
+    df = st.session_state['df_data']
+    
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
-
-    with st.spinner("Carregando dados..."):
-        df = load_data_with_row_indices()
-
+    
     if df.empty:
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
-        
         if st.button("Recarregar Planilha"):
-            load_data_with_row_indices.clear()
+            st.session_state['df_data'] = load_data_with_row_indices()
             st.rerun()
         st.stop()
         
