@@ -222,12 +222,12 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
     </div>""", unsafe_allow_html=True)
 
 def render_top_container(dias_restantes):
-    weather_data = get_weather_data('Goiânia, BR')
+    weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
     <div class="header-container animated-fade-in">
         <div class="header-left">
-            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 500px;"/>
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 300px;"/>
         </div>
         <div class="header-center">
             <h1>Dashboard de Estudos</h1>
@@ -296,16 +296,16 @@ def create_altair_stacked_bar(df_summary):
 
     def label_color(row, df_row):
         if row['Percentual'] > 0:
-            return 'white'
+            return 'black'
         return 'transparent'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     bars = alt.Chart(df_melted).mark_bar(
-        stroke='white',
+        stroke='black',
         strokeWidth=2
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#FFFFFF', labelFont='Nunito')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -332,7 +332,7 @@ def create_altair_stacked_bar(df_summary):
             anchor='middle',
             fontSize=18,
             font='Nunito',
-            color='#FFFFFF'
+            color='#000000'
         )
     ).configure_view(
         stroke=None,
@@ -349,7 +349,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
 
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='white', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='black', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -359,7 +359,7 @@ def create_progress_donut(source_df, title):
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
         size=24,
         fontWeight='bold',
-        color='white',
+        color='#000000',
         font='Nunito'
     ).encode(text='text:N')
 
@@ -369,7 +369,7 @@ def create_progress_donut(source_df, title):
             anchor='middle',
             fontSize=26,
             dy=-10,
-            color='white',
+            color='#000000',
             font='Nunito'
         )
     ).configure_view(
@@ -489,10 +489,10 @@ def bar_questoes_padronizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=2,
         cornerRadiusTopRight=2,
-        stroke='white',
+        stroke='black',
         strokeWidth=1
     ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#FFFFFF')),
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
@@ -501,7 +501,7 @@ def bar_questoes_padronizado(ed_data):
         align='center',
         baseline='bottom',
         dy=-5,
-        color='white',
+        color='#000000',
         fontWeight='bold',
         font='Nunito'
     ).encode(
@@ -516,7 +516,7 @@ def bar_questoes_padronizado(ed_data):
             anchor='middle',
             fontSize=18,
             font='Nunito',
-            color='#FFFFFF'
+            color='#000000'
         )
     ).configure_view(
         stroke=None,
@@ -542,7 +542,7 @@ def bar_relevancia_customizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=2,
         cornerRadiusBottomRight=2,
-        stroke='white',
+        stroke='black',
         strokeWidth=2,
         size=80
     ).encode(
@@ -562,12 +562,12 @@ def bar_relevancia_customizado(ed_data):
         align='left',
         baseline='middle',
         dx=3,
-        color='white',
+        color='#000000',
         fontWeight='bold',
         fontSize=12,
         font='Nunito'
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='white')),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='black')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
@@ -580,7 +580,7 @@ def bar_relevancia_customizado(ed_data):
             anchor='middle',
             fontSize=18,
             font='Nunito',
-            color='white'
+            color='#000000'
         )
     ).configure_view(
         stroke=None,
@@ -596,7 +596,7 @@ def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
     st.markdown("---")
     st.markdown(f"""
-    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #E0E0E0;">
+    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
             🚀 {frase_aleatoria} ✨
         </p>
@@ -625,17 +625,17 @@ def main():
             font-family: 'Nunito', sans-serif !important;
         }
         
-        /* Fundo gradiente animado com tons de cinza */
+        /* NOVO: Fundo gradiente animado */
         @keyframes gradient-animation {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         .stApp {
-            background: linear-gradient(-45deg, #4B4B4B, #6A6A6A, #808080, #D3D3D3);
+            background: linear-gradient(-45deg, #e0f0ff, #f0f8ff, #f7f9fc, #f5f5f5);
             background-size: 400% 400%;
-            animation: gradient-animation 20s ease infinite;
-            color: #E0E0E0;
+            animation: gradient-animation 15s ease infinite;
+            color: #333;
         }
         
         /* Fundo transparente para todos os gráficos */
@@ -654,15 +654,15 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== CONTAINER DO TOPO ======== */
+        /* ======== CONTAINER DO TOPO NOVO ======== */
         /* ==================================== */
         .header-container {
             width: 100%;
             height: 300px;
-            background: rgba(45, 52, 54, 0.7);
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            border: 1px solid #4B4B4B;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid #D3D3D3;
             padding: 20px 40px;
             display: flex;
             justify-content: space-between;
@@ -677,35 +677,18 @@ def main():
             align-items: center;
             height: 100%;
         }
+
+        .header-left {
+            flex-grow: 1;
+            justify-content: flex-start;
+        }
         
-        /* Efeitos na logo: contorno estático e fumaça */
         .header-left img {
-            max-width: 500px;
+            max-width: 250px;
             height: auto;
             object-fit: contain;
-            filter: drop-shadow(0 0 3px white) drop-shadow(0 0 4px white);
-            position: relative;
         }
         
-        /* Efeito de fumaça subindo */
-        .header-left img::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
-            transform: translateX(-50%);
-            animation: smoke-up 4s infinite ease-out;
-        }
-
-        @keyframes smoke-up {
-            0% { transform: translate(-50%, 0); opacity: 0; }
-            50% { transform: translate(-50%, -15px); opacity: 0.8; }
-            100% { transform: translate(-50%, -30px); opacity: 0; }
-        }
-
         .header-center {
             flex-grow: 2;
             flex-direction: column;
@@ -717,7 +700,7 @@ def main():
         .header-center h1 {
             font-size: 3.5rem;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #2c3e50;
             margin: 0;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
         }
@@ -727,7 +710,7 @@ def main():
             font-weight: 600;
             margin: 0;
             font-style: italic;
-            color: #BDBDBD;
+            color: #7f8c8d;
         }
 
         .header-right {
@@ -739,6 +722,7 @@ def main():
             position: relative;
             padding-top: 10px;
             padding-bottom: 10px;
+            
         }
         
         .header-info-top {
@@ -749,7 +733,7 @@ def main():
         
         .header-info-top .location-date {
             font-size: 1rem;
-            color: #E0E0E0;
+            color: #777;
             font-weight: 400;
             white-space: nowrap;
         }
@@ -766,28 +750,33 @@ def main():
             position: relative;
             display: inline-flex;
             align-items: center;
+            height: 250px;
+            width: 100%;
             font-size: 3rem;
             font-weight: 900;
-            color: #E74C3C;
+            color: #e74c3c;
             animation: pulse 2s infinite ease-in-out;
             line-height: 1;
         }
-
+        
         .countdown-text {
-            position: relative;
+            position: absolute;
+            top: 50%;
+            right: 60px; /* ajuste este valor para mais ou menos à esquerda */
+            transform: translateY(-50%);
             z-index: 2;
         }
-
+        
         .sparkle {
             position: absolute;
-            top: -15px;
-            right: -25px;
+            top: calc(50% - 15px); /* centralizado verticalmente com offset */
+            right: 35px; /* posicionado em relação ao texto */
             font-size: 3rem;
-            color: #F1C40F;
+            color: #f1c40f;
             z-index: 1;
             animation: sparkle-anim 1.5s infinite ease-in-out;
         }
-
+        
         @keyframes sparkle-anim {
             0%, 100% {
                 transform: scale(0.8) rotate(0deg);
@@ -798,13 +787,13 @@ def main():
                 opacity: 1;
             }
         }
-
+        
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-
+        
         @media (max-width: 1200px) {
             .header-container {
                 flex-direction: column;
@@ -832,47 +821,57 @@ def main():
             .days-countdown {
                 font-size: 2.5rem;
             }
+            .countdown-text {
+                right: 40px; /* ajuste para mobile */
+            }
+            .sparkle {
+                right: 15px; /* ajuste para mobile */
+            }
         }
         
         /* ==================================== */
-        /* TÍTULOS E MÉTRICAS */
+        /* NOVO: TÍTULOS COM ANIMAÇÃO E BORDA/SOMBRA */
         /* ==================================== */
         .title-container {
-            border: 1px solid #4B4B4B;
+            border: 1px solid #D3D3D3; /* NOVA: Borda fina */
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
             border-radius: 12px;
             margin: 2rem 0 1.5rem 0;
-            background: rgba(60, 60, 60, 0.7);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: all 0.3s ease-in-out;
+            background: linear-gradient(to right, #ffffff, #f9f9f9);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* Sombra ajustada */
+            transition: all 0.3s ease-in-out; /* Adiciona transição para animação */
         }
         
+        /* NOVO: Efeito de hover */
         .title-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+            transform: translateY(-5px); /* Efeito de "levitar" */
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Sombra mais forte */
         }
         
         .title-container h2 {
             font-weight: 700;
             font-size: 1.6rem;
-            color: white;
+            color: #2c3e50;
             margin: 0;
         }
         
+        /* ==================================== */
+        /* ======== MÉTRICAS EM DESTAQUE ======== */
+        /* ==================================== */
         [data-testid="stMetricValue"] {
             font-size: 1.8rem;
             font-weight: bold;
-            color: #FFFFFF;
+            color: #333;
         }
         [data-testid="stMetricLabel"] {
             font-size: 1rem;
             font-weight: 500;
-            color: #B0B0B0;
+            color: #666;
         }
         
         /* ==================================== */
-        /* CHECKBOXES E BOTÕES */
+        /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
         /* ==================================== */
         .stCheckbox > label {
             transition: none !important;
@@ -881,6 +880,15 @@ def main():
             background-color: inherit;
         }
         
+        /* Centralização de altair charts */
+        .st-emotion-cache-1v0mbdj {
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* ==================================== */
+        /* ======== ESTILOS PARA BOTÕES CUSTOMIZADOS ======== */
+        /* ==================================== */
         .stButton > button {
             width: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -891,36 +899,17 @@ def main():
             font-weight: 600;
             font-size: 0.95rem;
             transition: all 0.3s ease;
-            box-shadow: 4px 4px 12px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 6px 6px 20px rgba(0,0,0,0.35);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
         
         .stButton > button:active {
             transform: translateY(0);
-        }
-
-        /* Cores de texto dos gráficos */
-        .st-emotion-cache-1v0mbdj {
-            display: block;
-            margin: 0 auto;
-        }
-        .stMarkdown div b {
-            color: #E0E0E0 !important;
-        }
-        
-        /* Cor da barra de progresso individual */
-        div[style*="background:#eee"] > div[style*="width:"] {
-            background:#2ecc71 !important;
-        }
-
-        /* Acessibilidade para os check-boxes */
-        .stCheckbox > label > div[data-testid="stCheckbox-label"] span {
-            color: white;
         }
     </style>
     """, unsafe_allow_html=True)
