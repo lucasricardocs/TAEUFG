@@ -820,15 +820,15 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
+    # A função agora recebe df_summary para usar os cálculos prontos
+    display_conteudos_com_checkboxes(df, df_summary)
+    
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
-    
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-    # A função agora recebe df_summary para usar os cálculos prontos
-    display_conteudos_com_checkboxes(df, df_summary)
     
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
