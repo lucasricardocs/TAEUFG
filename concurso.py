@@ -596,7 +596,7 @@ def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
     st.markdown("---")
     st.markdown(f"""
-    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
+    <div style="text-align: center; margin: 0.5rem 0; padding: 0.3rem; color: #555;">
         <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
             🚀 {frase_aleatoria} ✨
         </p>
