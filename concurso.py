@@ -524,13 +524,11 @@ def rodape_motivacional():
     """, unsafe_allow_html=True)
 
 # --- Funções de Lógica e Cálculos (Versão reescrita e aprimorada) ---
-def update_df_and_rerun(df_new):
-    """Armazena o novo DataFrame no st.session_state e força o re-render"""
-    st.session_state['df_data'] = df_new
-    st.rerun()
-
 def on_checkbox_change(worksheet, row_number, key):
-    """Atualiza o Google Sheets e o DataFrame local no st.session_state."""
+    """
+    Atualiza o status no Google Sheets e atualiza o DataFrame local no st.session_state.
+    O Streamlit irá re-executar o script automaticamente devido à mudança no st.session_state.
+    """
     novo_status = st.session_state.get(key, False)
     
     with st.spinner("Atualizando planilha..."):
@@ -539,7 +537,7 @@ def on_checkbox_change(worksheet, row_number, key):
             # Atualiza o DataFrame na sessão para re-renderizar
             df_updated = st.session_state['df_data'].copy()
             df_updated.loc[df_updated['sheet_row'] == row_number, 'Status'] = novo_status
-            update_df_and_rerun(df_updated)
+            st.session_state['df_data'] = df_updated
         else:
             st.toast("Falha ao atualizar a planilha.", icon="❌")
 
@@ -582,6 +580,7 @@ def display_conteudos_com_checkboxes(df):
             is_expanded = st.session_state.get(f"expanded_{disc}", False)
             if st.button(f"📁 {'Fechar' if is_expanded else 'Ver'} conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[f"expanded_{disc}"] = not is_expanded
+                # Esta chamada a st.rerun é OK, pois não está em um callback de widget
                 st.rerun()
             
             if st.session_state.get(f"expanded_{disc}", False):
@@ -641,7 +640,7 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # Gerencia o estado dos dados
+    # 🚨 PONTO CRÍTICO: Gerencia o estado dos dados no st.session_state
     if 'df_data' not in st.session_state:
         st.session_state['df_data'] = load_data_with_row_indices()
 
