@@ -401,16 +401,17 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-def on_checkbox_change(worksheet, row_number, key):
-    """Atualiza status no Google Sheets e recarrega dados"""
+def on_checkbox_change(worksheet, row_number, key, disciplina):
+    """Atualiza status no Google Sheets e recarrega dados, mantendo a seção aberta"""
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
+        # Marca que esta disciplina deve ficar aberta
+        st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
         st.rerun()
     else:
         st.toast("Falha ao atualizar.", icon="❌")
-
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
@@ -453,17 +454,31 @@ def display_conteudos_com_checkboxes(df):
             </div>
         """, unsafe_allow_html=True)
 
-        # 📂 Expander sem setas (CSS aplicado antes)
-        with st.expander("", expanded=False):
-            for _, row in conteudos_disciplina.iterrows():
-                key = f"cb_{row['sheet_row']}"
-                st.checkbox(
-                    label=row['Conteúdos'],
-                    value=bool(row['Status']),
-                    key=key,
-                    on_change=on_checkbox_change,
-                    args=(worksheet, row['sheet_row'], key)
-                )
+        # Verifica se esta disciplina deve ficar expandida
+        expanded_key = f"expanded_{disc}"
+        is_expanded = st.session_state.get(expanded_key, False)
+
+        # 📂 Container customizado que substitui o expander
+        with st.container():
+            # Botão para expandir/contrair
+            if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
+                st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
+                st.rerun()
+            
+            # Mostra o conteúdo se estiver expandido
+            if st.session_state.get(expanded_key, False):
+                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
+                for _, row in conteudos_disciplina.iterrows():
+                    key = f"cb_{row['sheet_row']}"
+                    st.checkbox(
+                        label=row['Conteúdos'],
+                        value=bool(row['Status']),
+                        key=key,
+                        on_change=on_checkbox_change,
+                        args=(worksheet, row['sheet_row'], key, disc)
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
 
@@ -692,8 +707,8 @@ def main():
         }
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         
         @media (max-width: 768px) {
@@ -734,11 +749,6 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== Ícones Expander: Solução Robusta ======== */
-        /* ==================================== */
-        /* Não é necessário CSS adicional, o carregamento da fonte Material Icons resolve o problema. */
-        
-        /* ==================================== */
         /* ======== MÉTRICAS EM DESTAQUE ======== */
         /* ==================================== */
         [data-testid="stMetricValue"] {
@@ -767,6 +777,32 @@ def main():
             display: block;
             margin: 0 auto;
         }
+
+        /* ==================================== */
+        /* ======== ESTILOS PARA BOTÕES CUSTOMIZADOS ======== */
+        /* ==================================== */
+        .stButton > button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .stButton > button:active {
+            transform: translateY(0);
+        }
     </style>
     """, unsafe_allow_html=True)
     
@@ -785,19 +821,15 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    st.divider()
     titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    st.divider()
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
     display_donuts_grid(df_summary, progresso_geral)
     
-    st.divider()
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
     display_conteudos_com_checkboxes(df)
     
-    st.divider()
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
     with colA:
