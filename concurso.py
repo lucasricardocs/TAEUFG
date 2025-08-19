@@ -408,7 +408,7 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         # Marca que esta disciplina deve ficar aberta
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        # st.rerun() # Não é mais necessário, Streamlit já reinicia automaticamente
+        # Não é mais necessário, Streamlit já reinicia automaticamente
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
@@ -417,20 +417,8 @@ def display_conteudos_com_checkboxes(df, df_summary):
     if not worksheet:
         return
     
-    # 🔍 Barra de busca
-    search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
-    
-    if search_query:
-        df_filtered = df[df.apply(
-            lambda row: (search_query in row['Disciplinas'].upper()) or 
-                        (search_query in row['Conteúdos'].upper()),
-            axis=1
-        )]
-        if df_filtered.empty:
-            st.warning("Nenhum conteúdo encontrado.")
-            return
-    else:
-        df_filtered = df
+    # Removido: barra de busca e a lógica de filtragem
+    df_filtered = df
 
     # Garante que Status seja boolean
     df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
@@ -469,7 +457,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
             # Botão para expandir/contrair
             if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
-                # O rerun aqui é mantido para alternar o estado do container, é uma exceção
+                # O rerun aqui é mantido para alternar o estado do container
                 st.rerun()
             
             # Mostra o conteúdo se estiver expandido
