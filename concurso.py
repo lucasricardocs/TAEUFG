@@ -10,6 +10,7 @@ import warnings
 import altair as alt
 import random
 import requests
+import time
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -247,10 +248,11 @@ def render_topbar_with_logo(dias_restantes):
             transform: translateY(-5px);
             box-shadow: 0 12px 40px rgba(0,0,0,0.15);
         }}
+        
         .logo-container {{
             grid-area: logo;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: flex-start;
         }}
         .titles-container {{
@@ -260,7 +262,7 @@ def render_topbar_with_logo(dias_restantes):
             justify-content: center;
             align-items: center;
             text-align: center;
-            align-self: center; /* Alinha o conteúdo centralizado verticalmente */
+            align-self: center;
         }}
         .titles-container h1 {{
             color: #2c3e50;
@@ -294,6 +296,7 @@ def render_topbar_with_logo(dias_restantes):
             line-height: 1.1;
             align-self: flex-end;
             justify-self: center;
+            text-align: center;
         }}
         .logo-ufg {{
             height: 90px;
@@ -327,6 +330,59 @@ def render_topbar_with_logo(dias_restantes):
                 align-items: center;
                 margin-top: 0.5rem;
             }}
+        }}
+        /* ==================================== */
+        /* ======== TÍTULOS MELHORADOS ======== */
+        /* ==================================== */
+        .title-container-default {{
+            border-left: 6px solid #8e44ad;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0 1.5rem 0;
+            background: linear-gradient(to right, #ffffff, #f9f9f9);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+        }}
+        
+        .title-container-default h2 {{
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #2c3e50;
+            margin: 0;
+        }}
+        
+        /* ==================================== */
+        /* ======== MÉTRICAS EM DESTAQUE ======== */
+        /* ==================================== */
+        [data-testid="stMetricValue"] {{
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+        }}
+        [data-testid="stMetricLabel"] {{
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+        }}
+        
+        /* ==================================== */
+        /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
+        /* ==================================== */
+        .stCheckbox > label {{
+            transition: none !important;
+        }}
+        .stCheckbox > label:hover {{
+            background-color: inherit;
+        }}
+        
+        /* Centralização de altair charts */
+        .st-emotion-cache-1v0mbdj {{
+            display: block;
+            margin: 0 auto;
+        }}
+        
+        /* Oculta o ícone padrão do expander */
+        .streamlit-expanderHeader > div:first-child {{
+            display: none;
         }}
     </style>
     <div class="top-container">
@@ -510,7 +566,8 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         st.toast("Status atualizado!", icon="✅")
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        st.rerun()
+        time.sleep(1)
+        st.experimental_rerun()
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
@@ -552,17 +609,6 @@ def display_conteudos_com_checkboxes(df):
 
         # 📂 Expander sem setas (CSS aplicado antes)
         with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expanded_key]):
-            # A partir de agora, o st.session_state[expanded_key] é True, então o conteúdo é exibido.
-            # O st.rerun no callback já garante que o estado é mantido.
-            
-            # st.markdown(f"""
-            #     <div style="margin: 0.5rem 0;">
-            #         <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
-            #         <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
-            #             <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
-            #         </div>
-            #     </div>
-            # """, unsafe_allow_html=True)
             
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
@@ -753,8 +799,8 @@ def main():
             overflow: hidden;
             display: grid;
             grid-template-areas:
-                "logo main-title weather"
-                "countdown main-title .";
+                "left-corner main-title right-corner-top"
+                "left-corner main-title right-corner-bottom";
             grid-template-columns: 1fr 2fr 1fr;
             grid-template-rows: auto 1fr;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -765,9 +811,9 @@ def main():
         }
         
         .logo-container {
-            grid-area: logo;
+            grid-area: left-corner;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: flex-start;
         }
         .titles-container {
@@ -777,7 +823,7 @@ def main():
             justify-content: center;
             align-items: center;
             text-align: center;
-            align-self: center; /* Alinha o conteúdo centralizado verticalmente */
+            align-self: center;
         }
         .titles-container h1 {
             color: #2c3e50;
@@ -794,7 +840,7 @@ def main():
             font-weight: 500;
         }
         .weather-info {
-            grid-area: weather;
+            grid-area: right-corner-top;
             font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
             font-weight: 400;
@@ -803,7 +849,7 @@ def main():
             justify-self: flex-end;
         }
         .days-countdown {
-            grid-area: countdown;
+            grid-area: right-corner-bottom;
             animation: pulse 2s infinite ease-in-out;
             color: #e74c3c;
             font-weight: 800;
@@ -811,93 +857,94 @@ def main():
             line-height: 1.1;
             align-self: flex-end;
             justify-self: center;
+            text-align: center;
         }
         .logo-ufg {
             height: 90px;
         }
         
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+            0% {{ transform: scale(1); }}
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
+        }}
         
-        @media (max-width: 768px) {
-            .top-container {
+        @media (max-width: 768px) {{
+            .top-container {{
                 display: flex;
                 flex-direction: column;
                 height: auto;
                 padding: 1rem;
                 gap: 1rem;
-            }
-            .logo-container, .titles-container, .weather-info, .days-countdown {
+            }}
+            .logo-container, .titles-container, .weather-info, .days-countdown {{
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
                 width: 100%;
-            }
-            .logo-container {
+            }}
+            .logo-container {{
                 justify-content: center;
-            }
-            .weather-info {
+            }}
+            .weather-info {{
                 align-items: center;
                 margin-top: 0.5rem;
-            }
-        }
+            }}
+        }}
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
-        .title-container-default {
+        .title-container-default {{
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
             border-radius: 12px;
             margin: 2rem 0 1.5rem 0;
             background: linear-gradient(to right, #ffffff, #f9f9f9);
             box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-        }
+        }}
         
-        .title-container-default h2 {
+        .title-container-default h2 {{
             font-weight: 700;
             font-size: 1.6rem;
             color: #2c3e50;
             margin: 0;
-        }
+        }}
         
         /* ==================================== */
         /* ======== MÉTRICAS EM DESTAQUE ======== */
         /* ==================================== */
-        [data-testid="stMetricValue"] {
+        [data-testid="stMetricValue"] {{
             font-size: 1.8rem;
             font-weight: bold;
             color: #333;
-        }
-        [data-testid="stMetricLabel"] {
+        }}
+        [data-testid="stMetricLabel"] {{
             font-size: 1rem;
             font-weight: 500;
             color: #666;
-        }
+        }}
         
         /* ==================================== */
         /* ======== CHECKBOXES SEM ANIMAÇÃO ======== */
         /* ==================================== */
-        .stCheckbox > label {
+        .stCheckbox > label {{
             transition: none !important;
-        }
-        .stCheckbox > label:hover {
+        }}
+        .stCheckbox > label:hover {{
             background-color: inherit;
-        }
+        }}
         
         /* Centralização de altair charts */
-        .st-emotion-cache-1v0mbdj {
+        .st-emotion-cache-1v0mbdj {{
             display: block;
             margin: 0 auto;
-        }
+        }}
         
         /* Oculta o ícone padrão do expander */
-        .streamlit-expanderHeader > div:first-child {
+        .streamlit-expanderHeader > div:first-child {{
             display: none;
-        }
+        }}
     </style>
     """, unsafe_allow_html=True)
     
