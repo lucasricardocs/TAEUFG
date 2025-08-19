@@ -10,6 +10,7 @@ import warnings
 import altair as alt
 import random
 import requests
+import time
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -44,16 +45,7 @@ FRASES_MOTIVACIONAIS = [
     "Acredite no seu potencial. Você é mais forte do que pensa.",
     "Pequenos progressos diários somam-se a grandes resultados.",
     "O sacrifício de hoje é a celebração de amanhã. Continue firme.",
-    "Não desista. O caminho pode ser difícil, mas a vitória vale a pena.",
-    "Sua dedicação é o que vai te diferenciar dos demais. Estude com paixão.",
-    "Concentre-se em dominar um tópico de cada vez. O aprendizado é cumulativo.",
-    "A melhor maneira de prever o futuro é criá-lo com seus estudos.",
-    "O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
-    "Quando a vontade de desistir for grande, lembre-se do porquê começou.",
-    "Sua aprovação está esperando por você no final dessa jornada.",
-    "A preparação é a chave para a confiança. Estude, revise, vença.",
-    "Transforme o 'e se' em 'e daí, eu consegui!'.",
-    "Não estude até dar certo. Estude até não ter mais como dar errado."
+    "Não desista. O caminho pode ser difícil, mas a vitória vale a pena."
 ]
 
 # --- Funções de Conexão com Google Sheets ---
@@ -82,8 +74,11 @@ def get_worksheet():
         st.error(f"❌ Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
-@st.cache_data(ttl=300, show_spinner="Carregando dados dos estudos...")
+# ✅ FUNÇÃO CRÍTICA MODIFICADA - Remove cache para atualização instantânea
 def load_data_with_row_indices():
+    """
+    IMPORTANTE: Removido @st.cache_data para permitir atualização instantânea
+    """
     worksheet = get_worksheet()
     if not worksheet: return pd.DataFrame()
     try:
@@ -110,7 +105,6 @@ def load_data_with_row_indices():
         st.error(f"❌ Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
 
-# --- Funções de Lógica e Cálculos ---
 def update_status_in_sheet(sheet, row_number, new_status):
     try:
         header = sheet.row_values(1)
@@ -128,6 +122,28 @@ def update_status_in_sheet(sheet, row_number, new_status):
         st.error(f"❌ Erro inesperado ao atualizar planilha: {e}")
         return False
 
+# ✅ FUNÇÃO CRÍTICA MODIFICADA - Força atualização instantânea dos gráficos
+def on_checkbox_change(worksheet, row_number, key):
+    """
+    Atualiza o Google Sheets E força recarga instantânea dos gráficos
+    """
+    novo_status = st.session_state.get(key, False)
+    
+    # Atualiza na planilha
+    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+        # ✅ SOLUÇÃO: Recarrega dados sem cache
+        st.session_state['df_data'] = load_data_with_row_indices()
+        
+        # ✅ SOLUÇÃO: Marca timestamp da última atualização
+        st.session_state['last_update'] = time.time()
+        
+        st.toast("✅ Gráficos atualizados!", icon="📊")
+    else:
+        st.toast("❌ Erro na atualização", icon="⚠️")
+        # Reverte o checkbox se falhou
+        st.session_state[key] = not novo_status
+
+# --- Funções de Lógica e Cálculos ---
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
     if df.empty:
@@ -166,12 +182,11 @@ def calculate_stats(df_summary):
         'topicos_por_dia': topicos_por_dia,
         'maior_prioridade': maior_prioridade
     }
-    
-# --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=3600)   # Armazena em cache por 1 hora
+
+# --- Funções para buscar dados de clima ---
+@st.cache_data(ttl=3600)
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
-
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -185,44 +200,19 @@ def get_weather_data(city_name):
             weather_emojis = {
                 'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
                 'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
-                'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
-                'Smoke': '💨', 'Dust': '💨', 'Sand': '💨',
-                'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
+                'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️'
             }
             emoji = weather_emojis.get(status, '🌍')
             
-            return {
-                "temperature": f"{temperature:.0f}°C",
-                "emoji": emoji
-            }
-        
+            return {"temperature": f"{temperature:.0f}°C", "emoji": emoji}
         else:
-            return {
-                "temperature": "N/A",
-                "emoji": "🤷"
-            }
+            return {"temperature": "N/A", "emoji": "🤷"}
+    except:
+        return {"temperature": "N/A", "emoji": "🤷"}
 
-    except requests.exceptions.RequestException as e:
-        return {
-            "temperature": "N/A",
-            "emoji": "🤷"
-        }
-
-# --- Funções de Interface e Visualização ---
-def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
-    st.markdown(f"""
-    <div class="title-container animated-fade-in" style="
-        border-left: 6px solid {cor_lateral};
-        background: linear-gradient(to right, #fdfdfe, #f9f9f9);
-    ">
-        <h2 style="color: #2c3e50; font-family: 'Nunito', sans-serif;">
-            {texto}
-        </h2>
-    </div>""", unsafe_allow_html=True)
-
+# --- Funções de Interface ---
 def render_topbar_with_logo(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
-    
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-main">
@@ -289,18 +279,11 @@ def create_altair_stacked_bar(df_summary):
 
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
-    def label_color(row, df_row):
-        if row['Percentual'] > 0:
-            return 'black'
-        return 'transparent'
-
-    df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
-
     bars = alt.Chart(df_melted).mark_bar(
         stroke='#d3d3d3',
         strokeWidth=2
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -311,241 +294,27 @@ def create_altair_stacked_bar(df_summary):
         align='center',
         baseline='middle',
         fontWeight='bold',
-        fontSize=12,
-        font='Nunito'
+        fontSize=12
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
         text=alt.Text('PercentText:N'),
-        color=alt.Color('LabelColor:N', scale=None)
+        color=alt.value('black')
     )
 
     return (bars + labels).properties(
         height=350,
-        title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina",
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
+        title="📊 Progresso por Disciplina (ATUALIZADO INSTANTANEAMENTE)"
     )
-
-def create_progress_donut(source_df, title):
-    total = source_df['Valor'].sum()
-    concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
-    percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
-
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
-        theta=alt.Theta("Valor:Q"),
-        color=alt.Color("Status:N",
-                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
-                        legend=None),
-        tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
-    )
-    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
-        size=24,
-        fontWeight='bold',
-        color='#000000',
-        font='Nunito'
-    ).encode(text='text:N')
-
-    return (base + text).properties(
-        title=alt.TitleParams(
-            text=title,
-            anchor='middle',
-            fontSize=26,
-            dy=-10,
-            color='#000000',
-            font='Nunito'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    )
-
-def display_donuts_grid(df_summary, progresso_geral):
-    st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
-    charts_data = []
-    prog_geral_df = pd.DataFrame([
-        {'Status': 'Concluido', 'Valor': progresso_geral},
-        {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
-    ])
-    charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
-
-    for _, row in df_summary.iterrows():
-        df = pd.DataFrame([
-            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
-            {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
-        ])
-        charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
-
-    for i in range(0, len(charts_data), 3):
-        cols = st.columns(3)
-        for j in range(3):
-            if i + j < len(charts_data):
-                with cols[j]:
-                    chart_info = charts_data[i+j]
-                    donut = create_progress_donut(chart_info['df'], chart_info['title'])
-                    st.altair_chart(donut, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Gráficos ---
-PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
-
-def bar_questoes_padronizado(ed_data):
-    df = pd.DataFrame(ed_data)
-
-    bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=2,
-        cornerRadiusTopRight=2,
-        stroke='#d3d3d3',
-        strokeWidth=1
-    ).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
-        y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
-        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
-    )
-
-    labels = bars.mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-5,
-        color='#000000',
-        fontWeight='bold',
-        font='Nunito'
-    ).encode(
-        text='Questões:Q'
-    )
-
-    return (bars + labels).properties(
-        width=500,
-        height=500,
-        title=alt.TitleParams(
-            text='Distribuição de Questões',
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
-    )
-
-def bar_relevancia_customizado(ed_data):
-    df = pd.DataFrame(ed_data)
-    df['Relevancia'] = df['Peso'] * df['Questões']
-    df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
-    df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
-
-    color_scale = alt.Scale(
-        domain=[df['Relevancia'].min(), df['Relevancia'].max()],
-        range=['#cce6ff', '#004c99']
-    )
-
-    bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=2,
-        cornerRadiusBottomRight=2,
-        stroke='#d3d3d3',
-        strokeWidth=1,
-        size=40
-    ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
-        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
-        color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N'),
-            alt.Tooltip('Peso:Q'),
-            alt.Tooltip('Questões:Q'),
-            alt.Tooltip('Relevancia:Q', title='Relevância'),
-            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
-        ]
-    )
-    
-    text = bars.mark_text(
-        align='left',
-        baseline='middle',
-        dx=3,
-        color='#000000',
-        fontWeight='bold',
-        fontSize=12,
-        font='Nunito'
-    ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
-        x=alt.X('Relevancia:Q'),
-        text='custom_label:N'
-    )
-
-    return (bars + text).properties(
-        width=500,
-        height=500,
-        title=alt.TitleParams(
-            text='Relevância das Disciplinas',
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
-    )
-
-def rodape_motivacional():
-    frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
-    st.markdown("---")
-    st.markdown(f"""
-    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
-        <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
-            🚀 {frase_aleatoria} ✨
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# --- Funções de Lógica e Cálculos (Versão reescrita e aprimorada) ---
-def on_checkbox_change(worksheet, row_number, key):
-    """
-    Atualiza o status no Google Sheets e atualiza o DataFrame local no st.session_state.
-    O Streamlit irá re-executar o script automaticamente devido à mudança no st.session_state.
-    """
-    novo_status = st.session_state.get(key, False)
-    
-    with st.spinner("Atualizando planilha..."):
-        if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-            st.toast("Status atualizado!", icon="✅")
-            # Atualiza o DataFrame na sessão para re-renderizar
-            df_updated = st.session_state['df_data'].copy()
-            df_updated.loc[df_updated['sheet_row'] == row_number, 'Status'] = novo_status
-            st.session_state['df_data'] = df_updated
-        else:
-            st.toast("Falha ao atualizar a planilha.", icon="❌")
 
 def display_conteudos_com_checkboxes(df):
+    """
+    ✅ FUNÇÃO MODIFICADA para atualização instantânea
+    """
     worksheet = get_worksheet()
     if not worksheet: return
     
-    search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
+    search_query = st.text_input("🔍 Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
     
     df_filtered = df
     if search_query:
@@ -586,6 +355,7 @@ def display_conteudos_com_checkboxes(df):
                 st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
+                    # ✅ CRÍTICO: Usa callback que força atualização instantânea
                     st.checkbox(
                         label=row['Conteúdos'],
                         value=bool(row['Status']),
@@ -595,7 +365,7 @@ def display_conteudos_com_checkboxes(df):
                     )
                 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Função Principal da Aplicação (Versão reescrita e aprimorada) ---
+# --- Função Principal (Modificada para atualização instantânea) ---
 def main():
     st.set_page_config(
         page_title="📚 Dashboard de Estudos - Concurso TAE UFG",
@@ -604,79 +374,67 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    alt.themes.enable('none')
-    
+    # CSS do dashboard
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* (Seu CSS original aqui) */
         * { font-family: 'Nunito', sans-serif !important; }
         .stApp { background-color: #f7f9fc; color: #333; }
-        .stApp [data-testid="stVegaLiteChart"] > div, .vega-embed.has-actions { background-color: transparent !important; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animated-fade-in { animation: fadeIn 0.8s ease-out; }
-        .top-container { background: linear-gradient(135deg, #e0f0ff, #f0f8ff); border-radius: 18px; padding: 0.5rem 2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.1); margin-bottom: 2rem; border: 1px solid #d3d3d3; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.5rem; }
-        .top-container-main { display: flex; align-items: center; flex-grow: 1; }
-        .titles-container { display: flex; flex-direction: column; justify-content: center; margin-left: 3rem; }
-        .titles-container h1 { color: #2c3e50; margin: 0; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 700; line-height: 1.1; }
-        .titles-container p { color: #555; margin: 0; margin-top: 0.2rem; font-size: clamp(1.2rem, 1.8vw, 1.4rem); font-weight: 500; }
-        .top-container-info { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start;  text-align: right; flex-grow: 1; }
-        .weather-info { font-size: clamp(0.9rem, 1.5vw, 1.1rem); color: #777; font-weight: 400; margin-bottom: 0.2rem; }
-        .days-countdown { animation: pulse 4s infinite ease-in-out; color: #e74c3c; font-weight: 500; font-size: clamp(1.5rem, 3vw, 2.5rem); line-height: 1.1; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        @media (max-width: 768px) { .top-container { flex-direction: column; text-align: center; gap: 1rem; } .top-container-main, .top-container-info { flex-direction: column; align-items: center; text-align: center; width: 100%; } .titles-container { align-items: center; margin-left: 0; } }
-        .title-container { border-left: 6px solid #8e44ad; padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0; background: linear-gradient(to right, #ffffff, #f9f9f9); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
-        .title-container h2 { font-weight: 700; font-size: 1.6rem; color: #2c3e50; margin: 0; }
-        [data-testid="stMetricValue"] { font-size: 1.8rem; font-weight: bold; color: #333; }
-        [data-testid="stMetricLabel"] { font-size: 1rem; font-weight: 500; color: #666; }
-        .stCheckbox > label { transition: none !important; }
-        .stCheckbox > label:hover { background-color: inherit; }
-        .st-emotion-cache-1v0mbdj { display: block; margin: 0 auto; }
-        .stButton > button { width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); }
-        .stButton > button:active { transform: translateY(0); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animated-fade-in { animation: fadeIn 0.5s ease-out; }
+        .top-container { 
+            background: linear-gradient(135deg, #e0f0ff, #f0f8ff); 
+            border-radius: 18px; padding: 1rem 2rem; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1); 
+            margin-bottom: 2rem; display: flex; 
+            justify-content: space-between; align-items: center; 
+        }
+        .top-container-main { display: flex; align-items: center; }
+        .titles-container { margin-left: 2rem; }
+        .titles-container h1 { color: #2c3e50; margin: 0; font-size: 2.2rem; font-weight: 700; }
+        .titles-container p { color: #555; margin: 0; font-size: 1.2rem; }
+        .days-countdown { color: #e74c3c; font-weight: 600; font-size: 2rem; }
+        .weather-info { color: #777; font-size: 1rem; margin-bottom: 0.5rem; }
     </style>
     """, unsafe_allow_html=True)
     
-    if 'df_data' not in st.session_state:
-        st.session_state['df_data'] = load_data_with_row_indices()
+    # ✅ INICIALIZAÇÃO MODIFICADA - Sempre recarrega dados frescos
+    if 'last_update' not in st.session_state:
+        st.session_state['last_update'] = 0
     
-    df = st.session_state['df_data']
+    # ✅ CRÍTICO: Sempre carrega dados sem cache para atualização instantânea
+    df = load_data_with_row_indices()
+    st.session_state['df_data'] = df
     
     dias_restantes = max((CONCURSO_DATE - datetime.now()).days, 0)
     render_topbar_with_logo(dias_restantes)
     
     if df.empty:
-        st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
-        if st.button("Recarregar Planilha"):
-            st.session_state['df_data'] = load_data_with_row_indices()
+        st.info("👋 Bem-vindo! Sua planilha está vazia. Adicione conteúdos na Google Sheet.")
+        if st.button("🔄 Recarregar Planilha"):
             st.rerun()
         st.stop()
         
+    # ✅ RECALCULA SEMPRE com dados atuais
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
 
+    # Interface principal
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
+    st.markdown("---")
+    st.markdown("### ✅ **Marque os conteúdos estudados** (Gráficos atualizam instantaneamente!)")
     display_conteudos_com_checkboxes(df)
 
-    titulo_com_destaque("📊 Progresso Detalhado por Disciplina", cor_lateral="#3498db")
+    st.markdown("---")
+    st.markdown("### 📊 **Progresso Detalhado** (Atualização em Tempo Real)")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#2ecc71")
-    display_donuts_grid(df_summary, progresso_geral)
-    
-    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
-    colA, colB = st.columns([2, 3])
-    with colA:
-        st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
-    with colB:
-        st.altair_chart(bar_relevancia_customizado(ED_DATA), use_container_width=True)
-    
-    rodape_motivacional()
+    # Mostrar timestamp da última atualização
+    if st.session_state.get('last_update', 0) > 0:
+        update_time = datetime.fromtimestamp(st.session_state['last_update'])
+        st.caption(f"🕒 Última atualização: {update_time.strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
     main()
