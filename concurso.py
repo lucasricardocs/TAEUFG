@@ -290,25 +290,19 @@ def render_topbar_with_logo(dias_restantes):
         .days-countdown {{
             position: relative;
             z-index: 2;
-            animation: pulse 2s infinite ease-in-out, flame 3s infinite ease-in-out;
+            animation: pulse 2s infinite ease-in-out;
             color: #e74c3c;
             font-weight: 800;
             font-size: 2.5rem;
-            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
             margin-top: 1rem;
             font-family: 'Livvic', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }}
         
         @keyframes pulse {{
             0% {{ transform: scale(1); }}
             50% {{ transform: scale(1.05); }}
             100% {{ transform: scale(1); }}
-        }}
-        
-        @keyframes flame {{
-            0% {{ text-shadow: 0 0 5px #ff5722, 0 0 10px #ff5722, 0 0 15px #ff5722, 0 0 20px #ff5722; }}
-            50% {{ text-shadow: 0 0 10px #ff9800, 0 0 20px #ff9800, 0 0 30px #ff9800, 0 0 40px #ff9800; }}
-            100% {{ text-shadow: 0 0 5px #ff5722, 0 0 10px #ff5722, 0 0 15px #ff5722, 0 0 20px #ff5722; }}
         }}
         
         .flames {{
@@ -388,7 +382,6 @@ def render_topbar_with_logo(dias_restantes):
         <div class="flames"></div>
     </div>
     """, unsafe_allow_html=True)
-
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
@@ -437,7 +430,7 @@ def create_altair_stacked_bar(df_summary):
 
     def label_color(row, df_row):
         if row['Percentual'] > 0:
-            return 'black'
+            return 'white'
         return 'transparent'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
@@ -446,7 +439,7 @@ def create_altair_stacked_bar(df_summary):
         stroke='#white',
         strokeWidth=3
     ).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Livvic')),
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='black', labelFont='Livvic')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N',
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
