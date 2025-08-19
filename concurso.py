@@ -677,7 +677,7 @@ def main():
         }
         
         .header-left img {
-            max-width: 150px;
+            max-width: 200px;
             height: auto;
             object-fit: contain;
         }
