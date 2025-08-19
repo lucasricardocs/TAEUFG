@@ -702,7 +702,7 @@ def main():
         .days-countdown {
             animation: pulse 4s infinite ease-in-out;
             color: #e74c3c;
-            font-weight: 800;
+            font-weight: 500;
             font-size: clamp(1.5rem, 3vw, 2.5rem);
             line-height: 1.1;
         }
