@@ -402,25 +402,28 @@ def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('</div>', unsafe_allow_html=True)
 
 def on_checkbox_change(worksheet, row_number, key):
-    novo_status = st.session_state[key]
+    """Atualiza status no Google Sheets e recarrega dados"""
+    novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
         load_data_with_row_indices.clear()
         st.rerun()
     else:
-        st.toast(f"Falha ao atualizar.", icon="❌")
+        st.toast("Falha ao atualizar.", icon="❌")
+
 
 def display_conteudos_com_checkboxes(df):
     worksheet = get_worksheet()
     if not worksheet:
         return
     
-    # 🔍 Barra de busca simples e robusta
+    # 🔍 Barra de busca
     search_query = st.text_input("Buscar conteúdos...", placeholder="Ex: Informática, RLM").strip().upper()
     
     if search_query:
         df_filtered = df[df.apply(
-            lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(),
+            lambda row: (search_query in row['Disciplinas'].upper()) or 
+                        (search_query in row['Conteúdos'].upper()),
             axis=1
         )]
         if df_filtered.empty:
@@ -429,7 +432,10 @@ def display_conteudos_com_checkboxes(df):
     else:
         df_filtered = df
 
-    # 🔄 Itera pelas disciplinas em ordem alfabética
+    # Garante que Status seja boolean
+    df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
+
+    # 🔄 Itera pelas disciplinas
     for disc in sorted(df_filtered['Disciplinas'].unique()):
         conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
 
@@ -437,8 +443,18 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
 
-        # 📂 Expander nativo do Streamlit (sem ícones extras, sem CSS customizado)
-        with st.expander(f"{disc.title()}  ({concluidos}/{total} - {progresso:.1f}%)", expanded=False):
+        # 📊 Header com barra de progresso estilizada
+        st.markdown(f"""
+            <div style="margin: 0.5rem 0;">
+                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
+                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
+                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # 📂 Expander sem setas (CSS aplicado antes)
+        with st.expander("", expanded=False):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(
