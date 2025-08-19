@@ -487,10 +487,10 @@ def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
 
     bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=2,
-        cornerRadiusTopRight=2,
+        cornerRadiusTopLeft=3,
+        cornerRadiusTopRight=3,
         stroke='black',
-        strokeWidth=1
+        strokeWidth=2
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
@@ -540,11 +540,11 @@ def bar_relevancia_customizado(ed_data):
     )
 
     bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=2,
-        cornerRadiusBottomRight=2,
+        cornerRadiusTopRight=3,
+        cornerRadiusBottomRight=3,
         stroke='black',
         strokeWidth=2,
-        size=80
+        size=90
     ).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
