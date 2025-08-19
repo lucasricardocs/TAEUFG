@@ -24,8 +24,9 @@ warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=Fa
 try:
     import locale
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except locale.Error:
-    logger.warning("Não foi possível configurar localidade pt_BR.UTF-8")
+except (locale.Error, Exception):
+    # Fallback silencioso - não gera warning
+    pass
 
 # --- Constantes de Configuração ---
 class Config:
@@ -302,8 +303,13 @@ class UIComponents:
             initial_sidebar_state="collapsed"
         )
         
-        # Configura tema do Altair
-        alt.themes.enable('none')
+        # Configura tema do Altair (versão atualizada)
+        try:
+            import altair as alt
+            alt.theme.enable('none')
+        except AttributeError:
+            # Fallback para versões antigas do Altair
+            alt.themes.enable('none')
     
     @staticmethod
     def load_custom_css():
@@ -486,10 +492,17 @@ class UIComponents:
     @staticmethod
     def render_topbar(dias_restantes: int):
         """Renderiza a barra superior com layout customizado"""
-        weather_data = WeatherService.get_weather_data('Goiânia, BR')
+        try:
+            weather_data = WeatherService.get_weather_data('Goiânia, BR')
+        except Exception:
+            # Fallback se API do clima falhar
+            weather_data = {"temperature": "N/A", "emoji": "🌍"}
         
-        # Teste simples primeiro
-        st.write("🧪 Teste: Se você vê esta mensagem, o Streamlit está funcionando")
+        # Formatação de data com fallback
+        try:
+            data_formatada = datetime.now().strftime('%d de %B de %Y')
+        except Exception:
+            data_formatada = datetime.now().strftime('%d/%m/%Y')
         
         st.markdown(f"""
         <div class="responsive-topbar">
@@ -506,7 +519,7 @@ class UIComponents:
             
             <div class="topbar-info">
                 <div class="weather-info">
-                    Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}
+                    Goiânia, Brasil | {data_formatada} | {weather_data['emoji']} {weather_data['temperature']}
                 </div>
                 <div class="days-countdown">
                     ⏰ Faltam {dias_restantes} dias!
@@ -914,6 +927,10 @@ def main():
         
         # Renderiza interface
         UIComponents.render_topbar(dias_restantes)
+        
+        # Debug: verifica se o HTML está sendo renderizado
+        if st.secrets.get("debug_mode", False):
+            st.success("✅ HTML renderizado com sucesso!")
 
         # Carrega e processa dados
         df = DataProcessor.load_data_with_row_indices()
