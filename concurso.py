@@ -227,12 +227,12 @@ def render_topbar_with_logo(dias_restantes):
     st.markdown(f"""
     <div class="top-container">
         <div class="top-container-left">
-            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 70px; margin-right: 1.5rem;"/>
+            <img src="https://files.cercomp.ufg.br/weby/up/1/o/UFG_colorido.png" alt="Logo UFG" style="height: 90px; margin-right: 1.5rem;"/>
             <div class="titles-container">
-                <h1 style="margin: 0; line-height: 1.1;">
+                <h1 style="margin: 0; line-height: 1.1; font-size: 1.8rem;">
                     Dashboard de Estudos
                 </h1>
-                <p style="margin: 0; margin-top: 0.2rem;">
+                <p style="margin: 0; margin-top: 0.2rem; font-size: 1.2rem;">
                     Concurso TAE UFG 2025
                 </p>
             </div>
@@ -405,14 +405,12 @@ def display_donuts_grid(df_summary, progresso_geral):
                     st.altair_chart(donut, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-
-def on_checkbox_change(worksheet, row_number, key, expander_key):
+def on_checkbox_change(worksheet, row_number, key):
     novo_status = st.session_state[key]
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
-        # Mantém o expander aberto
-        st.session_state[expander_key] = True
         load_data_with_row_indices.clear()
+        st.rerun()
     else:
         st.toast(f"Falha ao atualizar.", icon="❌")
 
@@ -425,6 +423,8 @@ def display_conteudos_com_checkboxes(df):
     
     if search_query:
         df_filtered = df[df.apply(lambda row: search_query in row['Disciplinas'] or search_query in row['Conteúdos'].upper(), axis=1)]
+        if df_filtered.empty:
+            st.warning("Nenhum conteúdo encontrado com a sua busca.")
     else:
         df_filtered = df
 
@@ -435,27 +435,16 @@ def display_conteudos_com_checkboxes(df):
         total = len(conteudos_disciplina)
         progresso = (concluidos / total) * 100 if total > 0 else 0
         
-        # Usar um estado para cada expander
-        expander_key = f"expander_{disc}"
-        if expander_key not in st.session_state:
-            st.session_state[expander_key] = True  # Por padrão, expandido
-
-        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)", expanded=st.session_state[expander_key]):
-            # Atualiza o estado para manter expandido mesmo quando o checkbox é alterado
-            st.session_state[expander_key] = True
-            
+        with st.expander(f"**{disc.title()}** - {concluidos}/{total} ({progresso:.1f}%)"):
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 
-                if key not in st.session_state:
-                    st.session_state[key] = bool(row['Status'])
-
                 st.checkbox(
                     label=row['Conteúdos'],
-                    value=st.session_state[key],
+                    value=bool(row['Status']),
                     key=key,
                     on_change=on_checkbox_change,
-                    args=(worksheet, row['sheet_row'], key, expander_key)
+                    args=(worksheet, row['sheet_row'], key)
                 )
 
 # --- Gráficos ---
@@ -524,7 +513,7 @@ def bar_relevancia_customizado(ed_data):
         strokeWidth=1,
         size=40
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),  # Remover rótulos do eixo Y
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=[
@@ -596,6 +585,7 @@ def main():
     # CSS com animações e efeitos
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         /* Tipografia e cores globais */
         * {
@@ -635,68 +625,76 @@ def main():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 250px; /* Altura fixa de 250px */
+            flex-wrap: wrap; /* Adicionado para responsividade */
         }
         .top-container-left {
             display: flex;
             align-items: center;
             flex: 1;
-            height: 100%;
-            justify-content: center;
+            margin-bottom: 1rem; /* Espaçamento para telas pequenas */
         }
         .titles-container {
-            text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            text-align: left;
         }
         .titles-container h1 {
             color: #2c3e50;
             margin: 0;
-            font-size: 2.8rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            line-height: 1.1; /* Reduzir espaçamento entre linhas */
+            line-height: 1.1;
         }
         .titles-container p {
             color: #555;
             margin: 0;
-            margin-top: 0.2rem; /* Reduzir espaçamento superior */
-            font-size: 1.6rem;
+            margin-top: 0.2rem;
+            font-size: 1.2rem;
             font-weight: 500;
         }
         .top-container-right {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            justify-content: space-between;
-            height: 100%;
-            flex: 1;
+            text-align: right;
+            margin-bottom: 1rem;
         }
         .weather-info {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             color: #777;
             margin-bottom: 0.5rem;
             font-weight: 400;
         }
-
-        /* ==================================== */
-        /* ======== DESTAQUE PARA CONTADOR DE DIAS ======== */
-        /* ==================================== */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
         .days-countdown {
-            animation: pulse 2s infinite;
+            animation: pulse 2s infinite ease-in-out;
             color: #e74c3c;
             font-weight: 800;
-            font-size: 4rem;
-            margin: 0;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.15);
+            font-size: 1.5rem;
             line-height: 1.1;
         }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% {{ transform: scale(1.05); }}
+            100% {{ transform: scale(1); }}
+        }
         
+        @media (max-width: 768px) {
+            .top-container {
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+            }
+            .top-container-left, .top-container-right {
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+            }
+            .titles-container {
+                text-align: center;
+            }
+        }
+
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
@@ -717,14 +715,12 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== SOLUÇÃO DEFINITIVA PARA AS SETAS ======== */
+        /* ======== ÍCONES PERSONALIZADOS PARA EXPANDERS ======== */
         /* ==================================== */
-        /* Remove completamente o ícone padrão */
-        .streamlit-expanderHeader .st-emotion-cache-1p1m4ay {
+        [data-testid="stExpander-header"] .icon-container {
             display: none;
         }
-        /* Adiciona um ícone personalizado */
-        .streamlit-expanderHeader::before {
+        [data-testid="stExpander-header"]::before {
             content: "+";
             display: inline-block;
             margin-right: 8px;
@@ -732,10 +728,10 @@ def main():
             font-weight: bold;
             color: #9b59b6;
         }
-        .streamlit-expanderHeader[aria-expanded="true"]::before {
+        [data-testid="stExpander-header"][aria-expanded="true"]::before {
             content: "-";
         }
-        
+
         /* ==================================== */
         /* ======== MÉTRICAS EM DESTAQUE ======== */
         /* ==================================== */
@@ -758,6 +754,12 @@ def main():
         }
         .stCheckbox > label:hover {
             background-color: inherit;
+        }
+        
+        /* Centralização de altair charts */
+        .st-emotion-cache-1v0mbdj {
+            display: block;
+            margin: 0 auto;
         }
     </style>
     """, unsafe_allow_html=True)
