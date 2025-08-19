@@ -227,20 +227,21 @@ def render_top_container(dias_restantes):
     st.markdown(f"""
     <div class="header-container animated-fade-in">
         <div class="header-left">
-            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 500px;"/>
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 100px;"/>
         </div>
         <div class="header-center">
             <h1>Dashboard de Estudos</h1>
-            <h2>Concurso TAE UFG 2025</h2>
+            <h2 class="concurso-title">Concurso TAE UFG 2025</h2>
         </div>
         <div class="header-right">
             <div class="header-info-top">
                 <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
-                <span class="weather-info">| {weather_data['emoji']} {weather_data['temperature']}</span>
+                <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
             </div>
             <div class="header-info-bottom">
-                <div class="faltamxdias">
-                    <h1 class="neon-text">⏰ Faltam {dias_restantes} dias!</h1>
+                <div class="days-countdown pulse-effect">
+                    <span class="countdown-text">⏰ Faltam {dias_restantes} dias!</span>
+                    <span class="sparkle">✨</span>
                 </div>
             </div>
         </div>
@@ -697,11 +698,14 @@ def main():
             text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
         }
         
-        .header-center h2 {
+        /* Estilo do subtitulo alterado */
+        .header-center .concurso-title {
             font-size: 1.8rem;
             font-weight: 600;
             color: #555;
             margin: 0;
+            font-style: italic;
+            color: #7f8c8d; /* Nova cor mais clara */
         }
 
         .header-right {
@@ -729,31 +733,50 @@ def main():
             margin-left: 10px;
         }
         
-        /* EFEITO NEON APLICADO AQUI */
-        .faltamxdias {
-            display: flex;
-            justify-content: center;
+        /* NOVO EFEITO PARA A CONTAGEM REGRESSIVA */
+        .days-countdown {
+            position: relative;
+            display: inline-flex;
             align-items: center;
-            width: 100%;
-            height: 100%;
+            font-size: 3rem;
+            font-weight: 900;
+            color: #e74c3c;
+            animation: pulse 2s infinite ease-in-out;
+            line-height: 1;
         }
 
-        .neon-text {
-            font-size: 4rem;
-            color: #fff;
-            text-shadow: 0 0 5px #ff005e, 0 0 10px #ff005e, 0 0 20px #ff005e, 0 0 40px #ff005e, 0 0 80px #ff005e;
-            animation: glow 1.5s infinite alternate;
+        .countdown-text {
+            position: relative;
+            z-index: 2;
         }
 
-        @keyframes glow {
-            0% {
-                text-shadow: 0 0 5px #ff005e, 0 0 10px #ff005e, 0 0 20px #ff005e, 0 0 40px #ff005e, 0 0 80px #ff005e;
+        .sparkle {
+            position: absolute;
+            top: -15px;
+            right: -25px;
+            font-size: 3rem;
+            color: #f1c40f;
+            z-index: 1;
+            animation: sparkle-anim 1.5s infinite ease-in-out;
+        }
+
+        @keyframes sparkle-anim {
+            0%, 100% {
+                transform: scale(0.8) rotate(0deg);
+                opacity: 0.5;
             }
-            100% {
-                text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff, 0 0 40px #00d4ff, 0 0 80px #00d4ff, 0 0 160px #00d4ff;
+            50% {
+                transform: scale(1.2) rotate(30deg);
+                opacity: 1;
             }
         }
-        
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
         @media (max-width: 1200px) {
             .header-container {
                 flex-direction: column;
@@ -778,7 +801,7 @@ def main():
             .weather-info {
                 margin-left: 0;
             }
-            .neon-text {
+            .days-countdown {
                 font-size: 2.5rem;
             }
         }
