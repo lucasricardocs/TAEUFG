@@ -669,7 +669,7 @@ def main():
             display: flex;
             flex-direction: column;
             justify-content: center;
-            margin-left: 1.5rem;
+            margin-left: 3rem;
         }
         .titles-container h1 {
             color: #2c3e50;
@@ -697,7 +697,7 @@ def main():
             font-size: clamp(0.9rem, 1.5vw, 1.1rem);
             color: #777;
             font-weight: 400;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.2rem;
         }
         .days-countdown {
             animation: pulse 4s infinite ease-in-out;
