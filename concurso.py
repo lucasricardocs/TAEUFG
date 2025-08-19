@@ -488,6 +488,9 @@ class UIComponents:
         """Renderiza a barra superior com layout customizado"""
         weather_data = WeatherService.get_weather_data('Goiânia, BR')
         
+        # Teste simples primeiro
+        st.write("🧪 Teste: Se você vê esta mensagem, o Streamlit está funcionando")
+        
         st.markdown(f"""
         <div class="responsive-topbar">
             <div class="topbar-logo">
