@@ -235,8 +235,7 @@ def render_top_container(dias_restantes):
         </div>
         <div class="header-right">
             <div class="header-info-top">
-                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
-                <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
+                <span class="location-date">{datetime.now().strftime('Goiânia, Brasil | %d de %B de %Y')} | {weather_data['emoji']} {weather_data['temperature']}</span>
             </div>
             <div class="header-info-bottom">
                 <div class="days-countdown pulse-effect">
@@ -626,8 +625,16 @@ def main():
             font-family: 'Nunito', sans-serif !important;
         }
         
+        /* NOVO: Fundo gradiente animado */
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
         .stApp {
-            background-color: #f7f9fc;
+            background: linear-gradient(-45deg, #e0f0ff, #f0f8ff, #f7f9fc, #f5f5f5);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
             color: #333;
         }
         
@@ -651,7 +658,7 @@ def main():
         /* ==================================== */
         .header-container {
             width: 100%;
-            height: 250px;
+            height: 300px;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
@@ -660,7 +667,7 @@ def main():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            overflow: hidden; /* Garante que os efeitos fiquem dentro do container */
+            overflow: hidden;
             position: relative;
             margin-bottom: 2rem;
         }
@@ -677,7 +684,7 @@ def main():
         }
         
         .header-left img {
-            max-width: 200px;
+            max-width: 220px;
             height: auto;
             object-fit: contain;
         }
@@ -698,14 +705,12 @@ def main():
             text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
         }
         
-        /* Estilo do subtitulo alterado */
         .header-center .concurso-title {
             font-size: 1.8rem;
             font-weight: 600;
-            color: #555;
             margin: 0;
             font-style: italic;
-            color: #7f8c8d; /* Nova cor mais clara */
+            color: #7f8c8d;
         }
 
         .header-right {
@@ -717,23 +722,30 @@ def main():
             position: relative;
             padding-top: 10px;
             padding-bottom: 10px;
+            
         }
         
-        .header-info-top, .header-info-bottom {
+        .header-info-top {
             width: 100%;
+            text-align: right;
+            margin-bottom: 10px;
         }
-
-        .location-date, .weather-info {
+        
+        .header-info-top .location-date {
             font-size: 1rem;
             color: #777;
             font-weight: 400;
+            white-space: nowrap;
         }
-        
-        .weather-info {
-            margin-left: 10px;
+
+        .header-info-bottom {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            margin-top: -10px;
         }
-        
-        /* NOVO EFEITO PARA A CONTAGEM REGRESSIVA */
+
         .days-countdown {
             position: relative;
             display: inline-flex;
@@ -807,15 +819,23 @@ def main():
         }
         
         /* ==================================== */
-        /* ======== TÍTULOS MELHORADOS ======== */
+        /* NOVO: TÍTULOS COM ANIMAÇÃO E BORDA/SOMBRA */
         /* ==================================== */
         .title-container {
+            border: 1px solid #d3d3d3; /* NOVA: Borda fina */
             border-left: 6px solid #8e44ad;
             padding: 1rem 1.5rem;
             border-radius: 12px;
             margin: 2rem 0 1.5rem 0;
             background: linear-gradient(to right, #ffffff, #f9f9f9);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); /* Sombra ajustada */
+            transition: all 0.3s ease-in-out; /* Adiciona transição para animação */
+        }
+        
+        /* NOVO: Efeito de hover */
+        .title-container:hover {
+            transform: translateY(-5px); /* Efeito de "levitar" */
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15); /* Sombra mais forte */
         }
         
         .title-container h2 {
