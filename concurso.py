@@ -169,7 +169,7 @@ def calculate_stats(df_summary):
     }
     
 # --- Funções para buscar dados de clima real ---
-@st.cache_data(ttl=10)  # Armazena em cache por 10 segundos para atualização rápida
+@st.cache_data(ttl=10) # Armazena em cache por 1 hora
 def get_weather_data(city_name):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={API_KEY}&units=metric"
 
@@ -216,18 +216,441 @@ def titulo_com_destaque(texto, cor_lateral="#8e44ad"):
         border-left: 6px solid {cor_lateral};
         background: linear-gradient(to right, #fdfdfe, #f9f9f9);
     ">
-        <h2 style="color: #2c3e50; font-family: 'Livvic', sans-serif; font-weight: 700;">
+        <h2 style="color: #2c3e50; font-family: 'Nunito', sans-serif;">
             {texto}
         </h2>
     </div>""", unsafe_allow_html=True)
-
 
 def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     
     st.markdown(f"""
+    <div class="header-container animated-fade-in">
+        <div class="header-left">
+            <img src="{UFG_LOGO_URL}" alt="Logo UFG" style="height: 100px;"/>
+        </div>
+        <div class="header-center">
+            <h1>Dashboard de Estudos</h1>
+            <h2>Concurso TAE UFG 2025</h2>
+        </div>
+        <div class="header-right">
+            <div class="header-info-top">
+                <span class="location-date">Goiânia, Brasil | {datetime.now().strftime('%d de %B de %Y')}</span>
+                <span class="weather-info">{weather_data['emoji']} {weather_data['temperature']}</span>
+            </div>
+            <div class="header-info-bottom">
+                <div class="days-countdown pulse-effect">
+                    <div class="fire-effect"></div>
+                    <div class="flag-effect"></div>
+                    FALTAM {dias_restantes} DIAS
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def display_progress_bar(progresso_geral):
+    st.markdown(f"""
+    <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+            <span style="font-weight: 500; color: #3498db; font-family: 'Nunito', sans-serif;">Progresso Geral</span>
+            <span style="font-weight: 600; color: #2c3e50; font-family: 'Nunito', sans-serif;">{progresso_geral:.1f}%</span>
+        </div>
+        <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+            <div style="height: 100%; width: {progresso_geral}%;
+                        background: linear-gradient(90deg, #3498db, #1abc9c);
+                        border-radius: 10px; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def display_simple_metrics(stats):
+    cols = st.columns(4)
+    with cols[0]:
+        st.metric("✅ Concluídos", f"{stats['concluidos']}")
+    with cols[1]:
+        st.metric("⏳ Pendentes", f"{stats['pendentes']}")
+    with cols[2]:
+        st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
+    with cols[3]:
+        st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
+
+def create_altair_stacked_bar(df_summary):
+    df_percent = df_summary.copy()
+    df_percent['Concluido (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
+    df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
+
+    df_melted = df_percent.melt(
+        id_vars=['Disciplinas'],
+        value_vars=['Concluido (%)', 'Pendente (%)'],
+        var_name='Status',
+        value_name='Percentual'
+    )
+
+    status_map = {'Concluido (%)': 'Concluido', 'Pendente (%)': 'Pendente'}
+    df_melted['Status'] = df_melted['Status'].map(status_map)
+
+    df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
+    df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
+
+    df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
+
+    def label_color(row, df_row):
+        if row['Percentual'] > 0:
+            return 'black'
+        return 'transparent'
+
+    df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
+
+    bars = alt.Chart(df_melted).mark_bar(
+        stroke='#d3d3d3',
+        strokeWidth=2
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
+        x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
+        color=alt.Color('Status:N',
+                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        legend=None)
+    )
+
+    labels = alt.Chart(df_melted).mark_text(
+        align='center',
+        baseline='middle',
+        fontWeight='bold',
+        fontSize=12,
+        font='Nunito'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort=None),
+        x=alt.X('Posicao_norm:Q'),
+        text=alt.Text('PercentText:N'),
+        color=alt.Color('LabelColor:N', scale=None)
+    )
+
+    return (bars + labels).properties(
+        height=350,
+        title=alt.TitleParams(
+            text="Percentual de Conclusão por Disciplina",
+            anchor='middle',
+            fontSize=18,
+            font='Nunito',
+            color='#000000'
+        )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Nunito',
+        titleFont='Nunito'
+    )
+
+def create_progress_donut(source_df, title):
+    total = source_df['Valor'].sum()
+    concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
+    percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
+
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
+        theta=alt.Theta("Valor:Q"),
+        color=alt.Color("Status:N",
+                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
+                        legend=None),
+        tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
+    )
+    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
+        size=24,
+        fontWeight='bold',
+        color='#000000',
+        font='Nunito'
+    ).encode(text='text:N')
+
+    return (base + text).properties(
+        title=alt.TitleParams(
+            text=title,
+            anchor='middle',
+            fontSize=26,
+            dy=-10,
+            color='#000000',
+            font='Nunito'
+        )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
+    ).configure(
+        background='transparent'
+    )
+
+def display_donuts_grid(df_summary, progresso_geral):
+    st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
+    charts_data = []
+    prog_geral_df = pd.DataFrame([
+        {'Status': 'Concluido', 'Valor': progresso_geral},
+        {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
+    ])
+    charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
+
+    for _, row in df_summary.iterrows():
+        df = pd.DataFrame([
+            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
+            {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
+        ])
+        charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
+
+    for i in range(0, len(charts_data), 3):
+        cols = st.columns(3)
+        for j in range(3):
+            if i + j < len(charts_data):
+                with cols[j]:
+                    chart_info = charts_data[i+j]
+                    donut = create_progress_donut(chart_info['df'], chart_info['title'])
+                    st.altair_chart(donut, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def on_checkbox_change(worksheet, row_number, key, disciplina):
+    """Atualiza status no Google Sheets e recarrega dados, mantendo a seção aberta"""
+    novo_status = st.session_state.get(key, False)
+    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+        st.toast("Status atualizado!", icon="✅")
+        # Marca que esta disciplina deve ficar aberta
+        st.session_state[f"expanded_{disciplina}"] = True
+        load_data_with_row_indices.clear()
+        # Não é mais necessário, Streamlit já reinicia automaticamente
+    else:
+        st.toast("Falha ao atualizar.", icon="❌")
+
+def display_conteudos_com_checkboxes(df, df_summary):
+    worksheet = get_worksheet()
+    if not worksheet:
+        return
+    
+    # Removido: barra de busca e a lógica de filtragem
+    df_filtered = df
+
+    # Garante que Status seja boolean
+    df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
+
+    # 🔄 Itera pelas disciplinas
+    for disc in sorted(df_filtered['Disciplinas'].unique()):
+        conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
+        
+        # Usa os dados do df_summary para evitar recálculo
+        if disc in df_summary['Disciplinas'].values:
+            disc_stats = df_summary[df_summary['Disciplinas'] == disc].iloc[0]
+            concluidos = disc_stats['Conteudos_Concluidos']
+            total = disc_stats['Total_Conteudos']
+            progresso = (concluidos / total) * 100 if total > 0 else 0
+        else: # Caso a disciplina não esteja no edital_data, calcula apenas para exibir
+            concluidos = conteudos_disciplina['Status'].sum()
+            total = len(conteudos_disciplina)
+            progresso = (concluidos / total) * 100 if total > 0 else 0
+
+        # 📊 Header com barra de progresso estilizada
+        st.markdown(f"""
+            <div style="margin: 0.5rem 0;">
+                <b>{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
+                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
+                    <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Verifica se esta disciplina deve ficar expandida
+        expanded_key = f"expanded_{disc}"
+        is_expanded = st.session_state.get(expanded_key, False)
+
+        # 📂 Container customizado que substitui o expander
+        with st.container():
+            # Botão para expandir/contrair
+            if st.button(f"📁 Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
+                st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
+                # O rerun aqui é mantido para alternar o estado do container
+                st.rerun()
+            
+            # Mostra o conteúdo se estiver expandido
+            if st.session_state.get(expanded_key, False):
+                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
+                for _, row in conteudos_disciplina.iterrows():
+                    key = f"cb_{row['sheet_row']}"
+                    st.checkbox(
+                        label=row['Conteúdos'],
+                        value=bool(row['Status']),
+                        key=key,
+                        on_change=on_checkbox_change,
+                        args=(worksheet, row['sheet_row'], key, disc)
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+
+
+# --- Gráficos ---
+PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
+
+def bar_questoes_padronizado(ed_data):
+    df = pd.DataFrame(ed_data)
+
+    bars = alt.Chart(df).mark_bar(
+        cornerRadiusTopLeft=2,
+        cornerRadiusTopRight=2,
+        stroke='#d3d3d3',
+        strokeWidth=1
+    ).encode(
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
+        y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
+        color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
+    )
+
+    labels = bars.mark_text(
+        align='center',
+        baseline='bottom',
+        dy=-5,
+        color='#000000',
+        fontWeight='bold',
+        font='Nunito'
+    ).encode(
+        text='Questões:Q'
+    )
+
+    return (bars + labels).properties(
+        width=500,
+        height=500,
+        title=alt.TitleParams(
+            text='Distribuição de Questões',
+            anchor='middle',
+            fontSize=18,
+            font='Nunito',
+            color='#000000'
+        )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Nunito',
+        titleFont='Nunito'
+    )
+
+def bar_relevancia_customizado(ed_data):
+    df = pd.DataFrame(ed_data)
+    df['Relevancia'] = df['Peso'] * df['Questões']
+    df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
+    df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
+
+    color_scale = alt.Scale(
+        domain=[df['Relevancia'].min(), df['Relevancia'].max()],
+        range=['#cce6ff', '#004c99']
+    )
+
+    bars = alt.Chart(df).mark_bar(
+        cornerRadiusTopRight=2,
+        cornerRadiusBottomRight=2,
+        stroke='#d3d3d3',
+        strokeWidth=1,
+        size=40
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
+        x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
+        color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
+        tooltip=[
+            alt.Tooltip('Disciplinas:N'),
+            alt.Tooltip('Peso:Q'),
+            alt.Tooltip('Questões:Q'),
+            alt.Tooltip('Relevancia:Q', title='Relevância'),
+            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
+        ]
+    )
+    
+    text = bars.mark_text(
+        align='left',
+        baseline='middle',
+        dx=3,
+        color='#000000',
+        fontWeight='bold',
+        fontSize=12,
+        font='Nunito'
+    ).encode(
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#000000')),
+        x=alt.X('Relevancia:Q'),
+        text='custom_label:N'
+    )
+
+    return (bars + text).properties(
+        width=500,
+        height=500,
+        title=alt.TitleParams(
+            text='Relevância das Disciplinas',
+            anchor='middle',
+            fontSize=18,
+            font='Nunito',
+            color='#000000'
+        )
+    ).configure_view(
+        stroke=None,
+        fill='transparent'
+    ).configure(
+        background='transparent'
+    ).configure_axis(
+        labelFont='Nunito',
+        titleFont='Nunito'
+    )
+
+def rodape_motivacional():
+    frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
+    st.markdown("---")
+    st.markdown(f"""
+    <div style="text-align: center; margin: 0.5rem 0; padding: 1rem; color: #555;">
+        <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
+            🚀 {frase_aleatoria} ✨
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- Função Principal da Aplicação ---
+def main():
+    st.set_page_config(
+        page_title="📚 Dashboard de Estudos - Concurso TAE UFG",
+        page_icon="📚",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
+    
+    # Configura um tema vazio para garantir fundos transparentes
+    alt.themes.enable('none')
+    
+    # CSS com animações e efeitos
+    st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        .header-container {{
+        /* Tipografia e cores globais */
+        * {
+            font-family: 'Nunito', sans-serif !important;
+        }
+        
+        .stApp {
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        
+        /* Fundo transparente para todos os gráficos */
+        .stApp [data-testid="stVegaLiteChart"] > div,
+        .vega-embed.has-actions {
+            background-color: transparent !important;
+        }
+
+        /* Animação de Fade-in */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animated-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        /* ==================================== */
+        /* ======== CONTAINER DO TOPO NOVO ======== */
+        /* ==================================== */
+        .header-container {
             width: 100%;
             height: 300px;
             background: linear-gradient(135deg, #e0f0ff, #f0f8ff);
@@ -235,164 +658,166 @@ def render_top_container(dias_restantes):
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             border: 1px solid #d3d3d3;
             padding: 20px 40px;
-            display: grid;
-            grid-template-columns: 1fr 2fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            grid-template-areas:
-                "logo info-top info-top"
-                "logo center-title days-countdown";
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+            overflow: hidden; /* Garante que os efeitos fiquem dentro do container */
             position: relative;
-            overflow: hidden;
             margin-bottom: 2rem;
-        }}
+        }
         
-        .header-logo {{
-            grid-area: logo;
+        .header-left, .header-center, .header-right {
+            display: flex;
+            align-items: center;
             height: 100%;
-            display: flex;
-            align-items: center;
+        }
+
+        .header-left {
+            flex-grow: 1;
             justify-content: flex-start;
-        }}
-        .header-logo img {{
-            height: 100px;
+        }
+        
+        .header-left img {
             max-width: 150px;
+            height: auto;
             object-fit: contain;
-        }}
-
-        .header-info-top {{
-            grid-area: info-top;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            text-align: right;
-            font-size: 1.1rem;
-            color: #777;
-            font-weight: 400;
-        }}
-        .header-info-top .weather-emoji {{
-            margin-left: 0.5rem;
-        }}
-
-        .header-center-title {{
-            grid-area: center-title;
-            display: flex;
+        }
+        
+        .header-center {
+            flex-grow: 2;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
             text-align: center;
-        }}
-        .header-center-title h1 {{
+            line-height: 1;
+        }
+        
+        .header-center h1 {
             font-size: 3.5rem;
             font-weight: 800;
             color: #2c3e50;
             margin: 0;
-            line-height: 1.1;
-        }}
-        .header-center-title h2 {{
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .header-center h2 {
             font-size: 1.8rem;
             font-weight: 600;
-            color: #777;
+            color: #555;
             margin: 0;
-            font-style: italic;
-            margin-top: -0.5rem;
-        }}
+        }
 
-        .header-days-countdown {{
-            grid-area: days-countdown;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        }}
-        .days-countdown {{
-            font-size: 2.5rem;
+        .header-right {
+            flex-grow: 1;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            text-align: right;
+            position: relative;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        
+        .header-info-top, .header-info-bottom {
+            width: 100%;
+        }
+
+        .location-date, .weather-info {
+            font-size: 1rem;
+            color: #777;
+            font-weight: 400;
+        }
+        
+        .weather-info {
+            margin-left: 10px;
+        }
+        
+        .days-countdown {
+            font-size: 3rem;
             font-weight: 900;
             color: #e74c3c;
             line-height: 1;
             position: relative;
             display: inline-block;
             overflow: visible;
-            animation: pulse 2s infinite ease-in-out;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }}
-        @keyframes pulse {{
-            0% {{ transform: scale(1); }}
-            50% {{ transform: scale(1.05); }}
-            100% {{ transform: scale(1); }}
-        }}
-        .days-countdown .flames {{
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120%;
-            height: 40px;
-            background: radial-gradient(ellipse at center, rgba(255,100,0,0.8) 0%, rgba(255,200,0,0.5) 50%, transparent 70%);
-            z-index: -1;
-            filter: blur(10px);
-            animation: fire-flicker 2s infinite ease-in-out;
-            opacity: 0.7;
-        }}
-        @keyframes fire-flicker {
-            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
-            25% { opacity: 0.9; transform: scale(1.1) translateX(-50%); }
-            50% { opacity: 0.8; transform: scale(1.05) translateX(-50%); }
-            75% { opacity: 0.85; transform: scale(1.08) translateX(-50%); }
-        }
-        .days-countdown .pennants {{
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            height: 30px;
-            display: flex;
-            justify-content: space-between;
-            z-index: 2;
-        }}
-        .days-countdown .pennant {{
-            width: 20px;
-            height: 30px;
-            background: #e74c3c;
-            clip-path: polygon(0 0, 100% 0, 50% 100%);
-            animation: wave 3s infinite ease-in-out;
-        }}
-        .days-countdown .pennant:nth-child(1) { animation-delay: 0s; }
-        .days-countdown .pennant:nth-child(2) { animation-delay: 0.2s; }
-        .days-countdown .pennant:nth-child(3) { animation-delay: 0.4s; }
-        .days-countdown .pennant:nth-child(4) { animation-delay: 0.6s; }
-        .days-countdown .pennant:nth-child(5) { animation-delay: 0.8s; }
-        @keyframes wave {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-5px) rotate(5deg); }
         }
         
-        /* Estilos responsivos para telas menores */
-        @media (max-width: 768px) {
+        /* Animação de pulso */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse-effect {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        /* Animação de "fogo" - Sutil para evitar poluir o layout */
+        .fire-effect {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 20px;
+            background: radial-gradient(ellipse at center, rgba(255,100,0,0.8) 0%, rgba(255,200,0,0.5) 50%, transparent 70%);
+            z-index: -1;
+            filter: blur(8px);
+            animation: fire-flicker 2s infinite ease-in-out;
+            opacity: 0.7;
+        }
+        @keyframes fire-flicker {
+            0%, 100% { opacity: 0.7; transform: scale(1) translateX(-50%); }
+            25% { opacity: 0.9; transform: scale(1.05) translateX(-50%); }
+            50% { opacity: 0.8; transform: scale(1.02) translateX(-50%); }
+            75% { opacity: 0.85; transform: scale(1.03) translateX(-50%); }
+        }
+
+        /* Animação de "flâmulas" - Linhas sutis para simular a bandeira */
+        .flag-effect {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 120%;
+            height: 100%;
+            transform: translateX(-50%);
+            z-index: -2;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
+            background-size: 20px 20px, 20px 20px;
+            animation: flag-wave 6s infinite linear;
+        }
+        @keyframes flag-wave {
+            from { background-position: 0 0; }
+            to { background-position: -200px -200px; }
+        }
+
+        @media (max-width: 1200px) {
             .header-container {
+                flex-direction: column;
                 height: auto;
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto auto;
-                grid-template-areas:
-                    "logo"
-                    "info-top"
-                    "center-title"
-                    "days-countdown";
-                gap: 1rem;
-                padding: 1rem;
-            }
-            .header-logo, .header-center-title, .header-days-countdown, .header-info-top {
-                justify-content: center;
+                padding: 20px;
                 text-align: center;
+                gap: 20px;
+            }
+            .header-left, .header-center, .header-right {
+                flex-grow: initial;
+                justify-content: center;
+                width: 100%;
+            }
+            .header-right {
+                align-items: center;
             }
             .header-info-top {
+                display: flex;
                 flex-direction: column;
+                align-items: center;
             }
-            .header-info-top .weather-emoji {
+            .weather-info {
                 margin-left: 0;
             }
         }
-
+        
         /* ==================================== */
         /* ======== TÍTULOS MELHORADOS ======== */
         /* ==================================== */
