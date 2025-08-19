@@ -700,7 +700,7 @@ def main():
             margin-bottom: 0.5rem;
         }
         .days-countdown {
-            animation: pulse 2s infinite ease-in-out;
+            animation: pulse 4s infinite ease-in-out;
             color: #e74c3c;
             font-weight: 800;
             font-size: clamp(1.5rem, 3vw, 2.5rem);
