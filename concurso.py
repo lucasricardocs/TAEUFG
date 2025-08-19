@@ -51,7 +51,6 @@ FRASES_MOTIVACIONAIS = [
     "O único lugar onde o sucesso vem antes do trabalho é no dicionário.",
     "Quando a vontade de desistir for grande, lembre-se do porquê começou.",
     "Sua aprovação está esperando por você no final dessa jornada.",
-    "Visualize seu nome na lista de aprovados. É a sua motivação final.",
     "A preparação é a chave para a confiança. Estude, revise, vença.",
     "Transforme o 'e se' em 'e daí, eu consegui!'.",
     "Não estude até dar certo. Estude até não ter mais como dar errado."
@@ -413,7 +412,7 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
-def display_conteudos_com_checkboxes(df):
+def display_conteudos_com_checkboxes(df, df_summary):
     worksheet = get_worksheet()
     if not worksheet:
         return
@@ -439,15 +438,22 @@ def display_conteudos_com_checkboxes(df):
     # 🔄 Itera pelas disciplinas
     for disc in sorted(df_filtered['Disciplinas'].unique()):
         conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
-
-        concluidos = conteudos_disciplina['Status'].sum()
-        total = len(conteudos_disciplina)
-        progresso = (concluidos / total) * 100 if total > 0 else 0
+        
+        # Usa os dados do df_summary para evitar recálculo
+        if disc in df_summary['Disciplinas'].values:
+            disc_stats = df_summary[df_summary['Disciplinas'] == disc].iloc[0]
+            concluidos = disc_stats['Conteudos_Concluidos']
+            total = disc_stats['Total_Conteudos']
+            progresso = (concluidos / total) * 100 if total > 0 else 0
+        else: # Caso a disciplina não esteja no edital_data, calcula apenas para exibir
+            concluidos = conteudos_disciplina['Status'].sum()
+            total = len(conteudos_disciplina)
+            progresso = (concluidos / total) * 100 if total > 0 else 0
 
         # 📊 Header com barra de progresso estilizada
         st.markdown(f"""
             <div style="margin: 0.5rem 0;">
-                <b>{disc.title()}</b> — {concluidos}/{total} ({progresso:.1f}%)
+                <b>{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
                 <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
                     <div style="width:{progresso}%; background:#4CAF50; height:10px; border-radius:8px;"></div>
                 </div>
@@ -478,6 +484,7 @@ def display_conteudos_com_checkboxes(df):
                         args=(worksheet, row['sheet_row'], key, disc)
                     )
                 st.markdown('</div>', unsafe_allow_html=True)
+
 
 # --- Gráficos ---
 PALETA_CORES = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f']
@@ -816,9 +823,11 @@ def main():
         st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
         
+    # --- Somente aqui os cálculos são feitos ---
     df_summary, progresso_geral = calculate_progress(df)
     stats = calculate_stats(df_summary)
-
+    
+    # Exibe os componentes com os dados calculados
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
@@ -829,7 +838,8 @@ def main():
     display_donuts_grid(df_summary, progresso_geral)
     
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#9b59b6")
-    display_conteudos_com_checkboxes(df)
+    # A função agora recebe df_summary para usar os cálculos prontos
+    display_conteudos_com_checkboxes(df, df_summary)
     
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#e67e22")
     colA, colB = st.columns([2, 3])
