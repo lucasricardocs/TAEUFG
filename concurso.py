@@ -302,7 +302,7 @@ def create_altair_stacked_bar(df_summary):
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     bars = alt.Chart(df_melted).mark_bar(
-        stroke='white',
+        stroke='#dcdcdc',
         strokeWidth=2
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
