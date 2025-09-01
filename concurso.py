@@ -296,13 +296,13 @@ def create_altair_stacked_bar(df_summary):
 
     def label_color(row, df_row):
         if row['Percentual'] > 0:
-            return 'black'
+            return '#d3d3d3'
         return 'transparent'
 
     df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
 
     bars = alt.Chart(df_melted).mark_bar(
-        stroke='black',
+        stroke='#d3d3d3',
         strokeWidth=2
     ).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
@@ -349,7 +349,7 @@ def create_progress_donut(source_df, title):
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
 
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='black', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#2ecc71', '#e74c3c']),
@@ -489,7 +489,7 @@ def bar_questoes_padronizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopLeft=3,
         cornerRadiusTopRight=3,
-        stroke='black',
+        stroke='#d3d3d3',
         strokeWidth=2
     ).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
@@ -542,7 +542,7 @@ def bar_relevancia_customizado(ed_data):
     bars = alt.Chart(df).mark_bar(
         cornerRadiusTopRight=3,
         cornerRadiusBottomRight=3,
-        stroke='black',
+        stroke='#d3d3d3',
         strokeWidth=2,
         size=90
     ).encode(
@@ -567,7 +567,7 @@ def bar_relevancia_customizado(ed_data):
         fontSize=12,
         font='Nunito'
     ).encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='black')),
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#d3d3d3')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
