@@ -90,6 +90,7 @@ def get_worksheet():
         st.error(f"Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
     return None
 
+# MODIFICAÇÃO CRÍTICA: Lógica ajustada para não perder linhas com Status vazio
 @st.cache_data(ttl=300, show_spinner="Carregando dados dos estudos...")
 def load_data_with_row_indices():
     worksheet = get_worksheet()
@@ -105,10 +106,15 @@ def load_data_with_row_indices():
             return pd.DataFrame()
 
         df = df[required_cols].copy()
+        
+        # Garante que as colunas principais não sejam completamente vazias
+        df.dropna(subset=['Disciplinas', 'Conteúdos'], how='all', inplace=True)
+        
         df['Disciplinas'] = df['Disciplinas'].str.strip().str.upper()
         df['Conteúdos'] = df['Conteúdos'].str.strip()
-        df['Status'] = df['Status'].str.strip().str.lower().map({'true': True, 'false': False})
-        df.dropna(subset=['Status'], inplace=True)
+        
+        # Lógica CORRIGIDA: Trata células vazias ou diferentes de 'true' como False, sem apagar a linha.
+        df['Status'] = df['Status'].str.strip().str.lower() == 'true'
 
         df.reset_index(inplace=True)
         df['sheet_row'] = df['index'] + 2
@@ -117,6 +123,7 @@ def load_data_with_row_indices():
     except Exception as e:
         st.error(f"Falha ao carregar ou processar dados: {e}")
         return pd.DataFrame()
+
 
 # --- Funções de Lógica e Cálculos ---
 def update_status_in_sheet(sheet, row_number, new_status):
@@ -191,41 +198,23 @@ def get_weather_data(city_name):
             temperature = main_data.get("temp")
 
             weather_emojis = {
-                'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️',
-                'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 'Snow': '❄️',
-                'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
-                'Smoke': '💨', 'Dust': '💨', 'Sand': '💨',
-                'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
+                'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️', 'Drizzle': '🌦️', 'Thunderstorm': '⛈️', 
+                'Snow': '❄️', 'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️', 'Smoke': '💨', 'Dust': '💨', 
+                'Sand': '💨', 'Ash': '🌋', 'Squall': '🌪️', 'Tornado': '🌪️',
             }
             emoji = weather_emojis.get(status, '🌍')
             
-            return {
-                "temperature": f"{temperature:.0f}°C",
-                "emoji": emoji
-            }
-        
+            return {"temperature": f"{temperature:.0f}°C", "emoji": emoji}
         else:
-            return {
-                "temperature": "N/A",
-                "emoji": "🤷"
-            }
-
-    except requests.exceptions.RequestException as e:
-        return {
-            "temperature": "N/A",
-            "emoji": "🤷"
-        }
+            return {"temperature": "N/A", "emoji": "🤷"}
+    except requests.exceptions.RequestException:
+        return {"temperature": "N/A", "emoji": "🤷"}
 
 # --- Funções de Interface e Visualização ---
 def titulo_com_destaque(texto, cor_lateral="#0066cc"):
     st.markdown(f"""
-    <div class="title-container animated-fade-in" style="
-        border-left: 6px solid {cor_lateral};
-        background: linear-gradient(to right, #fdfdfe, #f9f9f9);
-    ">
-        <h2 style="color: #2c3e50; font-family: 'Nunito', sans-serif;">
-            {texto}
-        </h2>
+    <div class="title-container animated-fade-in" style="border-left: 6px solid {cor_lateral};">
+        <h2>{texto}</h2>
     </div>""", unsafe_allow_html=True)
 
 def render_top_container(dias_restantes):
@@ -254,7 +243,6 @@ def render_top_container(dias_restantes):
     </div>
     """, unsafe_allow_html=True)
 
-
 def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
@@ -264,7 +252,7 @@ def display_progress_bar(progresso_geral):
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="height: 100%; width: {progresso_geral}%;
-                        background: linear-gradient(90deg, #083d53, #bf8c45);
+                        background: linear-gradient(90deg, #e74c3c, #00a859);
                         border-radius: 10px; transition: width 0.5s ease;"></div>
         </div>
     </div>
@@ -287,71 +275,28 @@ def create_altair_stacked_bar(df_summary):
     df_percent['Pendente (%)'] = (df_percent['Conteudos_Pendentes'] / df_percent['Total_Conteudos']) * 100
 
     df_melted = df_percent.melt(
-        id_vars=['Disciplinas'],
-        value_vars=['Concluido (%)', 'Pendente (%)'],
-        var_name='Status',
-        value_name='Percentual'
+        id_vars=['Disciplinas'], value_vars=['Concluido (%)', 'Pendente (%)'],
+        var_name='Status', value_name='Percentual'
     )
-
-    status_map = {'Concluido (%)': 'Concluido', 'Pendente (%)': 'Pendente'}
-    df_melted['Status'] = df_melted['Status'].map(status_map)
-
+    df_melted['Status'] = df_melted['Status'].map({'Concluido (%)': 'Concluido', 'Pendente (%)': 'Pendente'})
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
-
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
+    df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 10 else 'transparent')
 
-    def label_color(row, df_row):
-        if row['Percentual'] > 10: 
-            return 'white'
-        return 'transparent'
-
-    df_melted['LabelColor'] = df_melted.apply(lambda row: label_color(row, df_percent[df_percent['Disciplinas']==row['Disciplinas']].iloc[0]), axis=1)
-
-    bars = alt.Chart(df_melted).mark_bar(
-        stroke='#dcdcdc',
-        strokeWidth=2
-    ).encode(
+    bars = alt.Chart(df_melted).mark_bar(stroke='#dcdcdc', strokeWidth=2).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
-        color=alt.Color('Status:N',
-                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']),
-                        legend=None)
+        color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']), legend=None)
     )
-
-    labels = alt.Chart(df_melted).mark_text(
-        align='center',
-        baseline='middle',
-        fontWeight='bold',
-        fontSize=12,
-        font='Nunito'
-    ).encode(
+    labels = alt.Chart(df_melted).mark_text(align='center', baseline='middle', fontWeight='bold', fontSize=12, font='Nunito').encode(
         y=alt.Y('Disciplinas:N', sort=None),
         x=alt.X('Posicao_norm:Q'),
         text=alt.Text('PercentText:N'),
         color=alt.Color('LabelColor:N', scale=None)
     )
+    return (bars + labels).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
 
-    return (bars + labels).properties(
-        height=350,
-        title=alt.TitleParams(
-            text="Percentual de Conclusão por Disciplina",
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
-    )
-
-# MODIFICAÇÃO: Gráfico Donut com ordem de cores ajustada
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
@@ -359,49 +304,21 @@ def create_progress_donut(source_df, title):
 
     base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
-        color=alt.Color("Status:N",
-                        scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']),
-                        legend=None),
-        order=alt.Order('Status:N', sort='descending'), # <-- ADICIONADO PARA ORDENAR AS CORES
+        color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']), legend=None),
+        order=alt.Order('Status:N', sort='descending'),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
-    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
-        size=24,
-        fontWeight='bold',
-        color='#000000',
-        font='Nunito'
-    ).encode(text='text:N')
-
-    return (base + text).properties(
-        title=alt.TitleParams(
-            text=title,
-            anchor='middle',
-            fontSize=26,
-            dy=-10,
-            color='#000000',
-            font='Nunito'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    )
+    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold', color='#000000', font='Nunito').encode(text='text:N')
+    return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=26, dy=-10, color='#000000', font='Nunito')).configure_view(stroke=None).configure(background='transparent')
 
 def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
     charts_data = []
-    prog_geral_df = pd.DataFrame([
-        {'Status': 'Concluido', 'Valor': progresso_geral},
-        {'Status': 'Pendente', 'Valor': 100 - progresso_geral}
-    ])
+    prog_geral_df = pd.DataFrame([{'Status': 'Concluido', 'Valor': progresso_geral}, {'Status': 'Pendente', 'Valor': 100 - progresso_geral}])
     charts_data.append({'df': prog_geral_df, 'title': 'Progresso Geral'})
 
     for _, row in df_summary.iterrows():
-        df = pd.DataFrame([
-            {'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']},
-            {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}
-        ])
+        df = pd.DataFrame([{'Status': 'Concluido', 'Valor': row['Conteudos_Concluidos']}, {'Status': 'Pendente', 'Valor': row['Conteudos_Pendentes']}])
         charts_data.append({'df': df, 'title': row['Disciplinas'].title()})
 
     for i in range(0, len(charts_data), 3):
@@ -415,7 +332,6 @@ def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('</div>', unsafe_allow_html=True)
 
 def on_checkbox_change(worksheet, row_number, key, disciplina):
-    """Atualiza status no Google Sheets e recarrega dados, mantendo a seção aberta"""
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
         st.toast("Status atualizado!", icon="✅")
@@ -426,24 +342,15 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
 
 def display_conteudos_com_checkboxes(df, df_summary):
     worksheet = get_worksheet()
-    if not worksheet:
-        return
+    if not worksheet: return
     
-    df_filtered = df
-    df_filtered['Status'] = df_filtered['Status'].astype(str).str.upper().map({"TRUE": True, "FALSE": False})
-
-    for disc in sorted(df_filtered['Disciplinas'].unique()):
-        conteudos_disciplina = df_filtered[df_filtered['Disciplinas'] == disc]
+    for disc in sorted(df_summary['Disciplinas'].unique()):
+        conteudos_disciplina = df[df['Disciplinas'] == disc]
         
-        if disc in df_summary['Disciplinas'].values:
-            disc_stats = df_summary[df_summary['Disciplinas'] == disc].iloc[0]
-            concluidos = disc_stats['Conteudos_Concluidos']
-            total = disc_stats['Total_Conteudos']
-            progresso = (concluidos / total) * 100 if total > 0 else 0
-        else:
-            concluidos = conteudos_disciplina['Status'].sum()
-            total = len(conteudos_disciplina)
-            progresso = (concluidos / total) * 100 if total > 0 else 0
+        disc_stats = df_summary[df_summary['Disciplinas'] == disc].iloc[0]
+        concluidos = disc_stats['Conteudos_Concluidos']
+        total = disc_stats['Total_Conteudos']
+        progresso = (concluidos / total) * 100 if total > 0 else 0
 
         st.markdown(f"""
             <div style="margin: 0.5rem 0;">
@@ -451,8 +358,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
                 <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;">
                     <div style="width:{progresso}%; background:#00a859; height:10px; border-radius:8px;"></div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
+            </div>""", unsafe_allow_html=True)
 
         expanded_key = f"expanded_{disc}"
         
@@ -465,297 +371,99 @@ def display_conteudos_com_checkboxes(df, df_summary):
                 st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
-                    st.checkbox(
-                        label=row['Conteúdos'],
-                        value=bool(row['Status']),
-                        key=key,
-                        on_change=on_checkbox_change,
-                        args=(worksheet, row['sheet_row'], key, disc)
-                    )
+                    st.checkbox(label=row['Conteúdos'], value=bool(row['Status']), key=key,
+                                on_change=on_checkbox_change, args=(worksheet, row['sheet_row'], key, disc))
                 st.markdown('</div>', unsafe_allow_html=True)
-
-
-# --- Gráficos ---
-PALETA_CORES = ['#0066cc', '#00a859', '#e74c3c', '#f7931e', '#ffd100']
 
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
-
-    bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopLeft=3,
-        cornerRadiusTopRight=3,
-        stroke='#d3d3d3',
-        strokeWidth=2
-    ).encode(
+    PALETA_CORES = ['#0066cc', '#00a859', '#e74c3c', '#f7931e', '#ffd100']
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, stroke='#d3d3d3', strokeWidth=2).encode(
         x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
-
-    labels = bars.mark_text(
-        align='center',
-        baseline='bottom',
-        dy=-5,
-        color='#000000',
-        fontWeight='bold',
-        font='Nunito'
-    ).encode(
-        text='Questões:Q'
-    )
-
-    return (bars + labels).properties(
-        width=500,
-        height=500,
-        title=alt.TitleParams(
-            text='Distribuição de Questões',
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
-    )
+    labels = bars.mark_text(align='center', baseline='bottom', dy=-5, color='#000000', fontWeight='bold', font='Nunito').encode(text='Questões:Q')
+    return (bars + labels).properties(width=500, height=500, title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
 
 def bar_relevancia_customizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
     df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
-
-    color_scale = alt.Scale(
-        domain=[df['Relevancia'].min(), df['Relevancia'].max()],
-        range=['#cce6ff', '#0066cc']
-    )
-
-    bars = alt.Chart(df).mark_bar(
-        cornerRadiusTopRight=3,
-        cornerRadiusBottomRight=3,
-        stroke='#d3d3d3',
-        strokeWidth=2,
-        size=70
-    ).encode(
+    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()], range=['#cce6ff', '#0066cc'])
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopRight=3, cornerRadiusBottomRight=3, stroke='#d3d3d3', strokeWidth=2, size=70).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
-        tooltip=[
-            alt.Tooltip('Disciplinas:N'),
-            alt.Tooltip('Peso:Q'),
-            alt.Tooltip('Questões:Q'),
-            alt.Tooltip('Relevancia:Q', title='Relevância'),
-            alt.Tooltip('Percentual:Q', format='.1f', title='Percentual (%)')
-        ]
+        tooltip=['Disciplinas:N', 'Peso:Q', 'Questões:Q', 'Relevancia:Q', alt.Tooltip('Percentual:Q', format='.1f')]
     )
-    
-    text = bars.mark_text(
-        align='left',
-        baseline='middle',
-        dx=3,
-        color='#000000',
-        fontWeight='bold',
-        fontSize=12,
-        font='Nunito'
-    ).encode(
+    text = bars.mark_text(align='left', baseline='middle', dx=3, color='#000000', fontWeight='bold', fontSize=12, font='Nunito').encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#d3d3d3')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
-
-    return (bars + text).properties(
-        width=500,
-        height=500,
-        title=alt.TitleParams(
-            text='Relevância das Disciplinas',
-            anchor='middle',
-            fontSize=18,
-            font='Nunito',
-            color='#000000'
-        )
-    ).configure_view(
-        stroke=None,
-        fill='transparent'
-    ).configure(
-        background='transparent'
-    ).configure_axis(
-        labelFont='Nunito',
-        titleFont='Nunito'
-    )
+    return (bars + text).properties(width=500, height=500, title=alt.TitleParams(text='Relevância das Disciplinas', anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
 
 def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
-    st.markdown(
-        """
-        <hr style="margin: 0.5rem 0; border: 1px solid #ddd;">
-        """,
-        unsafe_allow_html=True
-    )
-    st.markdown(f"""
-    <div style="text-align: center; margin: 0.3rem 0; padding: 0.2rem; color: #555;">
-        <p style='font-size: 0.9rem; margin: 0; font-family: "Nunito", sans-serif;'>
-            {frase_aleatoria}
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 0.5rem 0; border: 1px solid #ddd;'>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: #555;'><p>{frase_aleatoria}</p></div>", unsafe_allow_html=True)
 
 # --- Função Principal da Aplicação ---
 def main():
     st.set_page_config(
-        page_title="Dashboard de Estudos - Escriturário Goiás Fomento",
-        page_icon="📚",
-        layout="wide",
-        initial_sidebar_state="collapsed"
+        page_title="Dashboard de Estudos - Goiás Fomento",
+        page_icon="📚", layout="wide", initial_sidebar_state="collapsed"
     )
-    
     alt.themes.enable('none')
     
-    # MODIFICAÇÃO: CSS com ajustes de centralização e fontes
     st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            font-family: 'Nunito', sans-serif !important;
-        }
-        
-        .stApp {
-            background: #fafbfc;
-            color: #333;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animated-fade-in {
-            animation: fadeIn 0.8s ease-out;
-        }
+        * { font-family: 'Nunito', sans-serif !important; }
+        .stApp { background: #fafbfc; color: #333; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animated-fade-in { animation: fadeIn 0.8s ease-out; }
         
         .header-container {
-            width: 100%;
-            min-height: 200px; /* Reduzido para um visual mais compacto */
-            height: clamp(200px, 22vh, 280px);
+            width: 100%; min-height: 200px; height: clamp(200px, 22vh, 280px);
             background: linear-gradient(135deg, #e6f2ff, #fdf8e1);
-            border-radius: clamp(15px, 2vw, 20px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border: 1px solid #D3D3D3;
-            padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
+            border-radius: clamp(15px, 2vw, 20px); box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid #D3D3D3; padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;
         }
+        .header-left, .header-center, .header-right { display: flex; align-items: center; height: 100%; }
+        .header-left { flex: 1.2; justify-content: flex-start; }
+        .header-left img { max-width: clamp(160px, 18vw, 260px); height: auto; object-fit: contain; }
+        .header-center { flex: 2; flex-direction: column; justify-content: center; text-align: center; }
+        .header-center h1 { font-size: clamp(1.8rem, 4vw, 3.5rem); font-weight: 800; color: #083d53; margin: 0; line-height: 1.1; }
+        .header-center .concurso-title { font-size: clamp(1rem, 2vw, 1.6rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #bf8c45; line-height: 1.1; }
         
-        .header-left, .header-center, .header-right {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
-
-        .header-left {
-            flex: 1.2; /* Dando um pouco mais de espaço para a logo */
-            justify-content: flex-start;
-        }
-        
-        .header-left img {
-            max-width: clamp(160px, 18vw, 260px);
-            height: auto;
-            object-fit: contain;
-        }
-        
-        .header-center {
-            flex: 2;
-            flex-direction: column;
-            justify-content: center; /* Centraliza verticalmente */
-            text-align: center;
-        }
-        
-        .header-center h1 {
-            font-size: clamp(1.8rem, 4vw, 3.5rem);
-            font-weight: 800;
-            color: #083d53;
-            margin: 0;
-            line-height: 1.1; /* Ajusta a altura da linha */
-        }
-        
-        .header-center .concurso-title {
-            font-size: clamp(1rem, 2vw, 1.6rem); /* Levemente reduzido */
-            font-weight: 600;
-            margin: 0.2rem 0 0 0; /* Margem superior reduzida para aproximar */
-            font-style: italic;
-            color: #bf8c45;
-            line-height: 1.1;
-        }
-
         .header-right {
-            flex: 1.2; /* Mesmo espaço da logo para equilíbrio */
-            flex-direction: column;
-            justify-content: center; /* Centraliza verticalmente */
-            align-items: flex-end;
-            text-align: right;
-            gap: 15px; /* Espaço entre data e contagem */
+            flex: 1.2; flex-direction: column; justify-content: space-between;
+            align-items: flex-end; text-align: right; height: 90%;
         }
+        .header-info-top, .header-info-bottom { width: 100%; }
+        .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #555; }
+        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; }
         
-        .header-info-top, .header-info-bottom {
-             width: 100%;
-        }
-
-        .header-info-top .location-date {
-            font-size: clamp(0.65rem, 1vw, 0.85rem); /* Fonte reduzida */
-            color: #555;
-            font-weight: 400;
-        }
-        
-        .days-countdown {
-            font-size: clamp(1.2rem, 2.5vw, 2.2rem); /* Fonte reduzida */
-            font-weight: 700;
-            color: #e74c3c;
-            animation: pulse 2s infinite ease-in-out;
-            position: relative;
-        }
-        
-        .sparkle::before {
-            content: '✨';
-            font-size: clamp(1rem, 2vw, 1.8rem); /* Ajustado para o novo tamanho */
-            position: absolute;
-            right: -15px;
-            top: 50%;
-            transform: translateY(-50%);
-            animation: sparkle-anim 1.5s infinite ease-in-out;
-        }
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; right: -15px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         
         @media (max-width: 768px) {
-            .header-container { flex-direction: column; height: auto; min-height: auto; gap: 15px; padding: 20px; }
-            .header-left, .header-center, .header-right { width: 100%; text-align: center; }
-            .header-right { align-items: center; }
+            .header-container { flex-direction: column; height: auto; min-height: auto; gap: 20px; padding: 20px; }
+            .header-left, .header-center, .header-right { width: 100%; text-align: center; height: auto; }
+            .header-right { align-items: center; justify-content: center; gap: 10px; }
         }
         
-        .title-container {
-            border: 1px solid #D3D3D3; border-left: 6px solid #083d53;
-            padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0;
-            background: linear-gradient(to right, #ffffff, #f9f9f9);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-        }
+        .title-container { border: 1px solid #D3D3D3; border-left: 6px solid #083d53; padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
         .title-container h2 { font-weight: 700; font-size: clamp(1.2rem, 2vw, 1.6rem); color: #2c3e50; margin: 0; }
         [data-testid="stMetricValue"] { font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: bold; }
         [data-testid="stMetricLabel"] { font-size: clamp(0.8rem, 1.2vw, 1rem); }
-        .stButton > button {
-            width: 100%; background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%);
-            color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem;
-            font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .stButton > button:hover {
-            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #bf8c45 0%, #083d53 100%);
-        }
+        .stButton > button { width: 100%; background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%); color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); background: linear-gradient(135deg, #bf8c45 0%, #083d53 100%); }
     </style>
     """, unsafe_allow_html=True)
     
@@ -763,9 +471,8 @@ def main():
     render_top_container(dias_restantes)
 
     df = load_data_with_row_indices()
-
     if df.empty:
-        st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
+        st.info("👋 Bem-vindo! Sua planilha de estudos parece estar vazia. Adicione os conteúdos na Google Sheet para começar.")
         st.stop()
         
     df_summary, progresso_geral = calculate_progress(df)
@@ -786,9 +493,9 @@ def main():
     titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#f7931e")
     colA, colB = st.columns([2, 3])
     with colA:
-        st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
+        st.altair_chart(bar_questoes_padronizado(ed_data), use_container_width=True)
     with colB:
-        st.altair_chart(bar_relevancia_customizado(ED_DATA), use_container_width=True)
+        st.altair_chart(bar_relevancia_customizado(ed_data), use_container_width=True)
     
     rodape_motivacional()
 
