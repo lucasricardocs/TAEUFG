@@ -1,15 +1,3 @@
-Entendido\! Fiz a adaptação completa do seu dashboard para o concurso **Goiás Fomento**.
-
-As principais alterações foram:
-
-  * **Dados do Concurso:** Atualizei a data da prova, as disciplinas, pesos, quantidade de questões e o total de conteúdos conforme o edital do Goiás Fomento.
-  * **Identidade Visual:** Troquei a logo da UFG pela da Goiás Fomento.
-  * **Títulos e Textos:** Ajustei os títulos e as frases motivacionais para refletir o novo concurso.
-  * **Cores:** Apliquei a paleta de cores que você solicitou anteriormente (`#083d53` para o título e `#bf8c45` para o subtítulo) ao novo layout.
-
-Aqui está o código completo e atualizado para o seu dashboard do concurso Goiás Fomento. Basta copiar e colar.
-
-```python
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -907,4 +895,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
