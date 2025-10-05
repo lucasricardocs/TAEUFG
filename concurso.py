@@ -302,7 +302,7 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        if row['Percentual'] > 10: # Aumentar o limite para exibir o texto
+        if row['Percentual'] > 10: 
             return 'white'
         return 'transparent'
 
@@ -351,6 +351,7 @@ def create_altair_stacked_bar(df_summary):
         titleFont='Nunito'
     )
 
+# MODIFICAÇÃO: Gráfico Donut com ordem de cores ajustada
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0]
@@ -361,6 +362,7 @@ def create_progress_donut(source_df, title):
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']),
                         legend=None),
+        order=alt.Order('Status:N', sort='descending'), # <-- ADICIONADO PARA ORDENAR AS CORES
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
     text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(
@@ -612,7 +614,7 @@ def main():
     
     alt.themes.enable('none')
     
-    # CSS com cores personalizadas
+    # MODIFICAÇÃO: CSS com ajustes de centralização e fontes
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -626,11 +628,6 @@ def main():
             color: #333;
         }
         
-        .stApp [data-testid="stVegaLiteChart"] > div,
-        .vega-embed.has-actions {
-            background-color: transparent !important;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -641,18 +638,16 @@ def main():
         
         .header-container {
             width: 100%;
-            min-height: 250px;
-            height: clamp(250px, 25vh, 350px);
+            min-height: 200px; /* Reduzido para um visual mais compacto */
+            height: clamp(200px, 22vh, 280px);
             background: linear-gradient(135deg, #e6f2ff, #fdf8e1);
             border-radius: clamp(15px, 2vw, 20px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             border: 1px solid #D3D3D3;
-            padding: clamp(15px, 3vw, 40px) clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            overflow: hidden;
-            position: relative;
             margin-bottom: 2rem;
         }
         
@@ -663,13 +658,12 @@ def main():
         }
 
         .header-left {
-            flex: 1;
+            flex: 1.2; /* Dando um pouco mais de espaço para a logo */
             justify-content: flex-start;
-            min-width: 0;
         }
         
         .header-left img {
-            max-width: clamp(180px, 20vw, 300px);
+            max-width: clamp(160px, 18vw, 260px);
             height: auto;
             object-fit: contain;
         }
@@ -677,184 +671,89 @@ def main():
         .header-center {
             flex: 2;
             flex-direction: column;
-            justify-content: center;
+            justify-content: center; /* Centraliza verticalmente */
             text-align: center;
-            line-height: 1;
-            min-width: 0;
-            padding: 0 clamp(10px, 2vw, 20px);
         }
         
         .header-center h1 {
             font-size: clamp(1.8rem, 4vw, 3.5rem);
             font-weight: 800;
-            color: #083d53; /* COR ATUALIZADA */
+            color: #083d53;
             margin: 0;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
-            word-break: break-word;
+            line-height: 1.1; /* Ajusta a altura da linha */
         }
         
         .header-center .concurso-title {
-            font-size: clamp(1rem, 2vw, 1.8rem);
+            font-size: clamp(1rem, 2vw, 1.6rem); /* Levemente reduzido */
             font-weight: 600;
-            margin: clamp(5px, 1vw, 10px) 0 0 0;
+            margin: 0.2rem 0 0 0; /* Margem superior reduzida para aproximar */
             font-style: italic;
-            color: #bf8c45; /* COR ATUALIZADA */
-            word-break: break-word;
+            color: #bf8c45;
+            line-height: 1.1;
         }
 
         .header-right {
-            flex: 1;
+            flex: 1.2; /* Mesmo espaço da logo para equilíbrio */
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center; /* Centraliza verticalmente */
             align-items: flex-end;
             text-align: right;
-            position: relative;
-            padding-top: 10px;
-            padding-bottom: 10px;
-            min-width: 0;
+            gap: 15px; /* Espaço entre data e contagem */
         }
         
-        .header-info-top {
-            width: 100%;
-            text-align: right;
-            margin-bottom: 10px;
+        .header-info-top, .header-info-bottom {
+             width: 100%;
         }
-        
+
         .header-info-top .location-date {
-            font-size: clamp(0.7rem, 1.2vw, 1rem);
-            color: #777;
+            font-size: clamp(0.65rem, 1vw, 0.85rem); /* Fonte reduzida */
+            color: #555;
             font-weight: 400;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-
-        .header-info-bottom {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            flex: 1;
-        }
-
+        
         .days-countdown {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-end;
-            height: 100%;
-            width: 100%;
-            font-size: clamp(1.5rem, 3vw, 3rem);
+            font-size: clamp(1.2rem, 2.5vw, 2.2rem); /* Fonte reduzida */
             font-weight: 700;
             color: #e74c3c;
             animation: pulse 2s infinite ease-in-out;
-            line-height: 1;
-        }
-        
-        .countdown-text {
             position: relative;
-            z-index: 2;
-            text-align: right;
-            word-break: break-word;
-            hyphens: auto;
-            max-width: 100%;
-        }
-        
-        .sparkle {
-            position: absolute;
-            right: -10px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: clamp(1.5rem, 3vw, 3rem);
-            color: #ffd100;
-            z-index: 1;
-            animation: sparkle-anim 1.5s infinite ease-in-out;
         }
         
         .sparkle::before {
             content: '✨';
+            font-size: clamp(1rem, 2vw, 1.8rem); /* Ajustado para o novo tamanho */
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            animation: sparkle-anim 1.5s infinite ease-in-out;
         }
-        
-        @keyframes sparkle-anim {
-            0%, 100% {
-                transform: translateY(-50%) scale(0.8) rotate(0deg);
-                opacity: 0.5;
-            }
-            50% {
-                transform: translateY(-50%) scale(1.2) rotate(30deg);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        @media (max-width: 1200px) and (min-width: 769px) {
-            .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.8rem); }
-            .header-center .concurso-title { font-size: clamp(0.9rem, 1.8vw, 1.4rem); }
-        }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         
         @media (max-width: 768px) {
-            .header-container {
-                height: auto;
-                min-height: 200px;
-                flex-direction: column;
-                gap: 15px;
-                padding: 20px;
-                text-align: center;
-            }
-            .header-left, .header-center, .header-right { flex: none; justify-content: center; width: 100%; height: auto; }
-            .header-left img { max-width: clamp(150px, 25vw, 220px); }
-            .header-center { order: 1; padding: 10px 0; }
-            .header-left { order: 2; }
-            .header-right { order: 3; align-items: center; padding: 10px 0; }
-            .header-info-top, .header-info-bottom { justify-content: center; text-align: center; }
-        }
-        
-        @media (max-width: 480px) {
-            .header-center h1 { font-size: clamp(1.3rem, 6vw, 2rem); }
-            .header-center .concurso-title { font-size: clamp(0.8rem, 3.5vw, 1.2rem); }
-            .header-left img { max-width: clamp(120px, 30vw, 180px); }
+            .header-container { flex-direction: column; height: auto; min-height: auto; gap: 15px; padding: 20px; }
+            .header-left, .header-center, .header-right { width: 100%; text-align: center; }
+            .header-right { align-items: center; }
         }
         
         .title-container {
-            border: 1px solid #D3D3D3;
-            border-left: 6px solid #083d53;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            margin: 2rem 0 1.5rem 0;
+            border: 1px solid #D3D3D3; border-left: 6px solid #083d53;
+            padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0;
             background: linear-gradient(to right, #ffffff, #f9f9f9);
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
-        
-        .title-container h2 {
-            font-weight: 700;
-            font-size: clamp(1.2rem, 2vw, 1.6rem);
-            color: #2c3e50;
-            margin: 0;
-        }
-        
+        .title-container h2 { font-weight: 700; font-size: clamp(1.2rem, 2vw, 1.6rem); color: #2c3e50; margin: 0; }
         [data-testid="stMetricValue"] { font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: bold; }
         [data-testid="stMetricLabel"] { font-size: clamp(0.8rem, 1.2vw, 1rem); }
-        
         .stButton > button {
-            width: 100%;
-            background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 100%; background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%);
+            color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem;
+            font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2);
             background: linear-gradient(135deg, #bf8c45 0%, #083d53 100%);
         }
     </style>
