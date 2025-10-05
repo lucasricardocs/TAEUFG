@@ -1,3 +1,15 @@
+Entendido\! Fiz a adaptação completa do seu dashboard para o concurso **Goiás Fomento**.
+
+As principais alterações foram:
+
+  * **Dados do Concurso:** Atualizei a data da prova, as disciplinas, pesos, quantidade de questões e o total de conteúdos conforme o edital do Goiás Fomento.
+  * **Identidade Visual:** Troquei a logo da UFG pela da Goiás Fomento.
+  * **Títulos e Textos:** Ajustei os títulos e as frases motivacionais para refletir o novo concurso.
+  * **Cores:** Apliquei a paleta de cores que você solicitou anteriormente (`#083d53` para o título e `#bf8c45` para o subtítulo) ao novo layout.
+
+Aqui está o código completo e atualizado para o seu dashboard do concurso Goiás Fomento. Basta copiar e colar.
+
+```python
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
@@ -234,7 +246,7 @@ def render_top_container(dias_restantes):
     st.markdown(f"""
     <div class="header-container animated-fade-in">
         <div class="header-left">
-            <img src="{GOIAS_FOMENTO_LOGO_URL}" alt="Logo Goiás Fomento" style="height: 180px;"/>
+            <img src="{GOIAS_FOMENTO_LOGO_URL}" alt="Logo Goiás Fomento"/>
         </div>
         <div class="header-center">
             <h1>Dashboard de Estudos</h1>
@@ -259,12 +271,12 @@ def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-            <span style="font-weight: 500; color: #0066cc; font-family: 'Nunito', sans-serif;">Progresso Geral</span>
+            <span style="font-weight: 500; color: #083d53; font-family: 'Nunito', sans-serif;">Progresso Geral</span>
             <span style="font-weight: 600; color: #2c3e50; font-family: 'Nunito', sans-serif;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
             <div style="height: 100%; width: {progresso_geral}%;
-                        background: linear-gradient(90deg, #0066cc, #00a859);
+                        background: linear-gradient(90deg, #083d53, #bf8c45);
                         border-radius: 10px; transition: width 0.5s ease;"></div>
         </div>
     </div>
@@ -273,13 +285,13 @@ def display_progress_bar(progresso_geral):
 def display_simple_metrics(stats):
     cols = st.columns(4)
     with cols[0]:
-        st.metric("Concluídos", f"{stats['concluidos']}")
+        st.metric("✅ Concluídos", f"{stats['concluidos']}")
     with cols[1]:
-        st.metric("Pendentes", f"{stats['pendentes']}")
+        st.metric("⏳ Pendentes", f"{stats['pendentes']}")
     with cols[2]:
-        st.metric("Ritmo", f"{stats['topicos_por_dia']}/dia")
+        st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     with cols[3]:
-        st.metric("Prioridade", stats['maior_prioridade'].title())
+        st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
@@ -302,7 +314,7 @@ def create_altair_stacked_bar(df_summary):
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
 
     def label_color(row, df_row):
-        if row['Percentual'] > 0:
+        if row['Percentual'] > 10: # Aumentar o limite para exibir o texto
             return 'white'
         return 'transparent'
 
@@ -453,8 +465,7 @@ def display_conteudos_com_checkboxes(df, df_summary):
         """, unsafe_allow_html=True)
 
         expanded_key = f"expanded_{disc}"
-        is_expanded = st.session_state.get(expanded_key, False)
-
+        
         with st.container():
             if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
@@ -613,7 +624,7 @@ def main():
     
     alt.themes.enable('none')
     
-    # CSS com cores do Goiás Fomento (azul e verde)
+    # CSS com cores personalizadas
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -644,7 +655,7 @@ def main():
             width: 100%;
             min-height: 250px;
             height: clamp(250px, 25vh, 350px);
-            background: linear-gradient(135deg, #e6f2ff, #e6fff5);
+            background: linear-gradient(135deg, #e6f2ff, #fdf8e1);
             border-radius: clamp(15px, 2vw, 20px);
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
             border: 1px solid #D3D3D3;
@@ -670,7 +681,7 @@ def main():
         }
         
         .header-left img {
-            max-width: clamp(120px, 15vw, 200px);
+            max-width: clamp(180px, 20vw, 300px);
             height: auto;
             object-fit: contain;
         }
@@ -688,7 +699,7 @@ def main():
         .header-center h1 {
             font-size: clamp(1.8rem, 4vw, 3.5rem);
             font-weight: 800;
-            color: #0066cc;
+            color: #083d53; /* COR ATUALIZADA */
             margin: 0;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
             word-break: break-word;
@@ -699,7 +710,7 @@ def main():
             font-weight: 600;
             margin: clamp(5px, 1vw, 10px) 0 0 0;
             font-style: italic;
-            color: #00a859;
+            color: #bf8c45; /* COR ATUALIZADA */
             word-break: break-word;
         }
 
@@ -794,29 +805,11 @@ def main():
         }
         
         @media (max-width: 1200px) and (min-width: 769px) {
-            .header-container {
-                height: clamp(220px, 22vh, 280px);
-                padding: clamp(15px, 2.5vw, 30px);
-            }
-            
-            .header-center {
-                padding: 0 15px;
-            }
-            
-            .header-center h1 {
-                font-size: clamp(1.6rem, 3.5vw, 2.8rem);
-            }
-            
-            .header-center .concurso-title {
-                font-size: clamp(0.9rem, 1.8vw, 1.4rem);
-            }
-            
-            .days-countdown {
-                font-size: clamp(1.3rem, 2.5vw, 2.5rem);
-            }
+            .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.8rem); }
+            .header-center .concurso-title { font-size: clamp(0.9rem, 1.8vw, 1.4rem); }
         }
         
-        @media (max-width: 768px) and (min-width: 481px) {
+        @media (max-width: 768px) {
             .header-container {
                 height: auto;
                 min-height: 200px;
@@ -825,135 +818,28 @@ def main():
                 padding: 20px;
                 text-align: center;
             }
-            
-            .header-left, .header-center, .header-right {
-                flex: none;
-                justify-content: center;
-                width: 100%;
-                height: auto;
-            }
-            
-            .header-left img {
-                max-width: clamp(100px, 20vw, 180px);
-            }
-            
-            .header-center {
-                order: 1;
-                padding: 10px 0;
-            }
-            
-            .header-left {
-                order: 2;
-            }
-            
-            .header-right {
-                order: 3;
-                align-items: center;
-                padding: 10px 0;
-            }
-            
-            .header-info-top {
-                text-align: center;
-                margin-bottom: 10px;
-            }
-            
-            .header-info-bottom {
-                justify-content: center;
-            }
-            
-            .days-countdown {
-                justify-content: center;
-                font-size: clamp(1.2rem, 4vw, 2rem);
-            }
-            
-            .sparkle {
-                right: -15px;
-            }
+            .header-left, .header-center, .header-right { flex: none; justify-content: center; width: 100%; height: auto; }
+            .header-left img { max-width: clamp(150px, 25vw, 220px); }
+            .header-center { order: 1; padding: 10px 0; }
+            .header-left { order: 2; }
+            .header-right { order: 3; align-items: center; padding: 10px 0; }
+            .header-info-top, .header-info-bottom { justify-content: center; text-align: center; }
         }
         
         @media (max-width: 480px) {
-            .header-container {
-                height: auto;
-                min-height: 180px;
-                flex-direction: column;
-                gap: 10px;
-                padding: 15px;
-                border-radius: 15px;
-            }
-            
-            .header-left, .header-center, .header-right {
-                flex: none;
-                justify-content: center;
-                width: 100%;
-                height: auto;
-            }
-            
-            .header-left img {
-                max-width: clamp(80px, 25vw, 140px);
-            }
-            
-            .header-center {
-                order: 1;
-                padding: 5px 0;
-            }
-            
-            .header-center h1 {
-                font-size: clamp(1.3rem, 6vw, 2rem);
-            }
-            
-            .header-center .concurso-title {
-                font-size: clamp(0.8rem, 3.5vw, 1.2rem);
-            }
-            
-            .header-left {
-                order: 2;
-            }
-            
-            .header-right {
-                order: 3;
-                align-items: center;
-                padding: 5px 0;
-            }
-            
-            .header-info-top .location-date {
-                font-size: clamp(0.6rem, 2.5vw, 0.8rem);
-                text-align: center;
-            }
-            
-            .header-info-bottom {
-                justify-content: center;
-                margin-top: 5px;
-            }
-            
-            .days-countdown {
-                justify-content: center;
-                font-size: clamp(1rem, 5vw, 1.5rem);
-            }
-            
-            .countdown-text {
-                text-align: center;
-            }
-            
-            .sparkle {
-                right: -8px;
-                font-size: clamp(1rem, 4vw, 1.5rem);
-            }
+            .header-center h1 { font-size: clamp(1.3rem, 6vw, 2rem); }
+            .header-center .concurso-title { font-size: clamp(0.8rem, 3.5vw, 1.2rem); }
+            .header-left img { max-width: clamp(120px, 30vw, 180px); }
         }
         
         .title-container {
             border: 1px solid #D3D3D3;
-            border-left: 6px solid #0066cc;
+            border-left: 6px solid #083d53;
             padding: 1rem 1.5rem;
             border-radius: 12px;
             margin: 2rem 0 1.5rem 0;
             background: linear-gradient(to right, #ffffff, #f9f9f9);
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            transition: all 0.3s ease-in-out;
-        }
-        
-        .title-container:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
         }
         
         .title-container h2 {
@@ -963,38 +849,17 @@ def main():
             margin: 0;
         }
         
-        [data-testid="stMetricValue"] {
-            font-size: clamp(1.2rem, 2vw, 1.8rem);
-            font-weight: bold;
-            color: #333;
-        }
-        [data-testid="stMetricLabel"] {
-            font-size: clamp(0.8rem, 1.2vw, 1rem);
-            font-weight: 500;
-            color: #666;
-        }
+        [data-testid="stMetricValue"] { font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: bold; }
+        [data-testid="stMetricLabel"] { font-size: clamp(0.8rem, 1.2vw, 1rem); }
         
-        .stCheckbox > label {
-            transition: none !important;
-        }
-        .stCheckbox > label:hover {
-            background-color: inherit;
-        }
-        
-        .st-emotion-cache-1v0mbdj {
-            display: block;
-            margin: 0 auto;
-        }
-
         .stButton > button {
             width: 100%;
-            background: linear-gradient(135deg, #0066cc 0%, #00a859 100%);
+            background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%);
             color: white;
             border: none;
             border-radius: 8px;
             padding: 0.75rem 1rem;
             font-weight: 600;
-            font-size: clamp(0.8rem, 1.2vw, 0.95rem);
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
@@ -1002,11 +867,7 @@ def main():
         .stButton > button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #00a859 0%, #0066cc 100%);
-        }
-        
-        .stButton > button:active {
-            transform: translateY(0);
+            background: linear-gradient(135deg, #bf8c45 0%, #083d53 100%);
         }
     </style>
     """, unsafe_allow_html=True)
@@ -1017,7 +878,7 @@ def main():
     df = load_data_with_row_indices()
 
     if df.empty:
-        st.info("Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
+        st.info("👋 Bem-vindo! Parece que sua planilha de estudos está vazia. Adicione os conteúdos na sua Google Sheet para começar a monitorar seu progresso aqui.")
         st.stop()
         
     df_summary, progresso_geral = calculate_progress(df)
@@ -1026,16 +887,16 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    titulo_com_destaque("Checklist de Conteúdos", cor_lateral="#00a859")
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#bf8c45")
     display_conteudos_com_checkboxes(df, df_summary)
     
-    titulo_com_destaque("Progresso Detalhado por Disciplina", cor_lateral="#0066cc")
+    titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#083d53")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    titulo_com_destaque("Visão Geral do Progresso", cor_lateral="#00a859")
+    titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#00a859")
     display_donuts_grid(df_summary, progresso_geral)
     
-    titulo_com_destaque("Análise Estratégica da Prova", cor_lateral="#f7931e")
+    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#f7931e")
     colA, colB = st.columns([2, 3])
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
@@ -1046,3 +907,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
