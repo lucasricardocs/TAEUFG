@@ -181,9 +181,9 @@ def get_weather_data(city_name):
         return {"temperature": "N/A", "emoji": "🤷"}
 
 # --- Funções de Interface e Visualização ---
-def titulo_com_destaque(texto, cor_lateral="#0066cc"):
+def titulo_com_destaque(texto, cor_lateral="#0066cc", animation_delay="0s"):
     st.markdown(f"""
-    <div class="title-container animated-fade-in" style="border-left: 6px solid {cor_lateral};"><h2>{texto}</h2></div>
+    <div class="title-container animated-slide-in" style="border-left: 6px solid {cor_lateral}; animation-delay: {animation_delay};"><h2>{texto}</h2></div>
     """, unsafe_allow_html=True)
 
 def render_top_container(dias_restantes):
@@ -218,11 +218,11 @@ def display_progress_bar(progresso_geral):
     st.markdown(f"""
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
-            <span style="font-weight: 500; color: #083d53;">Progresso Geral</span>
+            <span style="font-weight: 500; color: #2c3e50;">Progresso Geral</span>
             <span style="font-weight: 600; color: #2c3e50;">{progresso_geral:.1f}%</span>
         </div>
-        <div style="height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
-            <div style="height: 100%; width: {progresso_geral}%; background: linear-gradient(90deg, #e74c3c, #00a859); border-radius: 10px; transition: width 0.5s ease;"></div>
+        <div style="height: 12px; background: linear-gradient(90deg, #f8f9fa, #e9ecef); border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="height: 100%; width: {progresso_geral}%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);"></div>
         </div>
     </div>""", unsafe_allow_html=True)
 
@@ -243,28 +243,28 @@ def create_altair_stacked_bar(df_summary):
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
     df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 5 else 'transparent')
-    bars = alt.Chart(df_melted).mark_bar(stroke='#dcdcdc', strokeWidth=2).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
+    bars = alt.Chart(df_melted).mark_bar(stroke='#e9ecef', strokeWidth=2).encode(
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
-        color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']), legend=None)
+        color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#28a745', '#dc3545']), legend=None)
     )
     labels = alt.Chart(df_melted).mark_text(align='center', baseline='middle', fontWeight='bold', fontSize=12, font='Nunito').encode(
         y=alt.Y('Disciplinas:N', sort=None), x=alt.X('Posicao_norm:Q'), text=alt.Text('PercentText:N'), color=alt.Color('LabelColor:N', scale=None)
     )
-    return (bars + labels).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
+    return (bars + labels).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
 
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0] if 'Concluido' in source_df['Status'].values else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#d3d3d3', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#e9ecef', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
-        color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#00a859', '#e74c3c']), legend=None),
+        color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#28a745', '#dc3545']), legend=None),
         order=alt.Order('Status:N', sort='descending'),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
-    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold', color='#000000', font='Nunito').encode(text='text:N')
-    return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=26, dy=-10, color='#000000', font='Nunito')).configure_view(stroke=None).configure(background='transparent')
+    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold', color='#2c3e50', font='Nunito').encode(text='text:N')
+    return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=26, dy=-10, color='#2c3e50', font='Nunito')).configure_view(stroke=None).configure(background='transparent')
 
 def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
@@ -299,15 +299,15 @@ def display_conteudos_com_checkboxes(df, df_summary):
         progresso = (concluidos / total) * 100 if total > 0 else 0
         st.markdown(f"""
             <div style="margin: 0.5rem 0;">
-                <b>{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
-                <div style="background:#eee; border-radius:8px; height:10px; margin-top:4px;"><div style="width:{progresso}%; background:#00a859; height:10px; border-radius:8px;"></div></div>
+                <b style="color: #495057;">{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
+                <div style="background: linear-gradient(90deg, #f8f9fa, #e9ecef); border-radius:8px; height:10px; margin-top:4px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);"><div style="width:{progresso}%; background: linear-gradient(90deg, #28a745, #20c997); height:10px; border-radius:8px; transition: width 0.5s ease;"></div></div>
             </div>""", unsafe_allow_html=True)
         expanded_key = f"expanded_{disc}"
         with st.container():
             if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
             if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
+                st.markdown('<div style="padding: 15px; border-left: 4px solid #6c757d; margin-left: 10px; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 0 8px 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
                     st.checkbox(label=row['Conteúdos'], value=bool(row['Status']), key=key, on_change=on_checkbox_change, args=(worksheet, row['sheet_row'], key, disc))
@@ -315,38 +315,38 @@ def display_conteudos_com_checkboxes(df, df_summary):
 
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
-    PALETA_CORES = ['#0066cc', '#00a859', '#e74c3c', '#f7931e', '#ffd100']
-    bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, stroke='#d3d3d3', strokeWidth=2).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#000000')),
+    PALETA_CORES = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, stroke='#e9ecef', strokeWidth=2).encode(
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#2c3e50')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
-    labels = bars.mark_text(align='center', baseline='bottom', dy=-5, color='#000000', fontWeight='bold', font='Nunito').encode(text='Questões:Q')
-    return (bars + labels).properties(width=500, height=500, title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
+    labels = bars.mark_text(align='center', baseline='bottom', dy=-5, color='#2c3e50', fontWeight='bold', font='Nunito').encode(text='Questões:Q')
+    return (bars + labels).properties(width=500, height=500, title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
 
 def bar_relevancia_customizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
     df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
-    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()], range=['#cce6ff', '#0066cc'])
-    bars = alt.Chart(df).mark_bar(cornerRadiusTopRight=3, cornerRadiusBottomRight=3, stroke='#d3d3d3', strokeWidth=2, size=70).encode(
+    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()], range=['#e3f2fd', '#1976d2'])
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopRight=3, cornerRadiusBottomRight=3, stroke='#e9ecef', strokeWidth=2, size=70).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=['Disciplinas:N', 'Peso:Q', 'Questões:Q', 'Relevancia:Q', alt.Tooltip('Percentual:Q', format='.1f')]
     )
-    text = bars.mark_text(align='left', baseline='middle', dx=3, color='#000000', fontWeight='bold', fontSize=12, font='Nunito').encode(
-        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#d3d3d3')),
+    text = bars.mark_text(align='left', baseline='middle', dx=3, color='#2c3e50', fontWeight='bold', fontSize=12, font='Nunito').encode(
+        y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#e9ecef')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
-    return (bars + text).properties(width=500, height=500, title=alt.TitleParams(text='Relevância das Disciplinas', anchor='middle', fontSize=18, font='Nunito', color='#000000')).configure_view(stroke=None).configure(background='transparent')
+    return (bars + text).properties(width=500, height=500, title=alt.TitleParams(text='Relevância das Disciplinas', anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
 
 def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
-    st.markdown("<hr style='margin: 0.5rem 0; border: 1px solid #ddd;'>", unsafe_allow_html=True)
-    st.markdown(f"<div style='text-align: center; color: #555;'><p>{frase_aleatoria}</p></div>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 0.5rem 0; border: 1px solid #e9ecef;'>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align: center; color: #6c757d;'><p>{frase_aleatoria}</p></div>", unsafe_allow_html=True)
 
 # --- Função Principal da Aplicação ---
 def main():
@@ -356,14 +356,40 @@ def main():
     )
     alt.themes.enable('none')
     
-    # CSS com efeito de fumaça aprimorado
+    # CSS com animações nos containers de título e esquema de cores melhorado
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Nunito', sans-serif !important; }
-        .stApp { background: #fafbfc; color: #333; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animated-fade-in { animation: fadeIn 0.8s ease-out; }
+        .stApp { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #2c3e50; }
+        
+        /* Animações */
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        @keyframes slideInLeft { 
+            from { opacity: 0; transform: translateX(-50px); } 
+            to { opacity: 1; transform: translateX(0); } 
+        }
+        @keyframes slideInRight { 
+            from { opacity: 0; transform: translateX(50px); } 
+            to { opacity: 1; transform: translateX(0); } 
+        }
+        @keyframes bounceIn { 
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2); }
+            50% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        }
+        
+        .animated-fade-in { animation: fadeIn 1s ease-out; }
+        .animated-slide-in { animation: slideInLeft 0.8s ease-out; }
+        .animated-bounce-in { animation: bounceIn 1.2s ease-out; }
         
         .header-wrapper { 
             position: relative; 
@@ -374,26 +400,29 @@ def main():
         
         .header-container {
             width: 100%; min-height: 200px; height: clamp(200px, 22vh, 280px);
-            background: linear-gradient(135deg, #e6f2ff, #fdf8e1);
-            border-radius: clamp(15px, 2vw, 20px); box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border: 1px solid #D3D3D3; padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: clamp(15px, 2vw, 20px); 
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(255,255,255,0.2); 
+            padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
             display: flex; justify-content: space-between; align-items: center;
             position: relative; z-index: 2;
+            animation: glow 3s ease-in-out infinite;
         }
         .header-left, .header-center, .header-right { display: flex; align-items: center; height: 100%; }
         .header-left { flex: 1.2; justify-content: flex-start; }
         .header-left img { max-width: clamp(160px, 18vw, 260px); height: auto; object-fit: contain; }
         .header-center { flex: 2; flex-direction: column; justify-content: center; text-align: center; }
-        .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 800; color: #083d53; margin: 0; line-height: 1.1; }
-        .header-center .concurso-title { font-size: clamp(0.9rem, 2vw, 1.3rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #bf8c45; line-height: 1.1; }
+        .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 800; color: #ffffff; margin: 0; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .header-center .concurso-title { font-size: clamp(0.9rem, 2vw, 1.3rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #f8f9fa; line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         
         .header-right { flex: 1.2; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; height: 90%; }
         .header-info-top, .header-info-bottom { width: 100%; }
-        .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #555; }
-        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; }
+        .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #f8f9fa; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #ffd700; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         
         .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; right: -15px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* Efeito de fumaça aprimorado */
@@ -412,105 +441,138 @@ def main():
         .smoke-particle {
             position: absolute;
             bottom: -100px;
-            background: radial-gradient(circle, rgba(200, 220, 255, 0.6) 0%, rgba(180, 200, 240, 0.4) 40%, rgba(160, 180, 220, 0.2) 70%, transparent 100%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(200, 220, 255, 0.2) 40%, rgba(160, 180, 220, 0.1) 70%, transparent 100%);
             border-radius: 50%;
-            filter: blur(25px);
+            filter: blur(20px);
             animation: smoke-rise linear infinite;
         }
         
-        .smoke-particle:nth-child(1) { 
-            left: 2%; 
-            width: 120px; 
-            height: 120px; 
-            animation-duration: 18s; 
-            animation-delay: -2s; 
-        }
-        .smoke-particle:nth-child(2) { 
-            left: 15%; 
-            width: 180px; 
-            height: 180px; 
-            animation-duration: 22s; 
-            animation-delay: -8s; 
-        }
-        .smoke-particle:nth-child(3) { 
-            left: 28%; 
-            width: 140px; 
-            height: 140px; 
-            animation-duration: 20s; 
-            animation-delay: -5s; 
-        }
-        .smoke-particle:nth-child(4) { 
-            left: 42%; 
-            width: 200px; 
-            height: 200px; 
-            animation-duration: 25s; 
-            animation-delay: -12s; 
-        }
-        .smoke-particle:nth-child(5) { 
-            left: 58%; 
-            width: 160px; 
-            height: 160px; 
-            animation-duration: 19s; 
-            animation-delay: -3s; 
-        }
-        .smoke-particle:nth-child(6) { 
-            left: 72%; 
-            width: 190px; 
-            height: 190px; 
-            animation-duration: 24s; 
-            animation-delay: -10s; 
-        }
-        .smoke-particle:nth-child(7) { 
-            left: 85%; 
-            width: 150px; 
-            height: 150px; 
-            animation-duration: 21s; 
-            animation-delay: -6s; 
-        }
-        .smoke-particle:nth-child(8) { 
-            left: 95%; 
-            width: 130px; 
-            height: 130px; 
-            animation-duration: 17s; 
-            animation-delay: -1s; 
-        }
+        .smoke-particle:nth-child(1) { left: 2%; width: 120px; height: 120px; animation-duration: 18s; animation-delay: -2s; }
+        .smoke-particle:nth-child(2) { left: 15%; width: 180px; height: 180px; animation-duration: 22s; animation-delay: -8s; }
+        .smoke-particle:nth-child(3) { left: 28%; width: 140px; height: 140px; animation-duration: 20s; animation-delay: -5s; }
+        .smoke-particle:nth-child(4) { left: 42%; width: 200px; height: 200px; animation-duration: 25s; animation-delay: -12s; }
+        .smoke-particle:nth-child(5) { left: 58%; width: 160px; height: 160px; animation-duration: 19s; animation-delay: -3s; }
+        .smoke-particle:nth-child(6) { left: 72%; width: 190px; height: 190px; animation-duration: 24s; animation-delay: -10s; }
+        .smoke-particle:nth-child(7) { left: 85%; width: 150px; height: 150px; animation-duration: 21s; animation-delay: -6s; }
+        .smoke-particle:nth-child(8) { left: 95%; width: 130px; height: 130px; animation-duration: 17s; animation-delay: -1s; }
         
         @keyframes smoke-rise { 
-            0% { 
-                transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); 
-                opacity: 0.7; 
-            } 
-            25% { 
-                transform: translateY(-150px) translateX(20px) scale(1.2) rotate(90deg); 
-                opacity: 0.5; 
-            }
-            50% { 
-                transform: translateY(-300px) translateX(-10px) scale(1.8) rotate(180deg); 
-                opacity: 0.3; 
-            }
-            75% { 
-                transform: translateY(-450px) translateX(30px) scale(2.4) rotate(270deg); 
-                opacity: 0.15; 
-            }
-            100% { 
-                transform: translateY(-600px) translateX(-20px) scale(3.0) rotate(360deg); 
-                opacity: 0; 
-            } 
+            0% { transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); opacity: 0.6; } 
+            25% { transform: translateY(-150px) translateX(20px) scale(1.2) rotate(90deg); opacity: 0.4; }
+            50% { transform: translateY(-300px) translateX(-10px) scale(1.8) rotate(180deg); opacity: 0.25; }
+            75% { transform: translateY(-450px) translateX(30px) scale(2.4) rotate(270deg); opacity: 0.1; }
+            100% { transform: translateY(-600px) translateX(-20px) scale(3.0) rotate(360deg); opacity: 0; } 
         }
 
         @media (max-width: 768px) {
             .header-container { flex-direction: column; height: auto; min-height: auto; gap: 20px; padding: 20px; }
             .header-left, .header-center, .header-right { width: 100%; text-align: center; height: auto; }
             .header-right { align-items: center; justify-content: center; gap: 10px; }
-            .smoke-particle { display: none; } /* Oculta fumaça em mobile para performance */
+            .smoke-particle { display: none; }
         }
         
-        .title-container { border: 1px solid #D3D3D3; border-left: 6px solid #083d53; padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-        .title-container h2 { font-weight: 700; font-size: clamp(1.2rem, 2vw, 1.6rem); color: #2c3e50; margin: 0; }
-        [data-testid="stMetricValue"] { font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: bold; }
-        [data-testid="stMetricLabel"] { font-size: clamp(0.8rem, 1.2vw, 1rem); }
-        .stButton > button { width: 100%; background: linear-gradient(135deg, #083d53 0%, #bf8c45 100%); color: white; border: none; border-radius: 8px; padding: 0.75rem 1rem; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); background: linear-gradient(135deg, #bf8c45 0%, #083d53 100%); }
+        /* Containers de título com animações */
+        .title-container { 
+            border: 1px solid #e9ecef; 
+            border-left: 6px solid #667eea; 
+            padding: 1.2rem 1.8rem; 
+            border-radius: 12px; 
+            margin: 2rem 0 1.5rem 0; 
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .title-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .title-container:hover::before {
+            left: 100%;
+        }
+        
+        .title-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .title-container h2 { 
+            font-weight: 700; 
+            font-size: clamp(1.2rem, 2vw, 1.6rem); 
+            color: #2c3e50; 
+            margin: 0; 
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Métricas com cores melhoradas */
+        [data-testid="stMetricValue"] { 
+            font-size: clamp(1.2rem, 2vw, 1.8rem); 
+            font-weight: bold; 
+            color: #495057;
+        }
+        [data-testid="stMetricLabel"] { 
+            font-size: clamp(0.8rem, 1.2vw, 1rem); 
+            color: #6c757d;
+        }
+        
+        /* Botões com gradiente melhorado */
+        .stButton > button { 
+            width: 100%; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            padding: 0.8rem 1.2rem; 
+            font-weight: 600; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stButton > button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .stButton > button:hover::before {
+            left: 100%;
+        }
+        
+        .stButton > button:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); 
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); 
+        }
+        
+        /* Checkboxes com estilo melhorado */
+        .stCheckbox > label > div:first-child {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .stCheckbox > label > div:first-child:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
     </style>
     """, unsafe_allow_html=True)
     
@@ -528,16 +590,16 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#bf8c45")
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
     display_conteudos_com_checkboxes(df, df_summary)
     
-    titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#083d53")
+    titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#667eea", animation_delay="0.4s")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
-    titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#00a859")
+    titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#764ba2", animation_delay="0.6s")
     display_donuts_grid(df_summary, progresso_geral)
     
-    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#f7931e")
+    titulo_com_destaque("📝 Análise Estratégica da Prova", cor_lateral="#f093fb", animation_delay="0.8s")
     colA, colB = st.columns([2, 3])
     with colA:
         st.altair_chart(bar_questoes_padronizado(ED_DATA), use_container_width=True)
