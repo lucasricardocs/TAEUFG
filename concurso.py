@@ -183,7 +183,7 @@ def get_weather_data(city_name):
 # --- Funções de Interface e Visualização ---
 def titulo_com_destaque(texto, cor_lateral="#0066cc", animation_delay="0s"):
     st.markdown(f"""
-    <div class="title-container animated-slide-in" style="border-left: 6px solid {cor_lateral}; animation-delay: {animation_delay};"><h2>{texto}</h2></div>
+    <div class="title-container" style="border-left: 6px solid {cor_lateral}; animation-delay: {animation_delay};"><h2>{texto}</h2></div>
     """, unsafe_allow_html=True)
 
 def render_top_container(dias_restantes):
@@ -356,7 +356,7 @@ def main():
     )
     alt.themes.enable('none')
     
-    # CSS com animações nos containers de título e esquema de cores melhorado
+    # CSS com fundo cinza claro no container do topo e animação dos botões aplicada aos containers de título
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -383,8 +383,8 @@ def main():
             100% { opacity: 1; transform: scale(1); }
         }
         @keyframes glow {
-            0%, 100% { box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2); }
-            50% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+            0%, 100% { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+            50% { box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); }
         }
         
         .animated-fade-in { animation: fadeIn 1s ease-out; }
@@ -398,12 +398,13 @@ def main():
             border-radius: clamp(15px, 2vw, 20px);
         }
         
+        /* MODIFICAÇÃO: Fundo cinza bem clarinho para o container do topo */
         .header-container {
             width: 100%; min-height: 200px; height: clamp(200px, 22vh, 280px);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             border-radius: clamp(15px, 2vw, 20px); 
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
-            border: 1px solid rgba(255,255,255,0.2); 
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e9ecef; 
             padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
             display: flex; justify-content: space-between; align-items: center;
             position: relative; z-index: 2;
@@ -413,19 +414,19 @@ def main():
         .header-left { flex: 1.2; justify-content: flex-start; }
         .header-left img { max-width: clamp(160px, 18vw, 260px); height: auto; object-fit: contain; }
         .header-center { flex: 2; flex-direction: column; justify-content: center; text-align: center; }
-        .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 800; color: #ffffff; margin: 0; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .header-center .concurso-title { font-size: clamp(0.9rem, 2vw, 1.3rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #f8f9fa; line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 800; color: #083d53; margin: 0; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header-center .concurso-title { font-size: clamp(0.9rem, 2vw, 1.3rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #bf8c45; line-height: 1.1; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         
         .header-right { flex: 1.2; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; height: 90%; }
         .header-info-top, .header-info-bottom { width: 100%; }
-        .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #f8f9fa; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #ffd700; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #6c757d; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
         .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; right: -15px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* Efeito de fumaça aprimorado */
+        /* Efeito de fumaça ajustado para o fundo cinza */
         .smoke-wrapper { 
             position: absolute; 
             top: 0; 
@@ -441,7 +442,7 @@ def main():
         .smoke-particle {
             position: absolute;
             bottom: -100px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(200, 220, 255, 0.2) 40%, rgba(160, 180, 220, 0.1) 70%, transparent 100%);
+            background: radial-gradient(circle, rgba(220, 220, 220, 0.4) 0%, rgba(200, 200, 200, 0.3) 40%, rgba(180, 180, 180, 0.2) 70%, transparent 100%);
             border-radius: 50%;
             filter: blur(20px);
             animation: smoke-rise linear infinite;
@@ -457,9 +458,9 @@ def main():
         .smoke-particle:nth-child(8) { left: 95%; width: 130px; height: 130px; animation-duration: 17s; animation-delay: -1s; }
         
         @keyframes smoke-rise { 
-            0% { transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); opacity: 0.6; } 
-            25% { transform: translateY(-150px) translateX(20px) scale(1.2) rotate(90deg); opacity: 0.4; }
-            50% { transform: translateY(-300px) translateX(-10px) scale(1.8) rotate(180deg); opacity: 0.25; }
+            0% { transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); opacity: 0.5; } 
+            25% { transform: translateY(-150px) translateX(20px) scale(1.2) rotate(90deg); opacity: 0.3; }
+            50% { transform: translateY(-300px) translateX(-10px) scale(1.8) rotate(180deg); opacity: 0.2; }
             75% { transform: translateY(-450px) translateX(30px) scale(2.4) rotate(270deg); opacity: 0.1; }
             100% { transform: translateY(-600px) translateX(-20px) scale(3.0) rotate(360deg); opacity: 0; } 
         }
@@ -471,7 +472,7 @@ def main():
             .smoke-particle { display: none; }
         }
         
-        /* Containers de título com animações */
+        /* MODIFICAÇÃO: Containers de título com animação igual aos botões 'Ver conteúdos' */
         .title-container { 
             border: 1px solid #e9ecef; 
             border-left: 6px solid #667eea; 
@@ -480,9 +481,10 @@ def main():
             margin: 2rem 0 1.5rem 0; 
             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
             box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            animation: slideInLeft 0.8s ease-out;
         }
         
         .title-container::before {
@@ -501,7 +503,7 @@ def main():
         }
         
         .title-container:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: 0 12px 35px rgba(102, 126, 234, 0.15);
         }
         
