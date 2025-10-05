@@ -128,7 +128,7 @@ def update_status_in_sheet(sheet, row_number, new_status):
         sheet.update_cell(row_number, status_col_index, new_status)
         return True
     except APIError as e:
-        st.error(f"Erro na API do Google Sheets: {e}")
+        st.error(f"Erro na API do Google Sheets durante a atualização: {e}")
         return False
     except Exception as e:
         st.error(f"Erro inesperado ao atualizar planilha: {e}")
@@ -186,7 +186,6 @@ def titulo_com_destaque(texto, cor_lateral="#0066cc"):
     <div class="title-container animated-fade-in" style="border-left: 6px solid {cor_lateral};"><h2>{texto}</h2></div>
     """, unsafe_allow_html=True)
 
-# MODIFICAÇÃO: Adicionado HTML para o efeito de fumaça
 def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     st.markdown(f"""
@@ -225,6 +224,7 @@ def display_simple_metrics(stats):
     with cols[2]: st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     with cols[3]: st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
+# MODIFICAÇÃO: Ajustado o limite para exibir o percentual
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
     df_percent['Concluido (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
@@ -234,7 +234,10 @@ def create_altair_stacked_bar(df_summary):
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
-    df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 10 else 'transparent')
+    
+    # Regra ajustada: exibe o texto se a barra for maior que 5%
+    df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 5 else 'transparent')
+
     bars = alt.Chart(df_melted).mark_bar(stroke='#dcdcdc', strokeWidth=2).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
@@ -349,7 +352,6 @@ def main():
     )
     alt.themes.enable('none')
     
-    # MODIFICAÇÃO: CSS com novas fontes e efeito de fumaça
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -366,16 +368,13 @@ def main():
             border-radius: clamp(15px, 2vw, 20px); box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             border: 1px solid #D3D3D3; padding: clamp(15px, 2vw, 25px) clamp(20px, 3vw, 40px);
             display: flex; justify-content: space-between; align-items: center;
-            position: relative; z-index: 2; /* Para ficar na frente da fumaça */
+            position: relative; z-index: 2;
         }
         .header-left, .header-center, .header-right { display: flex; align-items: center; height: 100%; }
         .header-left { flex: 1.2; justify-content: flex-start; }
         .header-left img { max-width: clamp(160px, 18vw, 260px); height: auto; object-fit: contain; }
         .header-center { flex: 2; flex-direction: column; justify-content: center; text-align: center; }
-        
-        /* MODIFICAÇÃO: Tamanho da fonte do título ajustado */
         .header-center h1 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 800; color: #083d53; margin: 0; line-height: 1.1; }
-        /* MODIFICAÇÃO: Tamanho da fonte do subtítulo ajustado */
         .header-center .concurso-title { font-size: clamp(0.9rem, 2vw, 1.3rem); font-weight: 600; margin: 0.2rem 0 0 0; font-style: italic; color: #bf8c45; line-height: 1.1; }
         
         .header-right { flex: 1.2; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; height: 90%; }
@@ -387,7 +386,6 @@ def main():
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* MODIFICAÇÃO: Efeito de fumaça adicionado */
         .smoke-wrapper { position: absolute; top: 50%; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; filter: blur(25px); }
         .smoke-wrapper span { position: absolute; bottom: -150px; background: rgba(200, 220, 255, 0.4); border-radius: 50%; animation: smoke-effect 15s linear infinite; }
         .smoke-wrapper span:nth-child(1) { left: 10%; width: 250px; height: 250px; animation-duration: 18s; animation-delay: -3s; }
