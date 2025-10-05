@@ -190,7 +190,16 @@ def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     st.markdown(f"""
     <div class="header-wrapper">
-        <div class="smoke-wrapper"><span></span><span></span><span></span><span></span></div>
+        <div class="smoke-wrapper">
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+            <span class="smoke-particle"></span>
+        </div>
         <div class="header-container animated-fade-in">
             <div class="header-left"><img src="{GOIAS_FOMENTO_LOGO_URL}" alt="Logo Goiás Fomento"/></div>
             <div class="header-center">
@@ -297,7 +306,6 @@ def display_conteudos_com_checkboxes(df, df_summary):
         with st.container():
             if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
-                st.rerun()
             if st.session_state.get(expanded_key, False):
                 st.markdown('<div style="padding: 10px; border-left: 3px solid #ddd; margin-left: 10px;">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
@@ -348,7 +356,7 @@ def main():
     )
     alt.themes.enable('none')
     
-    # MODIFICAÇÃO: CSS Corrigido para o efeito de fumaça
+    # CSS com efeito de fumaça aprimorado
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -357,7 +365,12 @@ def main():
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animated-fade-in { animation: fadeIn 0.8s ease-out; }
         
-        .header-wrapper { position: relative; margin-bottom: 2rem; }
+        .header-wrapper { 
+            position: relative; 
+            margin-bottom: 2rem; 
+            overflow: hidden;
+            border-radius: clamp(15px, 2vw, 20px);
+        }
         
         .header-container {
             width: 100%; min-height: 200px; height: clamp(200px, 22vh, 280px);
@@ -383,26 +396,113 @@ def main():
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* MODIFICAÇÃO: Efeito de fumaça CORRIGIDO */
-        .smoke-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-        .smoke-wrapper span {
-            position: absolute;
-            bottom: -200px;
-            background: rgba(200, 220, 255, 0.4);
-            border-radius: 50%;
-            filter: blur(30px);
-            animation: smoke-effect 20s linear infinite;
+        /* Efeito de fumaça aprimorado */
+        .smoke-wrapper { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: 1; 
+            pointer-events: none; 
+            overflow: hidden;
+            border-radius: clamp(15px, 2vw, 20px);
         }
-        .smoke-wrapper span:nth-child(1) { left: 5%; width: 200px; height: 200px; animation-duration: 25s; animation-delay: -5s; }
-        .smoke-wrapper span:nth-child(2) { left: 30%; width: 250px; height: 250px; animation-duration: 20s; animation-delay: -8s; }
-        .smoke-wrapper span:nth-child(3) { left: 60%; width: 180px; height: 180px; animation-duration: 18s; animation-delay: -2s; }
-        .smoke-wrapper span:nth-child(4) { left: 85%; width: 220px; height: 220px; animation-duration: 28s; animation-delay: 0s; }
-        @keyframes smoke-effect { 0% { transform: translateY(0) scale(1); opacity: 0.6; } 100% { transform: translateY(-400px) scale(2.5); opacity: 0; } }
+        
+        .smoke-particle {
+            position: absolute;
+            bottom: -100px;
+            background: radial-gradient(circle, rgba(200, 220, 255, 0.6) 0%, rgba(180, 200, 240, 0.4) 40%, rgba(160, 180, 220, 0.2) 70%, transparent 100%);
+            border-radius: 50%;
+            filter: blur(25px);
+            animation: smoke-rise linear infinite;
+        }
+        
+        .smoke-particle:nth-child(1) { 
+            left: 2%; 
+            width: 120px; 
+            height: 120px; 
+            animation-duration: 18s; 
+            animation-delay: -2s; 
+        }
+        .smoke-particle:nth-child(2) { 
+            left: 15%; 
+            width: 180px; 
+            height: 180px; 
+            animation-duration: 22s; 
+            animation-delay: -8s; 
+        }
+        .smoke-particle:nth-child(3) { 
+            left: 28%; 
+            width: 140px; 
+            height: 140px; 
+            animation-duration: 20s; 
+            animation-delay: -5s; 
+        }
+        .smoke-particle:nth-child(4) { 
+            left: 42%; 
+            width: 200px; 
+            height: 200px; 
+            animation-duration: 25s; 
+            animation-delay: -12s; 
+        }
+        .smoke-particle:nth-child(5) { 
+            left: 58%; 
+            width: 160px; 
+            height: 160px; 
+            animation-duration: 19s; 
+            animation-delay: -3s; 
+        }
+        .smoke-particle:nth-child(6) { 
+            left: 72%; 
+            width: 190px; 
+            height: 190px; 
+            animation-duration: 24s; 
+            animation-delay: -10s; 
+        }
+        .smoke-particle:nth-child(7) { 
+            left: 85%; 
+            width: 150px; 
+            height: 150px; 
+            animation-duration: 21s; 
+            animation-delay: -6s; 
+        }
+        .smoke-particle:nth-child(8) { 
+            left: 95%; 
+            width: 130px; 
+            height: 130px; 
+            animation-duration: 17s; 
+            animation-delay: -1s; 
+        }
+        
+        @keyframes smoke-rise { 
+            0% { 
+                transform: translateY(0) translateX(0) scale(0.8) rotate(0deg); 
+                opacity: 0.7; 
+            } 
+            25% { 
+                transform: translateY(-150px) translateX(20px) scale(1.2) rotate(90deg); 
+                opacity: 0.5; 
+            }
+            50% { 
+                transform: translateY(-300px) translateX(-10px) scale(1.8) rotate(180deg); 
+                opacity: 0.3; 
+            }
+            75% { 
+                transform: translateY(-450px) translateX(30px) scale(2.4) rotate(270deg); 
+                opacity: 0.15; 
+            }
+            100% { 
+                transform: translateY(-600px) translateX(-20px) scale(3.0) rotate(360deg); 
+                opacity: 0; 
+            } 
+        }
 
         @media (max-width: 768px) {
             .header-container { flex-direction: column; height: auto; min-height: auto; gap: 20px; padding: 20px; }
             .header-left, .header-center, .header-right { width: 100%; text-align: center; height: auto; }
             .header-right { align-items: center; justify-content: center; gap: 10px; }
+            .smoke-particle { display: none; } /* Oculta fumaça em mobile para performance */
         }
         
         .title-container { border: 1px solid #D3D3D3; border-left: 6px solid #083d53; padding: 1rem 1.5rem; border-radius: 12px; margin: 2rem 0 1.5rem 0; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
