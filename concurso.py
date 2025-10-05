@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf--8 -*-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -190,7 +190,7 @@ def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
     st.markdown(f"""
     <div class="header-wrapper">
-        <div class="smoke-wrapper"><span></span><span></span><span></span></div>
+        <div class="smoke-wrapper"><span></span><span></span><span></span><span></span></div>
         <div class="header-container animated-fade-in">
             <div class="header-left"><img src="{GOIAS_FOMENTO_LOGO_URL}" alt="Logo Goiás Fomento"/></div>
             <div class="header-center">
@@ -224,7 +224,6 @@ def display_simple_metrics(stats):
     with cols[2]: st.metric("🏃 Ritmo", f"{stats['topicos_por_dia']}/dia")
     with cols[3]: st.metric("⭐ Prioridade", stats['maior_prioridade'].title())
 
-# MODIFICAÇÃO: Ajustado o limite para exibir o percentual
 def create_altair_stacked_bar(df_summary):
     df_percent = df_summary.copy()
     df_percent['Concluido (%)'] = (df_percent['Conteudos_Concluidos'] / df_percent['Total_Conteudos']) * 100
@@ -234,10 +233,7 @@ def create_altair_stacked_bar(df_summary):
     df_melted['Percentual_norm'] = df_melted['Percentual'] / 100
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
-    
-    # Regra ajustada: exibe o texto se a barra for maior que 5%
     df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 5 else 'transparent')
-
     bars = alt.Chart(df_melted).mark_bar(stroke='#dcdcdc', strokeWidth=2).encode(
         y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#000000', labelFont='Nunito')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
@@ -352,6 +348,7 @@ def main():
     )
     alt.themes.enable('none')
     
+    # MODIFICAÇÃO: CSS Corrigido para o efeito de fumaça
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -386,12 +383,21 @@ def main():
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        .smoke-wrapper { position: absolute; top: 50%; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; filter: blur(25px); }
-        .smoke-wrapper span { position: absolute; bottom: -150px; background: rgba(200, 220, 255, 0.4); border-radius: 50%; animation: smoke-effect 15s linear infinite; }
-        .smoke-wrapper span:nth-child(1) { left: 10%; width: 250px; height: 250px; animation-duration: 18s; animation-delay: -3s; }
-        .smoke-wrapper span:nth-child(2) { left: 40%; width: 300px; height: 300px; animation-duration: 22s; animation-delay: -8s; }
-        .smoke-wrapper span:nth-child(3) { left: 70%; width: 200px; height: 200px; animation-duration: 20s; animation-delay: 0s; }
-        @keyframes smoke-effect { 0% { transform: translateY(0) scale(1); opacity: 0.7; } 100% { transform: translateY(-400px) scale(1.8); opacity: 0; } }
+        /* MODIFICAÇÃO: Efeito de fumaça CORRIGIDO */
+        .smoke-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .smoke-wrapper span {
+            position: absolute;
+            bottom: -200px;
+            background: rgba(200, 220, 255, 0.4);
+            border-radius: 50%;
+            filter: blur(30px);
+            animation: smoke-effect 20s linear infinite;
+        }
+        .smoke-wrapper span:nth-child(1) { left: 5%; width: 200px; height: 200px; animation-duration: 25s; animation-delay: -5s; }
+        .smoke-wrapper span:nth-child(2) { left: 30%; width: 250px; height: 250px; animation-duration: 20s; animation-delay: -8s; }
+        .smoke-wrapper span:nth-child(3) { left: 60%; width: 180px; height: 180px; animation-duration: 18s; animation-delay: -2s; }
+        .smoke-wrapper span:nth-child(4) { left: 85%; width: 220px; height: 220px; animation-duration: 28s; animation-delay: 0s; }
+        @keyframes smoke-effect { 0% { transform: translateY(0) scale(1); opacity: 0.6; } 100% { transform: translateY(-400px) scale(2.5); opacity: 0; } }
 
         @media (max-width: 768px) {
             .header-container { flex-direction: column; height: auto; min-height: auto; gap: 20px; padding: 20px; }
