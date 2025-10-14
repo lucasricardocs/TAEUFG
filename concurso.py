@@ -235,10 +235,10 @@ def display_progress_bar(progresso_geral):
     <div class="animated-fade-in" style="margin: 0.5rem 0 1.5rem 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
             <span style="font-weight: 500; color: #2c3e50;">Progresso Geral</span>
-            <span style="font-weight: 600; color: #2c3e50;">{progresso_geral:.1f}%</span>
+            <span style="font-weight: 600; color: #2c3e50; animation: scaleIn 0.5s ease-out;">{progresso_geral:.1f}%</span>
         </div>
         <div style="height: 12px; background: linear-gradient(90deg, #f8f9fa, #e9ecef); border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="height: 100%; width: {progresso_geral}%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);"></div>
+            <div style="height: 100%; width: {progresso_geral}%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 10px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); animation: progressPulse 2s ease-in-out infinite;"></div>
         </div>
     </div>""", unsafe_allow_html=True)
 
@@ -546,10 +546,52 @@ def main():
             font-size: clamp(1.2rem, 2vw, 1.8rem); 
             font-weight: bold; 
             color: #495057;
+            transition: all 0.3s ease;
         }
         [data-testid="stMetricLabel"] { 
             font-size: clamp(0.8rem, 1.2vw, 1rem); 
             color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        /* Hover effect nos cartões de métricas */
+        [data-testid="stMetric"] {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 1.2rem !important;
+            border-radius: 15px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        [data-testid="stMetric"]::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        [data-testid="stMetric"]:hover::before {
+            opacity: 1;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        
+        [data-testid="stMetric"]:hover [data-testid="stMetricValue"] {
+            color: #667eea;
+            transform: scale(1.1);
         }
         
         .stButton > button { 
@@ -573,18 +615,36 @@ def main():
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
             transition: left 0.5s;
+        }
+        
+        .stButton > button::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            background-size: 200% 200%;
+            animation: shimmer 3s infinite;
+            opacity: 0;
         }
         
         .stButton > button:hover::before {
             left: 100%;
         }
         
+        .stButton > button:hover::after {
+            opacity: 1;
+        }
+        
         .stButton > button:hover { 
-            transform: translateY(-3px); 
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5); 
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); 
+        }
+        
+        .stButton > button:active {
+            transform: translateY(-1px) scale(0.98);
         }
         
         .stCheckbox > label > div:first-child {
@@ -597,6 +657,76 @@ def main():
         .stCheckbox > label > div:first-child:hover {
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .stCheckbox > label {
+            transition: all 0.2s ease;
+            padding: 0.5rem;
+            border-radius: 8px;
+            display: block;
+        }
+        
+        .stCheckbox > label:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .stCheckbox input:checked ~ div:first-child {
+            animation: scaleIn 0.3s ease-out;
+        }
+        
+        /* Animação nas barras de progresso inline */
+        h2 {
+            animation: slideInLeft 0.6s ease-out;
+            position: relative;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            animation: expandWidth 0.8s ease-out 0.3s forwards;
+            border-radius: 3px;
+        }
+        
+        @keyframes expandWidth {
+            to { width: 60px; }
+        }
+        
+        /* Glow nos gráficos do Altair */
+        .vega-embed {
+            transition: all 0.4s ease;
+            border-radius: 15px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .vega-embed:hover {
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        /* Animação smooth no scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Efeito de fade-in nos elementos ao entrar na viewport */
+        [data-testid="stVerticalBlock"] > div {
+            animation: fadeIn 0.6s ease-out backwards;
+        }
+        
+        [data-testid="stVerticalBlock"] > div:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+        
+        [data-testid="stVerticalBlock"] > div:nth-child(even) {
+            animation-delay: 0.2s;
         }
     </style>
     """, unsafe_allow_html=True)
