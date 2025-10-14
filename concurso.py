@@ -775,10 +775,10 @@ def main():
             padding: 0 !important;
         }
         
-        /* Garante que checkboxes não sejam sobrepostos */
+        /* Garante que checkboxes não sejam sobrepostos mas não sobreponham gráficos */
         .stCheckbox {
             position: relative !important;
-            z-index: 10 !important;
+            z-index: 5 !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -810,11 +810,14 @@ def main():
             padding: 1rem;
             background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 100;
         }
         
         .vega-embed:hover {
             box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2);
             transform: translateY(-5px);
+            z-index: 101;
         }
         
         /* Animação smooth no scroll */
