@@ -325,9 +325,8 @@ def on_checkbox_change(worksheet, row_number, key, disciplina):
         # Mantém a disciplina expandida
         st.session_state[f"expanded_{disciplina}"] = True
         
-        # Aguarda um pouco e recarrega
-        time.sleep(0.5)
-        st.rerun()
+        # Aguarda um pouco para garantir que foi salvo
+        time.sleep(0.3)
         
     except Exception as e:
         st.error(f"❌ Erro ao atualizar: {str(e)}")
@@ -795,6 +794,18 @@ def main():
             z-index: 1 !important;
         }
         
+        /* TODOS os elementos relacionados a checkboxes com z-index baixo */
+        div:has(> .stCheckbox) {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        
+        /* Botões de expandir também com z-index baixo */
+        .stButton {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        
         /* Gráficos ficam MUITO acima dos checkboxes */
         .vega-embed {
             position: relative !important;
@@ -809,6 +820,18 @@ def main():
         
         /* Containers de colunas com gráficos */
         [data-testid="column"]:has(.vega-embed) {
+            position: relative !important;
+            z-index: 100 !important;
+        }
+        
+        /* Element container com gráficos */
+        div[data-testid="element-container"]:has(.vega-embed) {
+            position: relative !important;
+            z-index: 100 !important;
+        }
+        
+        /* Qualquer div pai que contenha vega-embed */
+        div:has(> div > .vega-embed) {
             position: relative !important;
             z-index: 100 !important;
         }
