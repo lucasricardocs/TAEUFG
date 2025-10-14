@@ -137,30 +137,20 @@ def load_data_with_row_indices():
 
 # --- Funções de Lógica e Cálculos ---
 def update_status_in_sheet(sheet, row_number, new_status):
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            header = sheet.row_values(1)
-            if 'Status' not in header:
-                st.error("Coluna 'Status' não encontrada na planilha.")
-                return False
-            status_col_index = header.index('Status') + 1
-            sheet.update_cell(row_number, status_col_index, new_status)
-            time.sleep(0.3)  # Pequeno delay para garantir que foi salvo
-            return True
-        except APIError as e:
-            if attempt < max_retries - 1:
-                time.sleep(0.5)
-                continue
-            st.error(f"Erro na API do Google Sheets: {e}")
+    try:
+        header = sheet.row_values(1)
+        if 'Status' not in header:
+            st.error("Coluna 'Status' não encontrada na planilha.")
             return False
-        except Exception as e:
-            if attempt < max_retries - 1:
-                time.sleep(0.5)
-                continue
-            st.error(f"Erro ao atualizar: {e}")
-            return False
-    return False
+        status_col_index = header.index('Status') + 1
+        sheet.update_cell(row_number, status_col_index, new_status)
+        return True
+    except APIError as e:
+        st.error(f"Erro na API do Google Sheets durante a atualização: {e}")
+        return False
+    except Exception as e:
+        st.error(f"Erro inesperado ao atualizar planilha: {e}")
+        return False
 
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
@@ -308,28 +298,13 @@ def display_donuts_grid(df_summary, progresso_geral):
 def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
     
-    try:
-        # Atualiza na planilha
-        header = worksheet.row_values(1)
-        if 'Status' not in header:
-            st.error("Coluna 'Status' não encontrada na planilha.")
-            return
-        
-        status_col_index = header.index('Status') + 1
-        worksheet.update_cell(row_number, status_col_index, "TRUE" if novo_status else "FALSE")
-        
-        # Limpa TODOS os caches - isso é crucial
-        st.cache_data.clear()
-        st.cache_resource.clear()
-        
-        # Mantém a disciplina expandida
+    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+        st.toast("Status atualizado!", icon="✅")
         st.session_state[f"expanded_{disciplina}"] = True
-        
-        # Aguarda um pouco para garantir que foi salvo
-        time.sleep(0.3)
-        
-    except Exception as e:
-        st.error(f"❌ Erro ao atualizar: {str(e)}")
+        # Limpa apenas o cache específico dos dados
+        load_data_with_row_indices.clear()
+    else:
+        st.toast("Falha ao atualizar.", icon="❌")
         # Reverte o checkbox
         st.session_state[key] = not novo_status
 
