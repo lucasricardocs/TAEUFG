@@ -298,11 +298,11 @@ def display_donuts_grid(df_summary, progresso_geral):
 def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
+        st.toast("✅ Status atualizado! Recarregue a página para ver as mudanças.", icon="✅")
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
-        st.rerun()
     else:
-        st.toast("Falha ao atualizar.", icon="❌")
+        st.toast("❌ Falha ao atualizar. Tente novamente.", icon="❌")
 
 def display_conteudos_com_checkboxes(df, df_summary):
     worksheet = get_worksheet()
@@ -649,13 +649,14 @@ def main():
         .stCheckbox {
             display: flex !important;
             align-items: center !important;
-            margin-bottom: 0.3rem !important;
+            margin: 0 !important;
             padding: 0 !important;
+            min-height: 0 !important;
         }
         
         .stCheckbox > label {
             transition: all 0.2s ease;
-            padding: 0.4rem 0.5rem !important;
+            padding: 0.25rem 0.5rem !important;
             border-radius: 8px;
             display: flex !important;
             flex-direction: row !important;
@@ -663,6 +664,7 @@ def main():
             gap: 0.6rem !important;
             width: 100%;
             margin: 0 !important;
+            min-height: 0 !important;
         }
         
         .stCheckbox > label:hover {
@@ -688,13 +690,14 @@ def main():
             flex: 1 !important;
             margin: 0 !important;
             padding: 0 !important;
-            line-height: 1.4 !important;
+            line-height: 1.3 !important;
         }
         
         .stCheckbox > label > div:last-child p {
             margin: 0 !important;
             padding: 0 !important;
             transition: all 0.3s ease;
+            line-height: 1.3 !important;
         }
         
         .stCheckbox input:checked ~ div:last-child p {
@@ -713,6 +716,18 @@ def main():
         [data-testid="stVerticalBlock"] > div:has(.stCheckbox) {
             gap: 0 !important;
             padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        /* Remove espaçamento entre elementos do Streamlit */
+        div[data-testid="stVerticalBlock"] > div[data-testid="element-container"]:has(.stCheckbox) {
+            margin-bottom: 0.1rem !important;
+            padding: 0 !important;
+        }
+        
+        /* Compacta ainda mais o espaçamento */
+        .stCheckbox + .stCheckbox {
+            margin-top: 0 !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -784,6 +799,13 @@ def main():
     
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
+    
+    # Botão para atualizar dados
+    col1, col2, col3 = st.columns([1, 1, 3])
+    with col1:
+        if st.button("🔄 Atualizar Dados", use_container_width=True):
+            load_data_with_row_indices.clear()
+            st.rerun()
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
     display_conteudos_com_checkboxes(df, df_summary)
