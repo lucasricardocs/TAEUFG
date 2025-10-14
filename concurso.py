@@ -298,9 +298,9 @@ def display_donuts_grid(df_summary, progresso_geral):
 def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
     if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-        st.toast("Status atualizado!", icon="✅")
         st.session_state[f"expanded_{disciplina}"] = True
         load_data_with_row_indices.clear()
+        st.rerun()
     else:
         st.toast("Falha ao atualizar.", icon="❌")
 
@@ -649,17 +649,20 @@ def main():
         .stCheckbox {
             display: flex !important;
             align-items: center !important;
+            margin-bottom: 0.3rem !important;
+            padding: 0 !important;
         }
         
         .stCheckbox > label {
             transition: all 0.2s ease;
-            padding: 0.5rem;
+            padding: 0.4rem 0.5rem !important;
             border-radius: 8px;
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
-            gap: 0.75rem !important;
+            gap: 0.6rem !important;
             width: 100%;
+            margin: 0 !important;
         }
         
         .stCheckbox > label:hover {
@@ -667,8 +670,9 @@ def main():
         }
         
         .stCheckbox > label > div {
-            display: inline-block !important;
-            vertical-align: middle !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            margin: 0 !important;
         }
         
         .stCheckbox > label > div:first-child {
@@ -677,16 +681,38 @@ def main():
             border-radius: 6px;
             transition: all 0.3s ease;
             flex-shrink: 0 !important;
+            margin: 0 !important;
         }
         
         .stCheckbox > label > div:last-child {
             flex: 1 !important;
             margin: 0 !important;
             padding: 0 !important;
+            line-height: 1.4 !important;
+        }
+        
+        .stCheckbox > label > div:last-child p {
+            margin: 0 !important;
+            padding: 0 !important;
+            transition: all 0.3s ease;
+        }
+        
+        .stCheckbox input:checked ~ div:last-child p {
+            text-decoration: line-through;
+            opacity: 0.6;
+            color: #6c757d;
         }
         
         .stCheckbox input:checked ~ div:first-child {
             animation: scaleIn 0.3s ease-out;
+            background: linear-gradient(135deg, #28a745, #20c997) !important;
+            border-color: #28a745 !important;
+        }
+        
+        /* Remove espaçamento extra dos containers dos checkboxes */
+        [data-testid="stVerticalBlock"] > div:has(.stCheckbox) {
+            gap: 0 !important;
+            padding: 0 !important;
         }
         
         /* Animação nas barras de progresso inline */
