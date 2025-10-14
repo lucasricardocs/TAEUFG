@@ -775,6 +775,12 @@ def main():
             padding: 0 !important;
         }
         
+        /* Garante que checkboxes não sejam sobrepostos */
+        .stCheckbox {
+            position: relative !important;
+            z-index: 10 !important;
+        }
+        
         /* Animação nas barras de progresso inline */
         h2 {
             animation: slideInLeft 0.6s ease-out;
