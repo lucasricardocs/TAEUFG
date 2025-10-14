@@ -751,6 +751,8 @@ def main():
             gap: 0 !important;
             padding: 0 !important;
             margin: 0 !important;
+            position: relative !important;
+            z-index: 1 !important;
         }
         
         /* Força espaçamento mínimo entre checkboxes */
@@ -758,6 +760,8 @@ def main():
             margin-bottom: 0 !important;
             margin-top: 0 !important;
             padding: 0 !important;
+            position: relative !important;
+            z-index: 1 !important;
         }
         
         /* Remove espaçamento padrão do Streamlit */
@@ -768,11 +772,15 @@ def main():
         /* Container dos checkboxes super compacto */
         div[data-testid="stVerticalBlock"]:has(.stCheckbox) {
             gap: 0 !important;
+            position: relative !important;
+            z-index: 1 !important;
         }
         
         div[data-testid="stVerticalBlock"]:has(.stCheckbox) > div {
             margin: 0 !important;
             padding: 0 !important;
+            position: relative !important;
+            z-index: 1 !important;
         }
         
         /* Garante que checkboxes não sobreponham gráficos */
