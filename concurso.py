@@ -1,4 +1,3 @@
-@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import streamlit as st
