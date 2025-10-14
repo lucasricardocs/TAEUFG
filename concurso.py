@@ -269,28 +269,28 @@ def create_altair_stacked_bar(df_summary):
     df_melted['Posicao_norm'] = df_melted.groupby('Disciplinas')['Percentual_norm'].cumsum() - (df_melted['Percentual_norm'] / 2)
     df_melted['PercentText'] = df_melted['Percentual'].apply(lambda x: f"{x:.1f}%")
     df_melted['LabelColor'] = df_melted['Percentual'].apply(lambda x: 'white' if x > 5 else 'transparent')
-    bars = alt.Chart(df_melted).mark_bar(stroke='#e9ecef', strokeWidth=2).encode(
-        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#2c3e50', labelFont='Nunito')),
+    bars = alt.Chart(df_melted).mark_bar(stroke='#34495e', strokeWidth=2).encode(
+        y=alt.Y('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelColor='#1a252f', labelFont='Nunito', labelFontSize=13, labelFontWeight='bold')),
         x=alt.X('Percentual_norm:Q', stack="normalize", axis=alt.Axis(title=None, labels=False)),
         color=alt.Color('Status:N', scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#28a745', '#dc3545']), legend=None)
     )
-    labels = alt.Chart(df_melted).mark_text(align='center', baseline='middle', fontWeight='bold', fontSize=12, font='Nunito').encode(
+    labels = alt.Chart(df_melted).mark_text(align='center', baseline='middle', fontWeight='bold', fontSize=13, font='Nunito').encode(
         y=alt.Y('Disciplinas:N', sort=None), x=alt.X('Posicao_norm:Q'), text=alt.Text('PercentText:N'), color=alt.Color('LabelColor:N', scale=None)
     )
-    return (bars + labels).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
+    return (bars + labels).properties(height=350, title=alt.TitleParams(text="Percentual de Conclusão por Disciplina", anchor='middle', fontSize=18, font='Nunito', color='#1a252f', fontWeight='bold')).configure_view(stroke=None).configure(background='transparent')
 
 def create_progress_donut(source_df, title):
     total = source_df['Valor'].sum()
     concluido_val = source_df[source_df['Status'] == 'Concluido']['Valor'].iloc[0] if 'Concluido' in source_df['Status'].values else 0
     percent_text = f"{(concluido_val / total * 100) if total > 0 else 0:.1f}%"
-    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#e9ecef', strokeWidth=2).encode(
+    base = alt.Chart(source_df).mark_arc(innerRadius=55, cornerRadius=5, stroke='#34495e', strokeWidth=2).encode(
         theta=alt.Theta("Valor:Q"),
         color=alt.Color("Status:N", scale=alt.Scale(domain=['Concluido', 'Pendente'], range=['#28a745', '#dc3545']), legend=None),
         order=alt.Order('Status:N', sort='descending'),
         tooltip=['Status', alt.Tooltip('Valor', title="Conteúdos")]
     )
-    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold', color='#2c3e50', font='Nunito').encode(text='text:N')
-    return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=26, dy=-10, color='#2c3e50', font='Nunito')).configure_view(stroke=None).configure(background='transparent')
+    text = alt.Chart(pd.DataFrame({'text': [percent_text]})).mark_text(size=24, fontWeight='bold', color='#1a252f', font='Nunito').encode(text='text:N')
+    return (base + text).properties(title=alt.TitleParams(text=title, anchor='middle', fontSize=26, dy=-10, color='#1a252f', font='Nunito', fontWeight='bold')).configure_view(stroke=None).configure(background='transparent')
 
 def display_donuts_grid(df_summary, progresso_geral):
     st.markdown('<div class="animated-fade-in">', unsafe_allow_html=True)
@@ -361,32 +361,32 @@ def display_conteudos_com_checkboxes(df, df_summary):
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
     PALETA_CORES = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']
-    bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, stroke='#e9ecef', strokeWidth=2).encode(
-        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#2c3e50')),
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, stroke='#34495e', strokeWidth=2).encode(
+        x=alt.X('Disciplinas:N', sort=None, title=None, axis=alt.Axis(labelAngle=0, labelFont='Nunito', labelColor='#1a252f', labelFontSize=12, labelFontWeight='bold')),
         y=alt.Y('Questões:Q', title=None, axis=alt.Axis(labels=False, ticks=True)),
         color=alt.Color('Disciplinas:N', scale=alt.Scale(range=PALETA_CORES), legend=None)
     )
-    labels = bars.mark_text(align='center', baseline='bottom', dy=-5, color='#2c3e50', fontWeight='bold', font='Nunito').encode(text='Questões:Q')
-    return (bars + labels).properties(width=500, height=500, title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
+    labels = bars.mark_text(align='center', baseline='bottom', dy=-5, color='#1a252f', fontWeight='bold', font='Nunito', fontSize=14).encode(text='Questões:Q')
+    return (bars + labels).properties(width=500, height=500, title=alt.TitleParams(text='Distribuição de Questões', anchor='middle', fontSize=18, font='Nunito', color='#1a252f', fontWeight='bold')).configure_view(stroke=None).configure(background='transparent')
 
 def bar_relevancia_customizado(ed_data):
     df = pd.DataFrame(ed_data)
     df['Relevancia'] = df['Peso'] * df['Questões']
     df['Percentual'] = df['Relevancia'] / df['Relevancia'].sum() * 100
     df['custom_label'] = df.apply(lambda row: f"{row['Disciplinas']} ({row['Percentual']:.1f}%)", axis=1)
-    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()], range=['#e3f2fd', '#1976d2'])
-    bars = alt.Chart(df).mark_bar(cornerRadiusTopRight=3, cornerRadiusBottomRight=3, stroke='#e9ecef', strokeWidth=2, size=70).encode(
+    color_scale = alt.Scale(domain=[df['Relevancia'].min(), df['Relevancia'].max()], range=['#4facfe', '#0066cc'])
+    bars = alt.Chart(df).mark_bar(cornerRadiusTopRight=3, cornerRadiusBottomRight=3, stroke='#34495e', strokeWidth=2, size=70).encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labels=False)),
         x=alt.X('Relevancia:Q', title=None, axis=alt.Axis(labels=False, grid=False)),
         color=alt.Color('Relevancia:Q', scale=color_scale, legend=None),
         tooltip=['Disciplinas:N', 'Peso:Q', 'Questões:Q', 'Relevancia:Q', alt.Tooltip('Percentual:Q', format='.1f')]
     )
-    text = bars.mark_text(align='left', baseline='middle', dx=3, color='#2c3e50', fontWeight='bold', fontSize=12, font='Nunito').encode(
+    text = bars.mark_text(align='left', baseline='middle', dx=3, color='#1a252f', fontWeight='bold', fontSize=13, font='Nunito').encode(
         y=alt.Y('Disciplinas:N', sort='-x', title=None, axis=alt.Axis(labelColor='#e9ecef')),
         x=alt.X('Relevancia:Q'),
         text='custom_label:N'
     )
-    return (bars + text).properties(width=500, height=500, title=alt.TitleParams(text='Relevância das Disciplinas', anchor='middle', fontSize=18, font='Nunito', color='#2c3e50')).configure_view(stroke=None).configure(background='transparent')
+    return (bars + text).properties(width=500, height=500, title=alt.TitleParams(text='Relevância das Disciplinas', anchor='middle', fontSize=18, font='Nunito', color='#1a252f', fontWeight='bold')).configure_view(stroke=None).configure(background='transparent')
 
 def rodape_motivacional():
     frase_aleatoria = random.choice(FRASES_MOTIVACIONAIS)
@@ -736,8 +736,8 @@ def main():
         
         .stCheckbox input:checked ~ div:last-child p {
             text-decoration: line-through;
-            opacity: 0.6;
-            color: #6c757d;
+            opacity: 0.8;
+            color: #dc3545 !important;
         }
         
         .stCheckbox input:checked ~ div:first-child {
@@ -775,10 +775,16 @@ def main():
             padding: 0 !important;
         }
         
-        /* Garante que checkboxes não sejam sobrepostos mas não sobreponham gráficos */
+        /* Garante que checkboxes não sobreponham gráficos */
         .stCheckbox {
             position: relative !important;
-            z-index: 5 !important;
+            z-index: 1 !important;
+        }
+        
+        /* Gráficos ficam acima dos checkboxes */
+        .vega-embed {
+            position: relative !important;
+            z-index: 10 !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -808,16 +814,25 @@ def main():
             transition: all 0.4s ease;
             border-radius: 15px;
             padding: 1rem;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
+            background: transparent !important;
+            backdrop-filter: none;
             position: relative;
-            z-index: 100;
+            z-index: 10;
         }
         
         .vega-embed:hover {
-            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.2);
+            box-shadow: none;
             transform: translateY(-5px);
-            z-index: 101;
+            z-index: 11;
+        }
+        
+        /* Background dos gráficos SVG transparente */
+        .vega-embed svg {
+            background: transparent !important;
+        }
+        
+        .vega-embed canvas {
+            background: transparent !important;
         }
         
         /* Animação smooth no scroll */
