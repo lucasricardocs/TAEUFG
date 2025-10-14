@@ -317,20 +317,32 @@ def display_conteudos_com_checkboxes(df, df_summary):
         concluidos = disc_stats['Conteudos_Concluidos']
         total = disc_stats['Total_Conteudos']
         progresso = (concluidos / total) * 100 if total > 0 else 0
+        
+        # Container que isola cada disciplina
         st.markdown(f"""
-            <div style="margin: 0.5rem 0; animation: fadeIn 0.5s ease-out;">
-                <b style="color: #495057;">{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
-                <div style="background: linear-gradient(90deg, #f8f9fa, #e9ecef); border-radius:8px; height:10px; margin-top:4px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
-                    <div style="width:{progresso}%; background: linear-gradient(90deg, #28a745, #20c997); height:10px; border-radius:8px; transition: width 0.5s ease; animation: progressPulse 2s ease-in-out infinite; box-shadow: 0 0 10px rgba(40, 167, 69, 0.4);"></div>
+            <div style="background: rgba(255, 255, 255, 0.5); padding: 1rem; border-radius: 12px; margin: 1rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <div style="margin-bottom: 0.8rem;">
+                    <b style="color: #495057; font-size: 1.05rem;">{disc.title()}</b> — {int(concluidos)}/{int(total)} ({progresso:.1f}%)
+                    <div style="background: linear-gradient(90deg, #f8f9fa, #e9ecef); border-radius:8px; height:10px; margin-top:6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div style="width:{progresso}%; background: linear-gradient(90deg, #28a745, #20c997); height:10px; border-radius:8px; transition: width 0.5s ease; animation: progressPulse 2s ease-in-out infinite; box-shadow: 0 0 10px rgba(40, 167, 69, 0.4);"></div>
+                    </div>
                 </div>
             </div>""", unsafe_allow_html=True)
+        
         expanded_key = f"expanded_{disc}"
         if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
             st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
+        
         if st.session_state.get(expanded_key, False):
+            # Container para os checkboxes com margem superior
+            st.markdown('<div style="margin-top: 0.5rem; padding-left: 0.5rem;">', unsafe_allow_html=True)
             for _, row in conteudos_disciplina.iterrows():
                 key = f"cb_{row['sheet_row']}"
                 st.checkbox(label=row['Conteúdos'], value=bool(row['Status']), key=key, on_change=on_checkbox_change, args=(worksheet, row['sheet_row'], key, disc))
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Espaçamento entre disciplinas
+        st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
 
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
@@ -874,14 +886,11 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#667eea", animation_delay="0.4s")
-    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
-    
-    # Adiciona espaço antes dos checkboxes
-    st.markdown("<div style='margin: 3rem 0;'></div>", unsafe_allow_html=True)
-    
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
     display_conteudos_com_checkboxes(df, df_summary)
+    
+    titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#667eea", animation_delay="0.4s")
+    st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#764ba2", animation_delay="0.6s")
     display_donuts_grid(df_summary, progresso_geral)
