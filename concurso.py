@@ -200,9 +200,7 @@ def get_weather_data(city_name):
 
 # --- Funções de Interface e Visualização ---
 def titulo_com_destaque(texto, cor_lateral="#0066cc", animation_delay="0s"):
-    st.markdown(f"""
-    <div class="title-container" style="border-left: 6px solid {cor_lateral}; animation-delay: {animation_delay};"><h2>{texto}</h2></div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<h2 style="color: #2c3e50; font-weight: 700; margin: 2rem 0 1.5rem 0;">{texto}</h2>""", unsafe_allow_html=True)
 
 def render_top_container(dias_restantes):
     weather_data = get_weather_data('Goiania, BR')
@@ -461,7 +459,7 @@ def main():
         .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #6c757d; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         
-        .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; right: -15px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
+        .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; left: -25px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -508,49 +506,6 @@ def main():
             .header-left, .header-center, .header-right { width: 100%; text-align: center; height: auto; }
             .header-right { align-items: center; justify-content: center; gap: 10px; }
             .smoke-particle { display: none; }
-        }
-        
-        .title-container { 
-            border: 1px solid #e9ecef; 
-            border-left: 6px solid #667eea; 
-            padding: 1.2rem 1.8rem; 
-            border-radius: 12px; 
-            margin: 2rem 0 1.5rem 0; 
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            animation: slideInLeft 0.8s ease-out;
-        }
-        
-        .title-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.5s;
-        }
-        
-        .title-container:hover::before {
-            left: 100%;
-        }
-        
-        .title-container:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.15);
-        }
-        
-        .title-container h2 { 
-            font-weight: 700; 
-            font-size: clamp(1.2rem, 2vw, 1.6rem); 
-            color: #2c3e50; 
-            margin: 0; 
-            position: relative;
-            z-index: 1;
         }
         
         [data-testid="stMetricValue"] { 
