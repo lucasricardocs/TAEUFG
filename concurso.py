@@ -391,7 +391,7 @@ def main():
         * { font-family: 'Nunito', sans-serif !important; }
         .stApp { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #2c3e50; }
         
-        /* Remove TODAS as caixas brancas padrão */
+        /* Remove caixas brancas padrão */
         [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] {
             background: transparent !important;
             border: none !important;
@@ -401,51 +401,6 @@ def main():
         /* Remove padding extra */
         .element-container { 
             padding: 0 !important;
-        }
-        
-        /* Remove caixas brancas dos containers */
-        .stMarkdown, [data-testid="stVerticalBlock"], [data-testid="column"] {
-            background: transparent !important;
-        }
-        
-        /* Remove fundo branco de containers de checkboxes */
-        [data-testid="stVerticalBlock"] > div:has(.stCheckbox) {
-            background: transparent !important;
-            padding: 0 !important;
-        }
-        
-        /* Remove qualquer fundo branco dentro de containers */
-        div[style*="background"] {
-            background: transparent !important;
-        }
-        
-        /* Força transparência em todos os blocos */
-        .block-container > div, .block-container > div > div {
-            background: transparent !important;
-        }
-        
-        /* Remove fundo branco dos containers de botões */
-        [data-testid="stVerticalBlock"]:has(.stButton) {
-            background: transparent !important;
-            padding: 0 !important;
-        }
-        
-        /* Remove container branco abaixo dos botões "Ver conteúdos" */
-        .stContainer, [data-testid="stContainer"] {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-        }
-        
-        /* Remove fundo de expanders e containers internos */
-        [data-testid="stExpander"], [data-testid="stExpanderDetails"] {
-            background: transparent !important;
-        }
-        
-        /* Remove qualquer div com fundo branco automatico */
-        div[data-testid="stVerticalBlock"] > div[style*="background-color: rgb(255, 255, 255)"] {
-            background: transparent !important;
         }
         
         /* Animações */
