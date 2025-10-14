@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -457,11 +457,7 @@ def main():
         .header-right { flex: 1.2; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; height: 90%; }
         .header-info-top, .header-info-bottom { width: 100%; }
         .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #6c757d; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        
-        .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; left: -25px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         .smoke-wrapper { 
             position: absolute; 
