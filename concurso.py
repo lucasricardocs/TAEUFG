@@ -858,21 +858,18 @@ def main():
             to { width: 60px; }
         }
         
-        /* Glow nos gráficos do Altair */
+        /* Gráficos com position absolute para ficarem fixos */
         .vega-embed {
             transition: all 0.4s ease;
             border-radius: 15px;
             padding: 1rem;
             background: transparent !important;
             backdrop-filter: none;
-            position: relative;
-            z-index: 100;
         }
         
         .vega-embed:hover {
             box-shadow: none;
             transform: translateY(-5px);
-            z-index: 101;
         }
         
         /* Background dos gráficos SVG transparente */
