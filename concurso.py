@@ -323,11 +323,9 @@ def display_conteudos_com_checkboxes(df, df_summary):
             if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
             if st.session_state.get(expanded_key, False):
-                st.markdown('<div style="padding: 15px; border-left: 4px solid #6c757d; margin-left: 10px; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 0 8px 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
                     st.checkbox(label=row['Conteúdos'], value=bool(row['Status']), key=key, on_change=on_checkbox_change, args=(worksheet, row['sheet_row'], key, disc))
-                st.markdown('</div>', unsafe_allow_html=True)
 
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
