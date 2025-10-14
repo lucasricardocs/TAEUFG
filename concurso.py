@@ -1,4 +1,4 @@
-# -*- coding: utf--8 -*-
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -10,6 +10,7 @@ import warnings
 import altair as alt
 import random
 import requests
+import time
 
 # Ignora avisos futuros do pandas
 warnings.filterwarnings('ignore', category=FutureWarning, message='.*observed=False.*')
@@ -81,16 +82,33 @@ def get_gspread_client():
 def get_worksheet():
     client = get_gspread_client()
     if not client: return None
-    try:
-        spreadsheet = client.open_by_key(SPREADSHEET_ID)
-        return spreadsheet.worksheet(WORKSHEET_NAME)
-    except SpreadsheetNotFound:
-        st.error("Planilha não encontrada. Verifique o SPREADSHEET_ID.")
-    except Exception as e:
-        st.error(f"Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
+    
+    max_retries = 5
+    base_delay = 1
+    
+    for attempt in range(max_retries):
+        try:
+            spreadsheet = client.open_by_key(SPREADSHEET_ID)
+            return spreadsheet.worksheet(WORKSHEET_NAME)
+        except SpreadsheetNotFound:
+            st.error("Planilha não encontrada. Verifique o SPREADSHEET_ID.")
+            return None
+        except APIError as e:
+            if e.response.status_code == 503 and attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                st.warning(f"⏳ Aguardando {delay}s antes de tentar novamente... (Tentativa {attempt + 1}/{max_retries})")
+                time.sleep(delay)
+                continue
+            else:
+                st.error(f"Erro ao acessar a aba '{WORKSHEET_NAME}': {e}")
+                return None
+        except Exception as e:
+            st.error(f"Erro inesperado: {e}")
+            return None
+    
     return None
 
-@st.cache_data(ttl=300, show_spinner="Carregando dados dos estudos...")
+@st.cache_data(ttl=600, show_spinner="Carregando dados dos estudos...")
 def load_data_with_row_indices():
     worksheet = get_worksheet()
     if not worksheet: return pd.DataFrame()
@@ -356,12 +374,34 @@ def main():
     )
     alt.themes.enable('none')
     
-    # CSS com fundo cinza claro no container do topo e animação dos botões aplicada aos containers de título
+    # Sidebar com botão de cache
+    with st.sidebar:
+        st.markdown("### ⚙️ Configurações")
+        if st.button("🔄 Limpar Cache e Reconectar"):
+            st.cache_resource.clear()
+            st.cache_data.clear()
+            st.success("Cache limpo! Recarregando...")
+            time.sleep(1)
+            st.rerun()
+    
+    # CSS otimizado sem caixas brancas
     st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Nunito', sans-serif !important; }
         .stApp { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); color: #2c3e50; }
+        
+        /* Remove caixas brancas padrão */
+        [data-testid="stVerticalBlock"] > [style*="flex-direction: column;"] > [data-testid="stVerticalBlock"] {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Remove padding extra */
+        .element-container { 
+            padding: 0 !important;
+        }
         
         /* Animações */
         @keyframes fadeIn { 
@@ -398,7 +438,6 @@ def main():
             border-radius: clamp(15px, 2vw, 20px);
         }
         
-        /* MODIFICAÇÃO: Fundo cinza bem clarinho para o container do topo */
         .header-container {
             width: 100%; min-height: 200px; height: clamp(200px, 22vh, 280px);
             background: #f8f9fa;
@@ -426,7 +465,6 @@ def main():
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* Efeito de fumaça ajustado para o fundo cinza */
         .smoke-wrapper { 
             position: absolute; 
             top: 0; 
@@ -472,7 +510,6 @@ def main():
             .smoke-particle { display: none; }
         }
         
-        /* MODIFICAÇÃO: Containers de título com animação igual aos botões 'Ver conteúdos' */
         .title-container { 
             border: 1px solid #e9ecef; 
             border-left: 6px solid #667eea; 
@@ -516,7 +553,6 @@ def main():
             z-index: 1;
         }
         
-        /* Métricas com cores melhoradas */
         [data-testid="stMetricValue"] { 
             font-size: clamp(1.2rem, 2vw, 1.8rem); 
             font-weight: bold; 
@@ -527,7 +563,6 @@ def main():
             color: #6c757d;
         }
         
-        /* Botões com gradiente melhorado */
         .stButton > button { 
             width: 100%; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
@@ -563,7 +598,6 @@ def main():
             background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); 
         }
         
-        /* Checkboxes com estilo melhorado */
         .stCheckbox > label > div:first-child {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border: 2px solid #dee2e6;
