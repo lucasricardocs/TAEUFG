@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -322,9 +323,11 @@ def display_conteudos_com_checkboxes(df, df_summary):
             if st.button(f"Ver conteúdos de {disc.title()}", key=f"btn_{disc}"):
                 st.session_state[expanded_key] = not st.session_state.get(expanded_key, False)
             if st.session_state.get(expanded_key, False):
+                st.markdown('<div style="padding: 15px; border-left: 4px solid #6c757d; margin-left: 10px; background: linear-gradient(135deg, #f8f9fa, #ffffff); border-radius: 0 8px 8px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
                 for _, row in conteudos_disciplina.iterrows():
                     key = f"cb_{row['sheet_row']}"
                     st.checkbox(label=row['Conteúdos'], value=bool(row['Status']), key=key, on_change=on_checkbox_change, args=(worksheet, row['sheet_row'], key, disc))
+                st.markdown('</div>', unsafe_allow_html=True)
 
 def bar_questoes_padronizado(ed_data):
     df = pd.DataFrame(ed_data)
@@ -454,7 +457,11 @@ def main():
         .header-right { flex: 1.2; flex-direction: column; justify-content: space-between; align-items: flex-end; text-align: right; height: 90%; }
         .header-info-top, .header-info-bottom { width: 100%; }
         .header-info-top .location-date { font-size: clamp(0.65rem, 1vw, 0.85rem); color: #6c757d; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .days-countdown { font-size: clamp(1.2rem, 2.5vw, 2.2rem); font-weight: 700; color: #e74c3c; animation: pulse 2s infinite ease-in-out; position: relative; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        
+        .sparkle::before { content: '✨'; font-size: clamp(1rem, 2vw, 1.8rem); position: absolute; right: -15px; top: 50%; transform: translateY(-50%); animation: sparkle-anim 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes sparkle-anim { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         .smoke-wrapper { 
             position: absolute; 
