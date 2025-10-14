@@ -137,20 +137,30 @@ def load_data_with_row_indices():
 
 # --- Funções de Lógica e Cálculos ---
 def update_status_in_sheet(sheet, row_number, new_status):
-    try:
-        header = sheet.row_values(1)
-        if 'Status' not in header:
-            st.error("Coluna 'Status' não encontrada na planilha.")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            header = sheet.row_values(1)
+            if 'Status' not in header:
+                st.error("Coluna 'Status' não encontrada na planilha.")
+                return False
+            status_col_index = header.index('Status') + 1
+            sheet.update_cell(row_number, status_col_index, new_status)
+            time.sleep(0.3)  # Pequeno delay para garantir que foi salvo
+            return True
+        except APIError as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)
+                continue
+            st.error(f"Erro na API do Google Sheets: {e}")
             return False
-        status_col_index = header.index('Status') + 1
-        sheet.update_cell(row_number, status_col_index, new_status)
-        return True
-    except APIError as e:
-        st.error(f"Erro na API do Google Sheets durante a atualização: {e}")
-        return False
-    except Exception as e:
-        st.error(f"Erro inesperado ao atualizar planilha: {e}")
-        return False
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(0.5)
+                continue
+            st.error(f"Erro ao atualizar: {e}")
+            return False
+    return False
 
 def calculate_progress(df):
     df_edital = pd.DataFrame(ED_DATA)
@@ -297,12 +307,32 @@ def display_donuts_grid(df_summary, progresso_geral):
 
 def on_checkbox_change(worksheet, row_number, key, disciplina):
     novo_status = st.session_state.get(key, False)
-    if update_status_in_sheet(worksheet, row_number, "TRUE" if novo_status else "FALSE"):
-        st.toast("✅ Status atualizado! Recarregue a página para ver as mudanças.", icon="✅")
+    
+    try:
+        # Atualiza na planilha
+        header = worksheet.row_values(1)
+        if 'Status' not in header:
+            st.error("Coluna 'Status' não encontrada na planilha.")
+            return
+        
+        status_col_index = header.index('Status') + 1
+        worksheet.update_cell(row_number, status_col_index, "TRUE" if novo_status else "FALSE")
+        
+        # Limpa TODOS os caches - isso é crucial
+        st.cache_data.clear()
+        st.cache_resource.clear()
+        
+        # Mantém a disciplina expandida
         st.session_state[f"expanded_{disciplina}"] = True
-        load_data_with_row_indices.clear()
-    else:
-        st.toast("❌ Falha ao atualizar. Tente novamente.", icon="❌")
+        
+        # Aguarda um pouco e recarrega
+        time.sleep(0.5)
+        st.rerun()
+        
+    except Exception as e:
+        st.error(f"❌ Erro ao atualizar: {str(e)}")
+        # Reverte o checkbox
+        st.session_state[key] = not novo_status
 
 def display_conteudos_com_checkboxes(df, df_summary):
     worksheet = get_worksheet()
@@ -652,19 +682,21 @@ def main():
             margin: 0 !important;
             padding: 0 !important;
             min-height: 0 !important;
+            height: auto !important;
         }
         
         .stCheckbox > label {
             transition: all 0.2s ease;
-            padding: 0.25rem 0.5rem !important;
+            padding: 0.15rem 0.5rem !important;
             border-radius: 8px;
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
-            gap: 0.6rem !important;
+            gap: 0.5rem !important;
             width: 100%;
             margin: 0 !important;
             min-height: 0 !important;
+            height: auto !important;
         }
         
         .stCheckbox > label:hover {
@@ -675,6 +707,7 @@ def main():
             display: inline-flex !important;
             align-items: center !important;
             margin: 0 !important;
+            padding: 0 !important;
         }
         
         .stCheckbox > label > div:first-child {
@@ -690,14 +723,15 @@ def main():
             flex: 1 !important;
             margin: 0 !important;
             padding: 0 !important;
-            line-height: 1.3 !important;
+            line-height: 1.2 !important;
         }
         
         .stCheckbox > label > div:last-child p {
             margin: 0 !important;
             padding: 0 !important;
             transition: all 0.3s ease;
-            line-height: 1.3 !important;
+            line-height: 1.2 !important;
+            font-size: 0.95rem !important;
         }
         
         .stCheckbox input:checked ~ div:last-child p {
@@ -712,22 +746,33 @@ def main():
             border-color: #28a745 !important;
         }
         
-        /* Remove espaçamento extra dos containers dos checkboxes */
+        /* Remove TODO espaçamento extra dos containers */
         [data-testid="stVerticalBlock"] > div:has(.stCheckbox) {
             gap: 0 !important;
             padding: 0 !important;
             margin: 0 !important;
         }
         
-        /* Remove espaçamento entre elementos do Streamlit */
-        div[data-testid="stVerticalBlock"] > div[data-testid="element-container"]:has(.stCheckbox) {
-            margin-bottom: 0.1rem !important;
+        /* Força espaçamento mínimo entre checkboxes */
+        div[data-testid="element-container"]:has(.stCheckbox) {
+            margin-bottom: 0 !important;
+            margin-top: 0 !important;
             padding: 0 !important;
         }
         
-        /* Compacta ainda mais o espaçamento */
+        /* Remove espaçamento padrão do Streamlit */
         .stCheckbox + .stCheckbox {
             margin-top: 0 !important;
+        }
+        
+        /* Container dos checkboxes super compacto */
+        div[data-testid="stVerticalBlock"]:has(.stCheckbox) {
+            gap: 0 !important;
+        }
+        
+        div[data-testid="stVerticalBlock"]:has(.stCheckbox) > div {
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -799,13 +844,6 @@ def main():
     
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
-    
-    # Botão para atualizar dados
-    col1, col2, col3 = st.columns([1, 1, 3])
-    with col1:
-        if st.button("🔄 Atualizar Dados", use_container_width=True):
-            load_data_with_row_indices.clear()
-            st.rerun()
 
     titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
     display_conteudos_com_checkboxes(df, df_summary)
