@@ -646,28 +646,43 @@ def main():
             transform: translateY(-1px) scale(0.98);
         }
         
-        .stCheckbox > label > div:first-child {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border: 2px solid #dee2e6;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-        
-        .stCheckbox > label > div:first-child:hover {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            transform: scale(1.05);
+        .stCheckbox {
+            display: flex !important;
+            align-items: center !important;
         }
         
         .stCheckbox > label {
             transition: all 0.2s ease;
             padding: 0.5rem;
             border-radius: 8px;
-            display: block;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            width: 100%;
         }
         
         .stCheckbox > label:hover {
             background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .stCheckbox > label > div {
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        
+        .stCheckbox > label > div:first-child {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            flex-shrink: 0 !important;
+        }
+        
+        .stCheckbox > label > div:last-child {
+            flex: 1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         .stCheckbox input:checked ~ div:first-child {
