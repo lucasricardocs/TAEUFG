@@ -650,6 +650,7 @@ def main():
             transform: translateY(-1px) scale(0.98);
         }
         
+        /* Remove z-index dos checkboxes para não sobrepor nada */
         .stCheckbox {
             display: flex !important;
             align-items: center !important;
@@ -657,6 +658,8 @@ def main():
             padding: 0 !important;
             min-height: 0 !important;
             height: auto !important;
+            position: relative !important;
+            z-index: auto !important;
         }
         
         .stCheckbox > label {
@@ -726,7 +729,7 @@ def main():
             padding: 0 !important;
             margin: 0 !important;
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
         /* Força espaçamento mínimo entre checkboxes */
@@ -735,7 +738,7 @@ def main():
             margin-top: 0 !important;
             padding: 0 !important;
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
         /* Remove espaçamento padrão do Streamlit */
@@ -747,68 +750,72 @@ def main():
         div[data-testid="stVerticalBlock"]:has(.stCheckbox) {
             gap: 0 !important;
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
         div[data-testid="stVerticalBlock"]:has(.stCheckbox) > div {
             margin: 0 !important;
             padding: 0 !important;
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
-        /* Garante que checkboxes não sobreponham gráficos */
-        .stCheckbox {
-            position: relative !important;
-            z-index: 1 !important;
-        }
-        
-        /* Container dos checkboxes com z-index baixo */
-        div[data-testid="stVerticalBlock"]:has(.stCheckbox) {
-            position: relative !important;
-            z-index: 1 !important;
-        }
-        
-        /* TODOS os elementos relacionados a checkboxes com z-index baixo */
+        /* TODOS os elementos relacionados a checkboxes sem z-index alto */
         div:has(> .stCheckbox) {
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
-        /* Botões de expandir também com z-index baixo */
+        /* Botões de expandir também sem z-index alto */
         .stButton {
             position: relative !important;
-            z-index: 1 !important;
+            z-index: auto !important;
         }
         
-        /* Gráficos ficam MUITO acima dos checkboxes */
+        /* Gráficos em camada normal do fluxo do documento */
         .vega-embed {
+            transition: all 0.4s ease;
+            border-radius: 15px;
+            padding: 1rem;
+            background: transparent !important;
+            backdrop-filter: none;
             position: relative !important;
-            z-index: 100 !important;
+            z-index: auto !important;
         }
         
-        /* Container do gráfico também com z-index alto */
+        .vega-embed:hover {
+            box-shadow: none;
+            transform: translateY(-5px);
+        }
+        
+        /* Background dos gráficos SVG transparente */
+        .vega-embed svg {
+            background: transparent !important;
+        }
+        
+        .vega-embed canvas {
+            background: transparent !important;
+        }
+        
+        /* Containers de gráficos em fluxo normal */
         div[data-testid="stVerticalBlock"]:has(.vega-embed) {
             position: relative !important;
-            z-index: 100 !important;
+            z-index: auto !important;
         }
         
-        /* Containers de colunas com gráficos */
         [data-testid="column"]:has(.vega-embed) {
             position: relative !important;
-            z-index: 100 !important;
+            z-index: auto !important;
         }
         
-        /* Element container com gráficos */
         div[data-testid="element-container"]:has(.vega-embed) {
             position: relative !important;
-            z-index: 100 !important;
+            z-index: auto !important;
         }
         
-        /* Qualquer div pai que contenha vega-embed */
         div:has(> div > .vega-embed) {
             position: relative !important;
-            z-index: 100 !important;
+            z-index: auto !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -831,29 +838,6 @@ def main():
         
         @keyframes expandWidth {
             to { width: 60px; }
-        }
-        
-        /* Gráficos com position absolute para ficarem fixos */
-        .vega-embed {
-            transition: all 0.4s ease;
-            border-radius: 15px;
-            padding: 1rem;
-            background: transparent !important;
-            backdrop-filter: none;
-        }
-        
-        .vega-embed:hover {
-            box-shadow: none;
-            transform: translateY(-5px);
-        }
-        
-        /* Background dos gráficos SVG transparente */
-        .vega-embed svg {
-            background: transparent !important;
-        }
-        
-        .vega-embed canvas {
-            background: transparent !important;
         }
         
         /* Animação smooth no scroll */
@@ -890,11 +874,14 @@ def main():
     display_progress_bar(progresso_geral)
     display_simple_metrics(stats)
 
-    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
-    display_conteudos_com_checkboxes(df, df_summary)
-    
     titulo_com_destaque("📊 Progresso Detalhado", cor_lateral="#667eea", animation_delay="0.4s")
     st.altair_chart(create_altair_stacked_bar(df_summary), use_container_width=True)
+    
+    # Adiciona espaço antes dos checkboxes
+    st.markdown("<div style='margin: 3rem 0;'></div>", unsafe_allow_html=True)
+    
+    titulo_com_destaque("✅ Checklist de Conteúdos", cor_lateral="#28a745", animation_delay="0.2s")
+    display_conteudos_com_checkboxes(df, df_summary)
     
     titulo_com_destaque("📈 Visão Geral do Progresso", cor_lateral="#764ba2", animation_delay="0.6s")
     display_donuts_grid(df_summary, progresso_geral)
