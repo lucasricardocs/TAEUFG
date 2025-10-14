@@ -679,7 +679,7 @@ def main():
         .stCheckbox {
             display: flex !important;
             align-items: center !important;
-            margin: 0 !important;
+            margin: 0 0 0.5rem 0 !important;
             padding: 0 !important;
             min-height: 0 !important;
             height: auto !important;
@@ -687,7 +687,7 @@ def main():
         
         .stCheckbox > label {
             transition: all 0.2s ease;
-            padding: 0.15rem 0.5rem !important;
+            padding: 0.25rem 0.5rem !important;
             border-radius: 8px;
             display: flex !important;
             flex-direction: row !important;
@@ -781,10 +781,28 @@ def main():
             z-index: 1 !important;
         }
         
-        /* Gráficos ficam acima dos checkboxes */
+        /* Container dos checkboxes com z-index baixo */
+        div[data-testid="stVerticalBlock"]:has(.stCheckbox) {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        
+        /* Gráficos ficam MUITO acima dos checkboxes */
         .vega-embed {
             position: relative !important;
-            z-index: 10 !important;
+            z-index: 100 !important;
+        }
+        
+        /* Container do gráfico também com z-index alto */
+        div[data-testid="stVerticalBlock"]:has(.vega-embed) {
+            position: relative !important;
+            z-index: 100 !important;
+        }
+        
+        /* Containers de colunas com gráficos */
+        [data-testid="column"]:has(.vega-embed) {
+            position: relative !important;
+            z-index: 100 !important;
         }
         
         /* Animação nas barras de progresso inline */
@@ -817,13 +835,13 @@ def main():
             background: transparent !important;
             backdrop-filter: none;
             position: relative;
-            z-index: 10;
+            z-index: 100;
         }
         
         .vega-embed:hover {
             box-shadow: none;
             transform: translateY(-5px);
-            z-index: 11;
+            z-index: 101;
         }
         
         /* Background dos gráficos SVG transparente */
