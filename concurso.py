@@ -384,7 +384,7 @@ def main():
     st.set_page_config(
         page_title="Dashboard de Estudos - Goiás Fomento",
         page_icon="📚", 
-        layout="wide"
+        layout="center"
     )
     alt.themes.enable('none')
     
