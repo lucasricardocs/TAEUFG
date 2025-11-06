@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import numpy as np
 
 # Função para gerenciar progresso
 def update_progress(completed_items, total_items):
@@ -77,31 +78,38 @@ def plot_progress(df):
 
     st.altair_chart(chart, use_container_width=True)
 
-# Inicializando a sessão do Streamlit
-st.title("Dashboard de Estudo - Concurso Auditor Fiscal")
+# Função para marcar os tópicos como estudados
+def toggle_checkboxes(df, subject):
+    st.subheader(f"Tópicos de {subject}")
+    subject_df = df[df["Matéria"] == subject]
+    for idx, row in subject_df.iterrows():
+        # Criar um efeito de hover com cor ao passar o mouse
+        completed = st.checkbox(f"{row['Tópico']}", value=row['Concluído'], key=row['Tópico'])
+        df.loc[idx, 'Concluído'] = completed
+    return df
 
-# Carregar o DataFrame
+# Layout principal
+st.title("Dashboard de Estudo - Concurso Auditor Fiscal")
+st.markdown("""
+    <style>
+    .css-1d391kg {
+        background-color: #f7f7f7;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 df = create_study_df()
 
-# Sidebar para seleção de materiais
-st.sidebar.header("Marque os Tópicos Estudados")
-selected_subject = st.sidebar.selectbox("Escolha a Matéria", df["Matéria"].unique())
+# Lista de matérias
+subjects = list(topics.keys())
+subject_selection = st.selectbox("Escolha a Matéria para Estudo", subjects)
 
-# Filtrar os tópicos selecionados pela matéria
-selected_topics = df[df["Matéria"] == selected_subject]
-
-# Exibir tópicos da matéria selecionada
-for idx, row in selected_topics.iterrows():
-    completed = st.checkbox(f"{row['Tópico']}", value=row['Concluído'], key=row['Tópico'])
-    df.loc[idx, 'Concluído'] = completed
+# Exibir os tópicos da matéria selecionada
+df = toggle_checkboxes(df, subject_selection)
 
 # Exibir gráficos de progresso com animação
 st.header("Progresso de Estudo")
 plot_progress(df)
-
-# Exibir tabela de progresso detalhado
-st.subheader("Detalhes do Progresso")
-st.dataframe(df)
 
 # Exibir a quantidade de tópicos estudados
 completed_topics = df['Concluído'].sum()
@@ -109,3 +117,4 @@ total_topics = len(df)
 study_progress = update_progress(completed_topics, total_topics)
 
 st.markdown(f"### Progresso Total de Estudo: {study_progress}%")
+
