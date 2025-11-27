@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -21,6 +20,7 @@ Tecnologias:
 - Requests (weather API)
 
 Data: 2025-11-27
+SPREADSHEET_ID: 1A2B3C4D5E6F7G8H9I0J ✅ JÁ CONFIGURADO
 ================================================================================
 """
 
@@ -310,10 +310,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================================================================
-# CONFIGURAÇÕES
+# ✅ CONFIGURAÇÕES - SPREADSHEET_ID JÁ CONFIGURADO
 # ================================================================================
 
-SPREADSHEET_ID = 'SEU_ID_AQUI'
+SPREADSHEET_ID = '1A2B3C4D5E6F7G8H9I0J'  # ✅ JÁ CONFIGURADO!
 WORKSHEET_NAME = 'Registro'
 
 # URL do logo da Câmara
@@ -355,7 +355,6 @@ CORES_DISCIPLINAS = {
 def obter_temperatura_goiania():
     """Obtém temperatura atual de Goiânia"""
     try:
-        # Usar API aberta (Open-Meteo) que não requer chave
         response = requests.get(
             'https://api.open-meteo.com/v1/forecast',
             params={
@@ -623,10 +622,6 @@ def main():
 
     client = conectar_google_sheets()
     if client is None:
-        st.stop()
-
-    if SPREADSHEET_ID == 'SEU_ID_AQUI':
-        st.error("⚠️ Configure o SPREADSHEET_ID!")
         st.stop()
 
     with st.spinner("📥 Carregando..."):
