@@ -2,25 +2,31 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-🚀 DASHBOARD DE ESTUDOS - CÂMARA MUNICIPAL DE GOIÂNIA
+🚀 DASHBOARD DE ESTUDOS ULTIMATE - CÂMARA MUNICIPAL DE GOIÂNIA
 ================================================================================
-VERSÃO: ULTIMATE MAXIMIZED
-DATA: 2025-11-27
+VERSÃO: ULTIMATE EXTENDED
 AUTOR: Perplexity AI Assistant
+DATA: 2025-11-27
 
 DESCRIÇÃO:
-Dashboard completo para acompanhamento de estudos com gamificação,
-animações avançadas, inteligência de dados e interface premium.
+Este dashboard é uma aplicação web completa desenvolvida com Streamlit para
+acompanhamento de estudos para concursos públicos. Ele integra funcionalidades
+avançadas de visualização de dados, gamificação e gestão de tarefas.
 
-FUNCIONALIDADES:
-1. Conexão segura com Google Sheets API
-2. Interface responsiva com tema claro
-3. Sistema de partículas (fagulhas) animadas
-4. Gamificação com badges e conquistas
-5. Heatmap de produtividade (simulado/real)
-6. Sistema de revisão inteligente (Spaced Repetition básico)
-7. Gráficos interativos (Altair)
-8. Check-list funcional com atualização em tempo real
+FUNCIONALIDADES PRINCIPAIS:
+1.  Conexão segura e autenticada com Google Sheets API.
+2.  Interface de usuário responsiva e moderna (Tema Claro).
+3.  Sistema de partículas (fagulhas) animadas em JavaScript puro.
+4.  Gamificação com sistema de Badges e Conquistas.
+5.  Heatmap de Produtividade Real baseado em histórico de datas.
+6.  Gráficos interativos de alta performance com Altair.
+7.  Check-list de conteúdos com atualização em tempo real na nuvem.
+8.  Visual clean e minimalista para máxima legibilidade.
+
+REQUISITOS:
+- Python 3.8+
+- Bibliotecas: streamlit, pandas, altair, gspread, google-auth
+- Arquivo 'credentials.json' (Google Service Account)
 ================================================================================
 """
 
@@ -34,20 +40,25 @@ import warnings
 import json
 import time
 import requests
-import random
 import locale
 
-# Configuração de Avisos e Locale
+# ================================================================================
+# 1. CONFIGURAÇÃO INICIAL DO AMBIENTE
+# ================================================================================
+
+# Suprimir avisos desnecessários do Pandas/Streamlit
 warnings.filterwarnings('ignore')
+
+# Tentar configurar locale para português (datas formatadas)
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except:
-    pass
+except Exception:
+    try:
+        locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil.1252')
+    except:
+        pass  # Fallback para padrão do sistema
 
-# ================================================================================
-# 1. CONFIGURAÇÃO DA PÁGINA
-# ================================================================================
-
+# Configuração da Página Streamlit
 st.set_page_config(
     page_title="Dashboard Ultimate",
     page_icon="🔥",
@@ -56,47 +67,60 @@ st.set_page_config(
     menu_items={
         'Get Help': None,
         'Report a bug': None,
-        'About': "Dashboard de Estudos Premium v2.0"
+        'About': """
+        ### Dashboard de Estudos Ultimate
+        Desenvolvido para alta performance em concursos.
+        """
     }
 )
 
 # ================================================================================
-# 2. ESTILOS CSS AVANÇADOS (INJEÇÃO DE CÓDIGO)
+# 2. ESTILOS CSS AVANÇADOS (LAYOUT & ANIMAÇÕES)
 # ================================================================================
 
 st.markdown("""
 <style>
-    /* IMPORTAÇÃO DE FONTES */
+    /* 
+    ==========================================================================
+    2.1. IMPORTAÇÃO DE FONTES E RESET
+    ==========================================================================
+    */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
-    /* RESET E BASE */
     * {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        box-sizing: border-box;
     }
 
-    /* BACKGROUND DA PÁGINA */
+    /* 
+    ==========================================================================
+    2.2. CONFIGURAÇÃO DO CONTAINER PRINCIPAL
+    ==========================================================================
+    */
     [data-testid="stMainBlockContainer"] {
         background-color: #f8fafc;
-        background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-        background-size: 20px 20px;
         color: #0f172a;
-        overflow-x: hidden;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
     }
 
-    /* REMOVE ELEMENTOS PADRÃO DO STREAMLIT */
+    /* Remove elementos padrão do Streamlit para visual limpo */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* ==========================================================================
-       ANIMAÇÕES (KEYFRAMES)
-       ========================================================================== */
+    /* 
+    ==========================================================================
+    2.3. ANIMAÇÕES (KEYFRAMES)
+    ==========================================================================
+    */
     
+    /* Entrada suave de baixo para cima */
     @keyframes slideUpFade {
         0% {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px);
         }
         100% {
             opacity: 1;
@@ -104,6 +128,7 @@ st.markdown("""
         }
     }
 
+    /* Efeito de "Pop" para Badges */
     @keyframes popIn {
         0% {
             opacity: 0;
@@ -118,358 +143,241 @@ st.markdown("""
         }
     }
 
-    @keyframes shimmer {
-        0% { background-position: -1000px 0; }
-        100% { background-position: 1000px 0; }
-    }
-
-    @keyframes pulse-glow {
-        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-    }
-
-    @keyframes stripes {
-        from { background-position: 20px 0; }
-        to { background-position: 0 0; }
-    }
-
-    @keyframes fillUp {
-        from { width: 0; }
-    }
-    
+    /* Flutuação de partículas */
     @keyframes floatUp { 
         0% { 
-            transform: translateY(110vh) scale(0); 
+            transform: translateY(100vh) scale(0.5); 
             opacity: 0; 
         } 
         20% { 
             opacity: 0.8; 
-            transform: translateY(80vh) scale(1); 
         } 
-        80% { 
-            opacity: 0.6; 
-        }
         100% { 
             transform: translateY(-10vh) scale(0.5); 
             opacity: 0; 
         } 
     }
 
-    /* ==========================================================================
-       COMPONENTES DO HEADER
-       ========================================================================== */
+    /* 
+    ==========================================================================
+    2.4. COMPONENTES DO HEADER (FIXO & SÓLIDO)
+    ==========================================================================
+    */
 
     .header-container {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
+        display: flex;
         align-items: center;
-        gap: 2rem;
+        justify-content: center;
         
+        /* Gradiente Azul Profundo */
         background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-        padding: 2rem 2.5rem;
-        border-radius: 20px;
-        margin-bottom: 2.5rem;
         
+        padding: 2rem 3rem;
+        border-radius: 20px;
+        margin-bottom: 3rem;
+        
+        /* Borda Branca Grossa (Solicitado) */
+        border: 5px solid #ffffff;
         box-shadow: 0 15px 35px -10px rgba(30, 64, 175, 0.4);
-        color: white;
         
         position: relative;
         z-index: 10;
         overflow: hidden;
-        
-        animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        color: white;
     }
 
-    /* Efeito de brilho no header */
-    .header-container::before {
-        content: '';
+    .header-logo {
         position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
-        animation: shimmer 3s infinite linear;
-        background-size: 200% 100%;
-        pointer-events: none;
+        left: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .header-logo img { 
-        max-width: 280px; 
+        max-width: 260px; 
         height: auto;
-        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); 
-        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        cursor: pointer;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); 
+        transition: transform 0.3s ease;
     }
     
-    .header-logo img:hover { 
-        transform: scale(1.05) rotate(-1deg); 
+    .header-logo img:hover {
+        transform: scale(1.02);
     }
 
     .header-content { 
         text-align: center; 
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        z-index: 1;
     }
 
     .header-content h1 { 
-        font-size: 2.8rem; 
+        font-size: 2.6rem; 
         font-weight: 800; 
         margin: 0; 
-        letter-spacing: -0.03em;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        background: linear-gradient(to right, #ffffff, #e0e7ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #ffffff; /* Branco Sólido */
+        letter-spacing: -0.02em;
     }
     
     .header-content p {
         margin-top: 0.5rem;
         font-size: 1.1rem;
-        color: #93c5fd;
+        color: #ffffff;
+        opacity: 0.9;
         font-weight: 500;
     }
 
+    /* Informações no Canto Superior Direito */
     .header-info { 
+        position: absolute;
+        top: 1.2rem;
+        right: 1.5rem;
+        text-align: right;
+        z-index: 2;
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        
-        background: rgba(255,255,255,0.1); 
-        padding: 1rem 1.5rem; 
-        border-radius: 16px; 
-        text-align: right; 
-        
-        border: 1px solid rgba(255,255,255,0.15);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-    }
-    
-    .header-info:hover {
-        background: rgba(255,255,255,0.15); 
-        transform: translateY(-2px);
+        gap: 0.2rem;
     }
     
     .info-row {
+        font-size: 0.7rem; /* Tamanho pequeno */
+        color: rgba(255,255,255,0.95);
+        font-weight: 700;
+        line-height: 1.4;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* 
+    ==========================================================================
+    2.5. LISTA DE CONTEÚDOS (ESTILO CLEAN)
+    ==========================================================================
+    */
+
+    .topic-row {
         display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.5rem;
+        align-items: flex-start;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05); /* Linha sutil */
+        transition: background-color 0.2s ease;
+    }
+    
+    .topic-row:hover {
+        background-color: #f1f5f9;
+        border-radius: 4px;
+    }
+    
+    .topic-text {
+        flex: 1;
         font-size: 0.95rem;
+        color: #334155;
+        padding-left: 12px;
+        line-height: 1.5;
+        font-weight: 400;
+    }
+    
+    .topic-text.done {
+        color: #94a3b8; /* Cinza claro */
+        text-decoration: line-through;
+    }
+    
+    .topic-date {
+        font-size: 0.7rem;
+        color: #64748b;
+        background-color: #e2e8f0;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 10px;
+        white-space: nowrap;
+        vertical-align: middle;
         font-weight: 600;
     }
 
-    /* ==========================================================================
-       GAMIFICAÇÃO (BADGES)
-       ========================================================================== */
+    /* 
+    ==========================================================================
+    2.6. CARDS DE MÉTRICAS (KPIs)
+    ==========================================================================
+    */
+
+    .metric-card { 
+        background: white; 
+        padding: 1.8rem; 
+        border-radius: 20px; 
+        border: 1px solid #e2e8f0; 
+        text-align: center; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); 
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .metric-card:hover { 
+        transform: translateY(-5px); 
+        border-color: #3b82f6;
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .metric-value { 
+        font-size: 2.8rem; 
+        font-weight: 800; 
+        color: #0f172a;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* 
+    ==========================================================================
+    2.7. GAMIFICAÇÃO (BADGES)
+    ==========================================================================
+    */
 
     .badge-container { 
         display: flex; 
-        gap: 15px; 
+        gap: 12px; 
         justify-content: center; 
         flex-wrap: wrap; 
         margin-bottom: 30px; 
         padding: 10px;
     }
     
-    .badge {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
+    .badge { 
+        background: linear-gradient(135deg, #FFD700, #FFA500); 
         color: #fff; 
-        padding: 10px 24px; 
-        border-radius: 50px;
-        
-        font-weight: 800; 
-        font-size: 1rem; 
+        padding: 8px 20px; 
+        border-radius: 50px; 
+        font-weight: 700; 
+        font-size: 0.85rem; 
         text-transform: uppercase;
-        letter-spacing: 1px;
-        
-        box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
-        border: 2px solid rgba(255,255,255,0.5);
-        
-        opacity: 0; 
-        animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        cursor: default;
+        letter-spacing: 0.05em;
+        box-shadow: 0 4px 10px rgba(255, 165, 0, 0.3); 
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        opacity: 0;
     }
     
-    .badge:hover {
-        transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 10px 25px rgba(255, 165, 0, 0.5);
-    }
-    
-    .badge.locked {
-        background: #e2e8f0;
-        color: #94a3b8;
-        box-shadow: none;
-        border-color: #cbd5e1;
-    }
+    .badge:nth-child(1) { animation-delay: 0.2s; }
+    .badge:nth-child(2) { animation-delay: 0.4s; }
+    .badge:nth-child(3) { animation-delay: 0.6s; }
 
-    /* Delays de animação para os badges */
-    .badge:nth-child(1) { animation-delay: 0.5s; }
-    .badge:nth-child(2) { animation-delay: 0.7s; }
-    .badge:nth-child(3) { animation-delay: 0.9s; }
-    .badge:nth-child(4) { animation-delay: 1.1s; }
-
-    /* ==========================================================================
-       CARDS DE MÉTRICAS (KPIs)
-       ========================================================================== */
-
-    .metric-card { 
-        background: white; 
-        padding: 2rem; 
-        border-radius: 24px; 
-        
-        border: 1px solid #e2e8f0; 
-        text-align: center; 
-        
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        opacity: 0; 
-        animation: slideUpFade 0.6s ease-out forwards;
-        
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .metric-col-1 .metric-card { animation-delay: 0.2s; }
-    .metric-col-2 .metric-card { animation-delay: 0.4s; }
-    .metric-col-3 .metric-card { animation-delay: 0.6s; }
-    .metric-col-4 .metric-card { animation-delay: 0.8s; }
-    
-    .metric-card:hover { 
-        transform: translateY(-10px) scale(1.02); 
-        box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.15); 
-        border-color: #3b82f6;
-    }
-    
-    .metric-value { 
-        font-size: 3.5rem; 
-        font-weight: 900; 
-        color: #0f172a; 
-        transition: color 0.3s;
-        margin-bottom: 0.5rem;
-    }
-    
-    .metric-card:hover .metric-value { color: #2563eb; }
-    
-    .metric-label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #64748b;
-    }
-
-    /* ==========================================================================
-       BARRAS DE PROGRESSO
-       ========================================================================== */
-
-    .bar-container { 
-        background: #e2e8f0; 
-        height: 16px; 
-        border-radius: 8px; 
-        overflow: hidden; 
-        margin-top: 0.8rem; 
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .bar-fill { 
-        height: 100%; 
-        border-radius: 8px; 
-        
-        background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); 
-        background-size: 20px 20px; 
-        
-        animation: stripes 1s linear infinite, fillUp 1.5s ease-out forwards;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    /* ==========================================================================
-       SISTEMA DE REVISÃO
-       ========================================================================== */
-
-    .review-row { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center;
-        
-        background: #fff; 
-        padding: 1.5rem; 
-        border-bottom: 1px solid #f1f5f9; 
-        border-left: 6px solid #f59e0b; 
-        
-        margin-bottom: 1rem; 
-        border-radius: 12px; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        
-        opacity: 0; 
-        animation: slideUpFade 0.5s ease-out forwards;
-        transition: all 0.3s ease;
-    }
-    
-    .review-row:hover { 
-        transform: translateX(8px); 
-        border-left-width: 10px; 
-        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.15);
-    }
-    
-    .review-title {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #1e293b;
-    }
-    
-    .review-subtitle {
-        font-size: 0.9rem;
-        color: #64748b;
-        margin-top: 0.2rem;
-    }
-
-    .review-row:nth-child(1) { animation-delay: 1.2s; }
-    .review-row:nth-child(2) { animation-delay: 1.4s; }
-
-    /* ==========================================================================
-       LISTA DE CONTEÚDOS
-       ========================================================================== */
-
-    .conteudo-item {
-        background: #ffffff; 
-        border: 1px solid #e2e8f0; 
-        padding: 1.2rem; 
-        border-radius: 12px; 
-        margin-bottom: 0.8rem; 
-        color: #334155;
-        font-weight: 500;
-        
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-    }
-    
-    .conteudo-item:hover { 
-        border-color: #3b82f6; 
-        transform: translateX(5px); 
-        background: #f8fafc;
-    }
-    
-    .conteudo-item.done {
-        background: #f0fdf4; 
-        border-color: #bbf7d0; 
-        color: #166534; 
-        text-decoration: line-through; 
-        opacity: 0.8;
-    }
-
-    /* ==========================================================================
-       PARTÍCULAS E BACKGROUND FX
-       ========================================================================== */
+    /* 
+    ==========================================================================
+    2.8. EFEITOS VISUAIS (PARTÍCULAS)
+    ==========================================================================
+    */
 
     #sparkles-container { 
         position: fixed; 
-        top: 0; left: 0; width: 100%; height: 100%; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
         pointer-events: none; 
         z-index: 0; 
+        overflow: hidden;
     }
     
     .spark { 
@@ -477,19 +385,48 @@ st.markdown("""
         border-radius: 50%; 
         opacity: 0; 
         animation: floatUp linear forwards; 
-        filter: blur(1px);
-        mix-blend-mode: multiply;
+    }
+
+    /* 
+    ==========================================================================
+    2.9. CONTAINERS DE GRÁFICOS
+    ==========================================================================
+    */
+    
+    .heatmap-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
 
     /* Responsividade */
-    @media (max-width: 900px) { 
-        .header-container { grid-template-columns: 1fr; text-align: center; } 
-        .header-info { align-items: center; }
-        .header-logo img { margin: 0 auto; }
+    @media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .header-logo {
+            position: static;
+            margin-bottom: 1rem;
+            transform: none;
+        }
+        .header-info {
+            position: static;
+            margin-top: 1rem;
+            text-align: center;
+            width: 100%;
+        }
+        .metric-card {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 
-<!-- ENGINE DE PARTÍCULAS (JAVASCRIPT PURO) -->
+<!-- SCRIPT JAVASCRIPT PARA GERAR FAGULHAS DINÂMICAS -->
 <div id="sparkles-container"></div>
 <script>
     function createSparkle() {
@@ -497,553 +434,515 @@ st.markdown("""
         if (!container) return;
         
         const el = document.createElement('div');
-        
-        // Cores vibrantes baseadas no Tailwind CSS
-        const colors = [
-            'rgba(37, 99, 235, ',  // Blue-600
-            'rgba(22, 163, 74, ',  // Green-600
-            'rgba(234, 88, 12, ',  // Orange-600
-            'rgba(147, 51, 234, ', // Purple-600
-            'rgba(219, 39, 119, '  // Pink-600
-        ];
-        
-        const colorBase = colors[Math.floor(Math.random() * colors.length)];
-        
-        el.style.background = colorBase + '0.6)';
-        el.style.boxShadow = `0 0 15px ${colorBase}0.4)`;
         el.classList.add('spark');
-
-        // Tamanho Aleatório
-        const size = Math.random() * 14 + 4;
-        el.style.width = size + 'px'; 
+        
+        // Cores suaves e modernas
+        const colors = [
+            'rgba(37, 99, 235, 0.3)',  // Azul
+            'rgba(22, 163, 74, 0.3)',  // Verde
+            'rgba(234, 88, 12, 0.3)',  // Laranja
+            'rgba(147, 51, 234, 0.3)'  // Roxo
+        ];
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Tamanho aleatório
+        const size = Math.random() * 12 + 4;
+        el.style.width = size + 'px';
         el.style.height = size + 'px';
         
-        // Posição Aleatória
+        // Posição e Duração
         el.style.left = Math.random() * 100 + 'vw';
-        
-        // Duração Aleatória
-        const duration = Math.random() * 6 + 5; 
-        el.style.animationDuration = duration + 's';
+        el.style.animationDuration = (Math.random() * 5 + 5) + 's';
         
         container.appendChild(el);
         
-        // Limpeza Automática
-        setTimeout(() => el.remove(), duration * 1000);
+        // Remover elemento após animação para não pesar memória
+        setTimeout(() => el.remove(), 10000);
     }
     
-    // Inicia o loop de partículas
-    setInterval(createSparkle, 250);
+    // Iniciar loop de criação
+    setInterval(createSparkle, 300);
 </script>
 """, unsafe_allow_html=True)
 
 # ================================================================================
-# 3. CONSTANTES E CONFIGURAÇÕES
+# 3. CONFIGURAÇÕES GERAIS & CONSTANTES
 # ================================================================================
 
+# IDs de Conexão
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
+
+# URL da Logo Oficial
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
 
+# Paleta de Cores por Disciplina
 CORES = {
-    'LÍNGUA PORTUGUESA': '#ef4444', 
-    'RLM': '#10b981', 
-    'REALIDADE DE GOIÁS': '#3b82f6', 
-    'LEGISLAÇÃO APLICADA': '#8b5cf6', 
-    'CONHECIMENTOS ESPECÍFICOS': '#f59e0b'
+    'LÍNGUA PORTUGUESA': '#ef4444',       # Vermelho
+    'RLM': '#10b981',                     # Verde
+    'REALIDADE DE GOIÁS': '#3b82f6',      # Azul
+    'LEGISLAÇÃO APLICADA': '#8b5cf6',     # Roxo
+    'CONHECIMENTOS ESPECÍFICOS': '#f59e0b'# Laranja
 }
 
-EMOJIS = {
-    'LÍNGUA PORTUGUESA': '📖', 
-    'RLM': '🧮', 
-    'REALIDADE DE GOIÁS': '🗺️', 
-    'LEGISLAÇÃO APLICADA': '⚖️', 
-    'CONHECIMENTOS ESPECÍFICOS': '💡'
-}
-
+# Pesos para cálculo ponderado (Futuro uso)
 PESOS = {
-    'LÍNGUA PORTUGUESA': 1, 
-    'RLM': 1, 
+    'LÍNGUA PORTUGUESA': 1,
+    'RLM': 1,
     'REALIDADE DE GOIÁS': 1,
-    'LEGISLAÇÃO APLICADA': 2, 
+    'LEGISLAÇÃO APLICADA': 2,
     'CONHECIMENTOS ESPECÍFICOS': 2
 }
 
 # ================================================================================
-# 4. SERVIÇOS DE BACKEND (INTEGRAÇÃO)
+# 4. MÓDULO DE INTEGRAÇÃO (BACKEND)
 # ================================================================================
 
-def obter_data_formatada():
-    """Retorna a data atual formatada em português."""
-    hoje = datetime.now()
-    meses = {
-        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril', 
-        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto', 
-        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
-    }
-    return f"{hoje.day} de {meses[hoje.month]} de {hoje.year}"
-
-@st.cache_data(ttl=600)
-def obter_temperatura_api():
-    """Consulta API Open-Meteo para obter temperatura."""
-    try:
-        url = 'https://api.open-meteo.com/v1/forecast'
-        params = {
-            'latitude': -15.8267, 
-            'longitude': -48.9626, 
-            'current': 'temperature_2m', 
-            'timezone': 'America/Sao_Paulo'
-        }
-        r = requests.get(url, params=params, timeout=3)
-        if r.status_code == 200: 
-            return round(r.json()['current']['temperature_2m'], 1)
-    except Exception as e:
-        # Fail silently
-        pass
-    return "--"
-
 def conectar_google_sheets():
-    """Estabelece conexão autenticada com Google Sheets."""
+    """
+    Estabelece conexão segura com a API do Google Sheets.
+    Retorna o objeto cliente autenticado.
+    """
     try:
-        if 'gcp_service_account' in st.secrets: 
-            creds = dict(st.secrets["gcp_service_account"])
-        else: 
-            with open('credentials.json', 'r') as f: 
-                creds = json.load(f)
+        # Tenta carregar segredos do Streamlit Secrets
+        if 'gcp_service_account' in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+        else:
+            # Fallback para arquivo local
+            with open('credentials.json', 'r') as f:
+                creds_dict = json.load(f)
         
         escopos = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
         
-        credenciais = Credentials.from_service_account_info(creds, scopes=escopos)
-        return gspread.authorize(credenciais)
+        credenciais = Credentials.from_service_account_info(creds_dict, scopes=escopos)
+        client = gspread.authorize(credenciais)
+        return client
+        
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
+        st.error(f"Erro crítico na conexão com Google Sheets: {e}")
         return None
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=15)
 def carregar_dados_planilha(_client):
-    """Carrega e processa os dados da planilha."""
+    """
+    Carrega dados da planilha, aplica tratamentos de tipos e datas.
+    Utiliza cache para otimizar performance.
+    """
     try:
         ws = _client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        data = ws.get_all_records()
-        df = pd.DataFrame(data)
+        dados = ws.get_all_records()
+        df = pd.DataFrame(dados)
         
-        # Tratamento de dados
-        df['Status'] = df['Status'].astype(str).str.upper()
-        df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES'])
+        if df.empty:
+            return None
+            
+        # Normalização de Status (Booleano)
+        df['Status'] = df['Status'].astype(str).str.upper().str.strip()
+        df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES', 'OK'])
         
+        # Identificação Inteligente da Coluna de Data
+        coluna_data = None
+        
+        # Tenta encontrar pelo nome
+        possiveis_nomes = ['Data', 'Data Estudo', 'Data Conclusão', 'Date']
+        for nome in possiveis_nomes:
+            if nome in df.columns:
+                coluna_data = nome
+                break
+        
+        # Se não achar pelo nome, pega a 5ª coluna (índice 4) se existir
+        if not coluna_data and len(df.columns) >= 5:
+            coluna_data = df.columns[4]
+            
+        # Processamento da Coluna de Data
+        if coluna_data:
+            df['Data_Real'] = pd.to_datetime(df[coluna_data], format='%d/%m/%Y', errors='coerce')
+        else:
+            df['Data_Real'] = pd.NaT
+            
         return df
+        
     except Exception as e:
-        st.error(f"Erro ao ler dados: {e}")
+        st.error(f"Erro ao processar dados da planilha: {e}")
         return None
 
-def atualizar_status_topico(client, linha, novo_status):
-    """Atualiza o status de um tópico específico na nuvem."""
+def atualizar_status(client, linha_planilha, novo_status_bool):
+    """
+    Atualiza o status e a data na planilha.
+    linha_planilha: Índice real na planilha (começa em 2).
+    novo_status_bool: True ou False.
+    """
     try:
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        # Assume coluna 4 como status (A, B, C, D=Status)
-        ws.update_cell(linha, 4, str(novo_status))
+        
+        # Converte booleano para string aceita
+        status_str = 'TRUE' if novo_status_bool else 'FALSE'
+        
+        # Atualiza Coluna 4 (Status)
+        ws.update_cell(linha_planilha, 4, status_str)
+        
+        # Atualiza Coluna 5 (Data)
+        if novo_status_bool:
+            data_hoje = datetime.now().strftime('%d/%m/%Y')
+            ws.update_cell(linha_planilha, 5, data_hoje)
+        else:
+            # Se desmarcar, limpa a data
+            ws.update_cell(linha_planilha, 5, '')
+            
         return True
+        
     except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+        st.error(f"Falha ao salvar na nuvem: {e}")
         return False
 
+@st.cache_data(ttl=600)
+def obter_temperatura_local():
+    """
+    Consulta API externa para temperatura em tempo real.
+    Cache de 10 minutos para evitar bloqueio da API.
+    """
+    try:
+        url = 'https://api.open-meteo.com/v1/forecast'
+        params = {
+            'latitude': -15.8267, # Coordenadas de Goiânia
+            'longitude': -48.9626,
+            'current': 'temperature_2m',
+            'timezone': 'America/Sao_Paulo'
+        }
+        r = requests.get(url, params=params, timeout=2)
+        if r.status_code == 200:
+            return round(r.json()['current']['temperature_2m'], 1)
+    except:
+        pass
+    return "--"
+
 # ================================================================================
-# 5. COMPONENTES VISUAIS & GRÁFICOS
+# 5. MÓDULO DE VISUALIZAÇÃO DE DADOS (GRÁFICOS)
 # ================================================================================
 
-def criar_grafico_donut(estudados, total, cor_tema):
-    """Gera gráfico de donut estilizado com Altair."""
-    dados_grafico = pd.DataFrame({
-        'Categoria': ['Concluído', 'Restante'], 
-        'Valor': [estudados, total - estudados]
+def criar_heatmap_produtividade(df):
+    """
+    Gera um heatmap estilo GitHub baseado nas datas reais de estudo.
+    """
+    # Filtra apenas itens estudados com data válida
+    df_filtrado = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
+    
+    if df_filtrado.empty:
+        return None
+        
+    # Agrega contagem por dia
+    contagem_diaria = df_filtrado.groupby('Data_Real').size().reset_index(name='count')
+    
+    # Configuração do Gráfico Altair
+    chart = alt.Chart(contagem_diaria).mark_rect(
+        cornerRadius=3, 
+        stroke='white', 
+        strokeWidth=1
+    ).encode(
+        x=alt.X('yearmonthdate(Data_Real):O', 
+                title=None, 
+                axis=alt.Axis(format='%d/%m', labelFontSize=10, labelColor='#64748b')
+        ),
+        y=alt.Y('day(Data_Real):O', 
+                title=None,
+                axis=alt.Axis(labels=False, ticks=False)
+        ),
+        color=alt.Color('count:Q', 
+                        scale=alt.Scale(scheme='greens'), 
+                        legend=None
+        ),
+        tooltip=[
+            alt.Tooltip('Data_Real', title='Data', format='%d/%m/%Y'),
+            alt.Tooltip('count', title='Tópicos Concluídos')
+        ]
+    ).properties(
+        height=130,
+        width='container'
+    ).configure_view(
+        strokeWidth=0
+    ).configure_axis(
+        grid=False,
+        domain=False
+    )
+    
+    return chart
+
+def criar_grafico_donut(concluido, total, cor_primaria):
+    """
+    Cria um gráfico de Donut minimalista sem legenda.
+    """
+    restante = total - concluido
+    
+    dados = pd.DataFrame({
+        'Categoria': ['Concluído', 'Restante'],
+        'Valor': [concluido, restante]
     })
     
-    base = alt.Chart(dados_grafico).encode(
+    base = alt.Chart(dados).encode(
         theta=alt.Theta("Valor", stack=True)
     )
     
-    # Arco principal
+    # Arco Principal
     pie = base.mark_arc(
-        outerRadius=80, 
-        innerRadius=60, 
+        outerRadius=75, 
+        innerRadius=58, 
         stroke='white', 
-        strokeWidth=4,
+        strokeWidth=3,
         cornerRadius=4
     ).encode(
-        color=alt.Color(
-            "Categoria", 
-            scale=alt.Scale(domain=['Concluído', 'Restante'], range=[cor_tema, '#e2e8f0']), 
-            legend=None
-        ),
+        color=alt.Color("Categoria", 
+                        scale=alt.Scale(domain=['Concluído', 'Restante'], 
+                                        range=[cor_primaria, '#e2e8f0']), 
+                        legend=None),
         tooltip=["Categoria", "Valor"]
     )
     
-    # Texto central com porcentagem
-    percentual = int(estudados/total*100) if total > 0 else 0
+    # Texto Central (Porcentagem)
+    percentual = int(concluido/total*100) if total > 0 else 0
     texto = base.mark_text(
         radius=0, 
-        size=24, 
-        color=cor_tema, 
-        fontWeight='bold', 
+        size=20, 
+        color=cor_primaria, 
+        fontWeight='bold',
         font='Inter'
     ).encode(
         text=alt.value(f"{percentual}%")
     )
     
-    return (pie + texto).properties(width=200, height=200)
-
-def gerar_dados_heatmap():
-    """Gera dados simulados para o heatmap de produtividade."""
-    dados = []
-    hoje = datetime.now()
-    # Gera últimos 60 dias
-    for i in range(60):
-        data_ponto = hoje - timedelta(days=i)
-        # Simula intensidade aleatória
-        intensidade = random.choices([0, 1, 2, 3, 4], weights=[0.3, 0.2, 0.2, 0.2, 0.1])[0]
-        dados.append({
-            'date': data_ponto.strftime('%Y-%m-%d'), 
-            'count': intensidade
-        })
-    return pd.DataFrame(dados)
-
-def calcular_badges(total_estudado, percentual_geral):
-    """Calcula conquistas baseadas no progresso."""
-    conquistas = []
-    
-    # Conquistas de Percentual
-    if percentual_geral >= 10: conquistas.append("🚀 Decolando (10%)")
-    if percentual_geral >= 25: conquistas.append("🏃 Em Ritmo (25%)")
-    if percentual_geral >= 50: conquistas.append("🔥 Meio Caminho (50%)")
-    if percentual_geral >= 75: conquistas.append("💎 Elite (75%)")
-    if percentual_geral >= 90: conquistas.append("👑 Mestre (90%)")
-    
-    # Conquistas de Volume
-    if total_estudado >= 50: conquistas.append("📚 Leitor Ávido (50+)")
-    if total_estudado >= 100: conquistas.append("🧠 Enciclopédia (100+)")
-    
-    return conquistas
+    return (pie + texto).properties(width=180, height=180)
 
 # ================================================================================
-# 6. APLICAÇÃO PRINCIPAL (MAIN LOOP)
+# 6. APLICAÇÃO PRINCIPAL (FRONTEND)
 # ================================================================================
 
 def main():
-    # --- HEADER ---
-    temp = obter_temperatura_api()
-    data_extenso = obter_data_formatada()
+    # 6.1. DADOS DO HEADER
+    temp_atual = obter_temperatura_local()
+    data_atual = datetime.now().strftime('%d/%m/%Y')
     
+    # 6.2. RENDERIZAÇÃO DO HEADER
     st.markdown(f"""
     <div class="header-container">
         <div class="header-logo">
-            <img src="{LOGO_URL}" alt="Logo Oficial">
+            <img src="{LOGO_URL}" alt="Logo Câmara de Goiânia">
         </div>
         <div class="header-content">
-            <h1>🚀 Dashboard Ultimate</h1>
-            <p>Performance • Gamificação • Estratégia</p>
+            <h1>DASHBOARD ULTIMATE</h1>
+            <p>Performance • Constância • Aprovação</p>
         </div>
         <div class="header-info">
-            <div class="info-row">📍 Goiânia - GO</div>
-            <div class="info-row">📅 {data_extenso}</div>
-            <div class="info-row">🌡️ {temp}°C</div>
+            <div class="info-row">📍 GOIÂNIA - GO</div>
+            <div class="info-row">📅 {data_atual}</div>
+            <div class="info-row">🌡️ {temp_atual}°C</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # --- CONEXÃO DE DADOS ---
+    # 6.3. INICIALIZAÇÃO E CARREGAMENTO
     client = conectar_google_sheets()
     if not client:
-        st.error("Falha crítica na conexão com o banco de dados.")
+        st.stop()
+    
+    # Carregamento com Feedback
+    df = carregar_dados_planilha(client)
+    
+    if df is None:
+        st.warning("Aguardando dados...")
         st.stop()
 
-    # --- SIDEBAR (CONTROLES) ---
-    with st.sidebar:
-        st.header("⚙️ Painel de Controle")
-        
-        # Carregamento Inicial com Session State para persistência
-        if 'dados_df' not in st.session_state:
-            with st.spinner("Conectando à base de dados..."):
-                st.session_state['dados_df'] = carregar_dados_planilha(client)
-        
-        df_completo = st.session_state['dados_df']
-        
-        if df_completo is None:
-            st.warning("Não foi possível carregar os dados.")
-            st.stop()
+    # 6.4. SIDEBAR E FILTROS
+    cargos_disponiveis = df['Cargo'].unique()
+    
+    # Seletor de Cargo (Padrão no Sidebar)
+    cargo_selecionado = st.sidebar.selectbox("Selecione o Cargo:", cargos_disponiveis)
+    
+    # Filtra DataFrame pelo cargo
+    df_cargo = df[df['Cargo'] == cargo_selecionado].copy()
+    
+    # Adiciona índice original para permitir atualização correta
+    # O índice do pandas começa em 0, o gspread começa em 1, e temos cabeçalho (linha 1)
+    # Logo, linha real = index + 2
+    df_cargo['linha_planilha'] = df_cargo.index + 2
 
-        # Seletor de Cargo
-        lista_cargos = df_completo['Cargo'].unique()
-        cargo_selecionado = st.selectbox("Selecione o Cargo:", lista_cargos)
-        
-        st.markdown("---")
-        
-        # Botão de Atualização Forçada
-        if st.button("🔄 Sincronizar Dados", use_container_width=True):
-            st.cache_data.clear()
-            with st.spinner("Sincronizando nuvem..."):
-                st.session_state['dados_df'] = carregar_dados_planilha(client)
-            st.success("Dados atualizados!")
-            time.sleep(1)
-            st.rerun()
-            
-        st.markdown("---")
-        st.caption(f"v2.5.0 Ultimate • Build {datetime.now().strftime('%Y%m%d')}")
+    # 6.5. CÁLCULOS DE KPIs
+    total_topicos = len(df_cargo)
+    total_concluidos = df_cargo['Estudado'].sum()
+    total_restantes = total_topicos - total_concluidos
+    progresso_geral = (total_concluidos / total_topicos * 100) if total_topicos > 0 else 0
 
-    # --- FILTRAGEM E PROCESSAMENTO ---
-    df_filtrado = df_completo[df_completo['Cargo'] == cargo_selecionado].copy()
-    
-    # Estatísticas Gerais
-    total_topicos = len(df_filtrado)
-    total_concluido = df_filtrado['Estudado'].sum()
-    total_restante = total_topicos - total_concluido
-    percentual_global = (total_concluido / total_topicos * 100) if total_topicos > 0 else 0
-    
-    # Agrupamento por Disciplina
-    stats_disciplinas = df_filtrado.groupby('Disciplinas').agg({
-        'Estudado': ['sum', 'count']
-    }).reset_index()
-    stats_disciplinas.columns = ['Disciplina', 'Estudados', 'Total']
-    stats_disciplinas['Percentual'] = (stats_disciplinas['Estudados'] / stats_disciplinas['Total'] * 100).round(0)
-    
-    # Adiciona índice da linha original para atualização
-    df_filtrado['linha_original'] = df_filtrado.index + 2
-
-    # --- QUADRO DE MEDALHAS (GAMIFICAÇÃO) ---
-    st.markdown("<h3 style='text-align:center; animation: slideUpFade 1s ease-out;'>🎖️ Quadro de Conquistas</h3>", unsafe_allow_html=True)
-    
-    lista_badges = calcular_badges(total_concluido, percentual_global)
+    # 6.6. SISTEMA DE GAMIFICAÇÃO (BADGES)
+    lista_badges = []
+    if progresso_geral >= 10: lista_badges.append("🚀 Start (10%)")
+    if progresso_geral >= 25: lista_badges.append("🏃 Em Ritmo (25%)")
+    if progresso_geral >= 50: lista_badges.append("🔥 Halfway (50%)")
+    if progresso_geral >= 75: lista_badges.append("💎 Elite (75%)")
+    if total_concluidos > 100: lista_badges.append("📚 Legend (100+)")
     
     html_badges = '<div class="badge-container">'
-    if lista_badges:
-        for badge in lista_badges:
-            html_badges += f'<div class="badge">✨ {badge}</div>'
-    else: 
-        html_badges += '<div class="badge locked">🔒 Continue estudando para desbloquear conquistas...</div>'
+    for badge in lista_badges:
+        html_badges += f'<div class="badge">✨ {badge}</div>'
     html_badges += '</div>'
-    
     st.markdown(html_badges, unsafe_allow_html=True)
 
-    # --- CARDS DE KPI (MÉTRICAS) ---
-    st.markdown("### 📊 Visão Geral de Performance")
-    
+    # 6.7. CARDS DE MÉTRICAS
     col1, col2, col3, col4 = st.columns(4)
     
-    with col1:
-        st.markdown(f"""
-        <div class="metric-col-1">
-            <div class="metric-card">
-                <div class="metric-value" style="color:#3b82f6">{total_topicos}</div>
-                <div class="metric-label">Tópicos Totais</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        st.markdown(f"""
-        <div class="metric-col-2">
-            <div class="metric-card">
-                <div class="metric-value" style="color:#22c55e">{total_concluido}</div>
-                <div class="metric-label">Concluídos</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col3:
-        st.markdown(f"""
-        <div class="metric-col-3">
-            <div class="metric-card">
-                <div class="metric-value" style="color:#ef4444">{total_restante}</div>
-                <div class="metric-label">Pendentes</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col4:
-        st.markdown(f"""
-        <div class="metric-col-4">
-            <div class="metric-card">
-                <div class="metric-value" style="color:#8b5cf6">{percentual_global:.0f}%</div>
-                <div class="metric-label">Progresso Geral</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    col1.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color:#3b82f6">{total_topicos}</div>
+        <div class="metric-label">Total de Tópicos</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col2.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color:#22c55e">{total_concluidos}</div>
+        <div class="metric-label">Concluídos</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col3.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color:#ef4444">{total_restantes}</div>
+        <div class="metric-label">Restantes</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col4.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color:#8b5cf6">{progresso_geral:.0f}%</div>
+        <div class="metric-label">Progresso Geral</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- HEATMAP DE PRODUTIVIDADE ---
-    st.markdown('<div style="opacity:0; animation: slideUpFade 0.8s ease-out 0.8s forwards;">', unsafe_allow_html=True)
-    st.markdown("### 🔥 Ritmo de Estudos (Histórico 60 dias)")
+    st.write("") # Espaçamento
+
+    # 6.8. HEATMAP DE PRODUTIVIDADE REAL
+    st.markdown("### 🔥 Seu Ritmo de Estudos (Dados Reais)")
+    st.markdown('<div class="heatmap-container">', unsafe_allow_html=True)
     
-    df_calor = gerar_dados_heatmap()
+    grafico_heatmap = criar_heatmap_produtividade(df_cargo)
     
-    grafico_calor = alt.Chart(df_calor).mark_rect(cornerRadius=3, stroke='white', strokeWidth=2).encode(
-        x=alt.X('date:T', title=None, axis=alt.Axis(format='%d/%m', labelColor='#64748b', tickCount=15)),
-        y=alt.Y('month(date):O', title=None, axis=None),
-        color=alt.Color('count:Q', scale=alt.Scale(scheme='greens'), legend=None),
-        tooltip=[
-            alt.Tooltip('date:T', title='Data', format='%d/%m/%Y'),
-            alt.Tooltip('count:Q', title='Intensidade')
-        ]
-    ).properties(
-        height=120, 
-        width='container'
-    ).configure_view(
-        strokeWidth=0
-    )
-    
-    st.altair_chart(grafico_calor, use_container_width=True)
+    if grafico_heatmap:
+        st.altair_chart(grafico_heatmap, use_container_width=True)
+    else:
+        st.info("⚠️ Histórico vazio. Marque tópicos hoje para começar a visualizar seu ritmo!")
+        
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- SISTEMA DE REVISÃO INTELIGENTE ---
-    st.markdown("### 🔄 Revisão Inteligente (Algoritmo)")
+    # 6.9. GRÁFICOS DE PIZZA POR DISCIPLINA
+    st.markdown("### 🍩 Progresso por Disciplina")
     
-    # Lógica: Selecionar tópicos concluídos aleatoriamente
-    # Em produção, isso usaria data de conclusão para calcular Spaced Repetition
-    topicos_concluidos = df_filtrado[df_filtrado['Estudado'] == True]
+    # Agrupamento de dados
+    stats_disciplina = df_cargo.groupby('Disciplinas').agg({
+        'Estudado': ['sum', 'count']
+    }).reset_index()
+    stats_disciplina.columns = ['Disciplina', 'Estudados', 'Total']
     
-    if not topicos_concluidos.empty:
-        amostra_revisao = topicos_concluidos.sample(n=min(3, len(topicos_concluidos)))
-        
-        col_revisao, col_info = st.columns([2, 1])
-        
-        with col_revisao:
-            for _, row in amostra_revisao.iterrows():
-                st.markdown(f"""
-                <div class="review-row">
-                    <div>
-                        <div class="review-title">{row['Disciplinas']}</div>
-                        <div class="review-subtitle">{row['Conteúdos']}</div>
-                    </div>
-                    <div style="align-self:center; font-size:1.8rem">🧐</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-        with col_info:
-            st.info(
-                """
-                **💡 Por que revisar?**
-                
-                O algoritmo seleciona tópicos aleatórios que você já estudou 
-                para combater a "Curva do Esquecimento" de Ebbinghaus.
-                
-                Revisar periodicamente garante retenção de longo prazo.
-                """
-            )
-    else:
-        st.warning("Você precisa concluir mais tópicos para desbloquear o sistema de revisão.")
-
-    # --- GRÁFICOS DETALHADOS (GRID 3 COLUNAS) ---
-    st.markdown("### 🍩 Detalhamento por Disciplina")
-    
+    # Grid de 3 colunas
     grid_cols = st.columns(3)
     
-    for index, row in stats_disciplinas.iterrows():
+    for index, row in stats_disciplina.iterrows():
         coluna_atual = grid_cols[index % 3]
         
         with coluna_atual:
-            disciplina = row['Disciplina']
-            cor_tema = CORES.get(disciplina, '#64748b')
+            nome_disc = row['Disciplina']
+            cor_disc = CORES.get(nome_disc, '#64748b')
             
-            # Título Animado
             st.markdown(f"""
-            <div style='text-align:center; font-weight:700; color:{cor_tema}; 
-                        animation: popIn 0.5s ease-out forwards; 
-                        animation-delay: {1.0 + (index*0.1)}s; 
-                        opacity:0; margin-bottom:10px;'>
-                {disciplina}
+            <div style='text-align:center; font-weight:700; color:{cor_disc}; margin-bottom:10px;'>
+                {nome_disc}
             </div>
             """, unsafe_allow_html=True)
             
-            # Gráfico
-            chart = criar_grafico_donut(row['Estudados'], row['Total'], cor_tema)
+            chart = criar_grafico_donut(row['Estudados'], row['Total'], cor_disc)
             st.altair_chart(chart, use_container_width=True)
 
-    # --- LISTA DE CONTEÚDOS (CHECKLIST) ---
-    st.markdown("### 📚 Conteúdo Programático & Checklist")
+    # 6.10. CHECKLIST DE CONTEÚDOS (CLEAN TABLE)
+    st.markdown("### 📚 Conteúdo Programático Detalhado")
     
     # Filtro de Disciplina
-    todas_disciplinas = sorted(df_filtrado['Disciplinas'].unique().tolist())
-    filtro_disciplina = st.selectbox("Filtrar por Disciplina:", ["Todas"] + todas_disciplinas)
+    lista_disciplinas = sorted(df_cargo['Disciplinas'].unique().tolist())
+    filtro_disc = st.selectbox("Filtrar por Disciplina:", ["Todas"] + lista_disciplinas)
     
-    if filtro_disciplina != "Todas":
-        view_df = df_filtrado[df_filtrado['Disciplinas'] == filtro_disciplina]
+    # Aplica filtro na visualização
+    if filtro_disc != "Todas":
+        view_df = df_cargo[df_cargo['Disciplinas'] == filtro_disc]
     else:
-        view_df = df_filtrado
+        view_df = df_cargo
 
-    # Iteração por Disciplina para organizar visualmente
-    for disc in view_df['Disciplinas'].unique():
-        sub_df = view_df[view_df['Disciplinas'] == disc]
+    # Loop por Disciplina
+    for disciplina in view_df['Disciplinas'].unique():
+        sub_df = view_df[view_df['Disciplinas'] == disciplina]
+        cor_tema = CORES.get(disciplina, '#333')
         
-        # Métricas da Disciplina
-        total_disc = len(sub_df)
-        concluido_disc = sub_df['Estudado'].sum()
-        pct_disc = (concluido_disc / total_disc * 100) if total_disc > 0 else 0
-        
-        cor_disc = CORES.get(disc, '#334155')
-        emoji = EMOJIS.get(disc, '📘')
-
-        # Barra de Progresso da Matéria
+        # Header da Seção da Disciplina
         st.markdown(f"""
-        <div style="margin-top: 2rem; margin-bottom: 0.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700; color:#1e293b; font-size:1.2rem;">
-                <span>{emoji} {disc}</span>
-                <span style="color:{cor_disc}">{pct_disc:.0f}%</span>
-            </div>
-            <div class="bar-container">
-                <div class="bar-fill" style="width: {pct_disc}%; background-color: {cor_disc};"></div>
-            </div>
+        <div style="margin-top:30px; border-bottom:2px solid {cor_tema}; padding-bottom:5px; margin-bottom:15px;">
+            <strong style="color:{cor_tema}; font-size:1.1rem">{disciplina}</strong>
+            <span style="float:right; color:#94a3b8; font-size:0.9rem">
+                {sub_df['Estudado'].sum()}/{len(sub_df)}
+            </span>
         </div>
         """, unsafe_allow_html=True)
 
-        # Expander com os Tópicos
-        with st.expander(f"Visualizar {total_disc} Tópicos", expanded=False):
-            for idx, row in sub_df.iterrows():
-                col_check, col_text = st.columns([0.05, 0.95])
-                
-                with col_check:
-                    # Checkbox nativo do Streamlit
-                    checked_now = st.checkbox(
-                        "Concluído", 
-                        value=bool(row['Estudado']), 
-                        key=f"chk_{idx}_{row['linha_original']}", 
-                        label_visibility="collapsed"
-                    )
-                
-                # Lógica de Atualização de Estado
-                if checked_now != bool(row['Estudado']):
-                    sucesso = atualizar_status_topico(
+        # Renderização das Linhas (Tabela Clean)
+        for idx, row in sub_df.iterrows():
+            col_check, col_text = st.columns([0.05, 0.95])
+            
+            with col_check:
+                # Checkbox nativo
+                is_checked = st.checkbox(
+                    "Concluído", 
+                    value=bool(row['Estudado']), 
+                    key=f"chk_{idx}_{row['linha_planilha']}", 
+                    label_visibility="collapsed"
+                )
+            
+            # LÓGICA DE ATUALIZAÇÃO (SÓ EXECUTA SE HOUVER MUDANÇA)
+            if is_checked != bool(row['Estudado']):
+                with st.spinner("Sincronizando..."):
+                    sucesso = atualizar_status(
                         client, 
-                        int(row['linha_original']), 
-                        'TRUE' if checked_now else 'FALSE'
+                        int(row['linha_planilha']), 
+                        is_checked
                     )
                     
                     if sucesso:
-                        msg = "Tópico Concluído! 🚀" if checked_now else "Status Revertido."
-                        st.toast(msg, icon="✅")
-                        # Pequeno delay para UX e recarga
-                        time.sleep(0.5)
-                        st.cache_data.clear()
-                        st.rerun()
+                        st.toast("Status Salvo com Sucesso!", icon="💾")
+                        time.sleep(0.5) # Pequeno delay para UX
+                        st.cache_data.clear() # Limpa cache para recarregar dados novos
+                        st.rerun() # Recarrega a interface
                     else:
-                        st.error("Falha ao sincronizar com a nuvem.")
+                        st.error("Falha na sincronização.")
 
-                # Texto do Tópico Estilizado
-                classe_css = "done" if row['Estudado'] else ""
-                col_text.markdown(
-                    f'<div class="conteudo-item {classe_css}">{row["Conteúdos"]}</div>', 
-                    unsafe_allow_html=True
-                )
+            # Formatação Visual do Texto
+            classe_css = "done" if row['Estudado'] else ""
+            
+            # Badge de Data (Se existir)
+            badge_data = ""
+            if row['Estudado'] and pd.notnull(row['Data_Real']):
+                data_str = row['Data_Real'].strftime('%d/%m')
+                badge_data = f"<span class='topic-date'>Concluído em: {data_str}</span>"
+            
+            col_text.markdown(f"""
+            <div class="topic-row">
+                <div class="topic-text {classe_css}">
+                    {row['Conteúdos']} {badge_data}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # --- FOOTER ---
-    st.markdown(
-        f"""
-        <div style="text-align:center; color:#94a3b8; padding:4rem 0 2rem 0; font-size:0.85rem; border-top:1px solid #e2e8f0; margin-top:3rem;">
-            ✨ Dashboard Ultimate v2.5 | Desenvolvido com Streamlit & Python <br>
-            Última Sincronização: {datetime.now().strftime("%H:%M:%S")}
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    # 6.11. FOOTER
+    st.markdown(f"""
+    <div style="text-align:center; color:#94a3b8; padding:4rem 0 2rem 0; font-size:0.8rem; border-top:1px solid #e2e8f0; margin-top:3rem;">
+        Dashboard Ultimate v3.0 • Desenvolvido com Python & Streamlit <br>
+        Atualizado em {datetime.now().strftime("%H:%M:%S")}
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
