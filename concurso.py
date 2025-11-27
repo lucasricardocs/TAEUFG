@@ -542,7 +542,7 @@ def criar_card_metrica(valor, label, icon="📊"):
     """
 
 def criar_grafico_pizza(stats):
-    """Gráfico de pizza"""
+    """Gráfico de pizza - CORRIGIDO"""
     data = pd.DataFrame({
         'Categoria': ['Estudados', 'Faltando'],
         'Quantidade': [stats['estudados'], stats['faltam']]
@@ -553,12 +553,12 @@ def criar_grafico_pizza(stats):
         color=alt.Color('Categoria:N', scale=alt.Scale(domain=['Estudados', 'Faltando'], 
                                                         range=['#2ecc71', '#e74c3c']), legend=None),
         tooltip=['Categoria:N', 'Quantidade:Q']
-    ).properties(width=350, height=350, title=None).configure_arc(stroke='white', strokeWidth=3)
+    ).properties(width=350, height=350).configure_arc(stroke='white', strokeWidth=3)
 
     return chart
 
 def criar_grafico_barras(stats):
-    """Gráfico de barras"""
+    """Gráfico de barras - CORRIGIDO"""
     df = stats['por_disciplina'].sort_values('Percentual', ascending=True)
 
     chart = alt.Chart(df).mark_bar(cornerRadius=8).encode(
@@ -566,7 +566,7 @@ def criar_grafico_barras(stats):
         y=alt.Y('Disciplina:N', sort='-x'),
         color=alt.Color('Disciplina:N', legend=None),
         tooltip=['Disciplina:N', 'Estudados:Q', 'Total:Q', 'Percentual:Q']
-    ).properties(width=600, height=350, title=None)
+    ).properties(width=600, height=350)
 
     return chart
 
@@ -594,7 +594,7 @@ def main():
     data_hoje = obter_data_formatada()  # ✅ DATA DINÂMICA
     temperatura = obter_temperatura_goiania()  # ✅ TEMPERATURA EM TEMPO REAL
 
-    # Header com logo e informações
+    # Header com logo e informações - CORRIGIDO
     st.markdown(f"""
     <div class="header-container animate-slide">
         <div class="logo-section">
