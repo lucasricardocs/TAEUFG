@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Dashboard de Estudos - Câmara de Goiânia
-VERSÃO FINAL CORRIGIDA
+VERSÃO FINAL - TEMA CLARO COM LOGO 1.5X MAIOR
+COM EFEITO: fagulhas subindo ao fundo da página (integrado)
 """
 
 import streamlit as st
@@ -25,7 +26,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS - COM FAISCAS FUNCIONAIS
+# ================================================================================
+# CSS + JS - TEMA CLARO + FAGULHAS (INTEGRADO)
+# ================================================================================
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -34,65 +38,116 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    [data-testid="stMainBlockContainer"] {
-        background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%);
-        color: white;
-        position: relative;
-        overflow: hidden;
+    /* Mantém o background claro do app */
+    html, body, [data-testid="stMainBlockContainer"] {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f5f7fa 100%);
+        color: #1f2937;
     }
 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* FAISCAS SUBINDO */
-    @keyframes sparkleUp {
+    /* ============================
+       CONFIG STREAMLIT Z-INDEX
+       Garante que o conteúdo do app fique acima do container das fagulhas
+       ============================ */
+    div[data-testid="stAppViewContainer"],
+    div[data-testid="stMainBlockContainer"],
+    .stApp {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ============================
+       CONTAINER DAS FAGULHAS (FUND0)
+       ============================ */
+    #sparkles-container {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 0; /* atrás do conteúdo (que tem z-index:1) */
+    }
+
+    /* FAISCAS SUBINDO (estilos principais) */
+    @keyframes sparkleRise {
         0% {
-            bottom: -10px;
+            transform: translateY(10vh) scale(1);
+            opacity: 1;
+        }
+        70% {
+            opacity: 0.9;
+        }
+        100% {
+            transform: translateY(-120vh) scale(0.4);
+            opacity: 0;
+        }
+    }
+
+    .spark {
+        position: absolute;
+        bottom: -6vh;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, rgba(255,255,200,1) 0%, rgba(255,180,60,1) 35%, rgba(255,90,20,0.9) 65%, rgba(0,0,0,0) 100%);
+        filter: drop-shadow(0 0 8px rgba(255,160,50,0.75));
+        will-change: transform, opacity;
+        animation-name: sparkleRise;
+        animation-timing-function: cubic-bezier(.12,.8,.18,1);
+        animation-fill-mode: forwards;
+        pointer-events: none;
+        mix-blend-mode: screen;
+        opacity: 0.95;
+    }
+
+    /* cores alternativas */
+    .spark.green {
+        background: radial-gradient(circle at 35% 30%, rgba(220,255,220,1) 0%, rgba(120,220,140,1) 35%, rgba(60,180,90,0.9) 65%, rgba(0,0,0,0) 100%);
+        filter: drop-shadow(0 0 8px rgba(60,180,90,0.55));
+    }
+
+    .spark.orange {
+        background: radial-gradient(circle at 35% 30%, rgba(255,230,200,1) 0%, rgba(255,160,90,1) 35%, rgba(255,100,30,0.9) 65%, rgba(0,0,0,0) 100%);
+        filter: drop-shadow(0 0 8px rgba(255,120,40,0.55));
+    }
+
+    /* Pequena responsividade para tamanhos menores */
+    @media (max-width: 600px) {
+        .spark { width: 4px; height: 4px; }
+    }
+
+    /* ============================
+       SEU CSS ORIGINAL (mantido)
+       ============================ */
+
+    /* slideIn (usado em conteúdos) */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
             opacity: 1;
             transform: translateX(0);
         }
-        100% {
-            bottom: 110vh;
-            opacity: 0;
-            transform: translateX(100px);
-        }
     }
 
-    .sparkle {
-        position: fixed;
-        width: 2px;
-        height: 2px;
-        background: radial-gradient(circle, #1a73e8 0%, transparent 70%);
-        border-radius: 50%;
-        pointer-events: none;
-        z-index: 1;
-        animation: sparkleUp var(--duration) linear infinite;
-        box-shadow: 0 0 6px #1a73e8;
+    .sparkle { /* mantém compatibilidade caso algum elemento use .sparkle */
+        display: none;
     }
 
-    .sparkle.green {
-        background: radial-gradient(circle, #34a853 0%, transparent 70%);
-        box-shadow: 0 0 6px #34a853;
-    }
-
-    .sparkle.orange {
-        background: radial-gradient(circle, #f57c00 0%, transparent 70%);
-        box-shadow: 0 0 6px #f57c00;
-    }
-
-    .header-box {
+    .header-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
         background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
         padding: 2rem;
         border-radius: 16px;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(26, 115, 232, 0.3);
+        box-shadow: 0 10px 30px rgba(26, 115, 232, 0.2);
         position: relative;
-    }
-
-    .header-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 2rem;
+        z-index: 2;
     }
 
     .header-logo {
@@ -100,80 +155,87 @@ st.markdown("""
     }
 
     .header-logo img {
-        max-width: 150px;
+        max-width: 225px;
         height: auto;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
     }
 
-    .header-center {
+    .header-content {
         flex: 1;
-        text-align: center;
         color: white;
     }
 
-    .header-center h1 {
+    .header-content h1 {
         margin: 0;
         font-size: 2.2rem;
         font-weight: 800;
+        letter-spacing: -1px;
     }
 
-    .header-center p {
+    .header-content p {
         margin: 0.3rem 0 0 0;
         font-size: 0.95rem;
         opacity: 0.9;
+        font-weight: 400;
     }
 
-    .header-right {
+    .header-info {
         position: absolute;
-        top: 2rem;
+        top: 1.5rem;
         right: 2rem;
         display: flex;
-        gap: 1.5rem;
-        background: rgba(255,255,255,0.1);
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        backdrop-filter: blur(10px);
+        gap: 2rem;
+        color: white;
+        font-size: 0.85rem;
     }
 
     .info-item {
-        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
     }
 
     .info-label {
         font-size: 0.7rem;
-        opacity: 0.7;
+        opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 1px;
         font-weight: 600;
     }
 
     .info-value {
-        font-size: 0.95rem;
-        font-weight: 700;
-        margin-top: 0.2rem;
+        font-size: 0.9rem;
+        font-weight: 600;
     }
 
     .section-title {
         font-size: 1.5rem;
         font-weight: 800;
-        color: white;
+        color: #1f2937;
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.8rem;
         border-bottom: 3px solid #1a73e8;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
     }
 
     .metric-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: white;
+        border: 1px solid #e5e7eb;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        cursor: pointer;
     }
 
     .metric-card:hover {
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(255,255,255,0.2);
-        transform: translateY(-4px);
+        background: #f8f9fa;
+        border-color: #1a73e8;
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px rgba(26, 115, 232, 0.15);
     }
 
     .metric-value {
@@ -181,19 +243,20 @@ st.markdown("""
         font-weight: 800;
         color: #34a853;
         margin: 0.5rem 0;
+        line-height: 1;
     }
 
     .metric-label {
         font-size: 0.85rem;
-        color: #b0b0b0;
+        color: #6b7280;
         text-transform: uppercase;
         letter-spacing: 1px;
         font-weight: 600;
     }
 
     .disc-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: white;
+        border: 1px solid #e5e7eb;
         border-left: 4px solid var(--cor);
         padding: 1.2rem;
         border-radius: 10px;
@@ -201,12 +264,15 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 1rem;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
     .disc-card:hover {
-        background: rgba(255,255,255,0.08);
+        background: #f8f9fa;
         transform: translateX(4px);
+        border-color: var(--cor);
+        box-shadow: 0 8px 16px rgba(26, 115, 232, 0.12);
     }
 
     .disc-name {
@@ -214,16 +280,18 @@ st.markdown("""
         color: var(--cor);
         font-weight: 700;
         font-size: 1.05rem;
+        letter-spacing: -0.5px;
     }
 
     .disc-stats {
         font-size: 0.8rem;
-        color: #b0b0b0;
+        color: #6b7280;
+        font-weight: 500;
     }
 
     .progress {
         flex: 1;
-        background: rgba(255,255,255,0.1);
+        background: #e5e7eb;
         height: 5px;
         border-radius: 5px;
         overflow: hidden;
@@ -234,7 +302,8 @@ st.markdown("""
         height: 100%;
         background: var(--cor);
         border-radius: 5px;
-        transition: width 0.5s ease;
+        transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
     }
 
     .pct {
@@ -246,85 +315,197 @@ st.markdown("""
     }
 
     .conteudo-item {
-        background: rgba(255,255,255,0.03);
-        border-left: 3px solid rgba(255,255,255,0.2);
+        background: #f9fafb;
+        border-left: 3px solid #e5e7eb;
         padding: 0.8rem 1rem;
         margin-bottom: 0.5rem;
         border-radius: 6px;
         font-size: 0.95rem;
         transition: all 0.2s ease;
+        animation: slideIn 0.3s ease-out;
+        color: #374151;
     }
 
     .conteudo-item:hover {
-        background: rgba(255,255,255,0.06);
-        border-left-color: rgba(255,255,255,0.4);
+        background: #f3f4f6;
+        border-left-color: #1a73e8;
+        transform: translateX(4px);
     }
 
     .conteudo-item.done {
         opacity: 0.6;
         text-decoration: line-through;
-        color: #80868b;
+        color: #6b7280;
         border-left-color: #34a853;
+        background: #ecf5ea;
+    }
+
+    .chart-container {
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .chart-container:hover {
+        background: #f8f9fa;
+        border-color: #d1d5db;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .pizza-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.8rem;
+        text-align: center;
+        letter-spacing: -0.5px;
     }
 
     .footer {
         text-align: center;
-        color: #80868b;
+        color: #6b7280;
         padding: 2rem 0;
         margin-top: 3rem;
-        border-top: 1px solid rgba(255,255,255,0.1);
+        border-top: 1px solid #e5e7eb;
         font-size: 0.85rem;
+        font-weight: 500;
     }
 
-    @media (max-width: 768px) {
-        .header-right {
+    @media (max-width: 1024px) {
+        .header-info {
             position: relative;
             top: auto;
             right: auto;
-            width: 100%;
-            margin-top: 1rem;
+            gap: 1rem;
         }
 
-        .header-wrapper {
+        .header-container {
             flex-direction: column;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header-content h1 {
+            font-size: 1.8rem;
+        }
+
+        .header-logo img {
+            max-width: 180px;
+        }
+
+        .metric-card {
+            padding: 1rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+        }
+
+        .header-info {
+            gap: 1rem;
+            flex-wrap: wrap;
         }
     }
 </style>
 
+<!-- container das fagulhas -->
+<div id="sparkles-container" aria-hidden="true"></div>
+
 <script>
-function createSparkles() {
-    const container = document.body;
+(function() {
+    // cria fagulha com variações
+    function createSpark() {
+        const container = document.getElementById('sparkles-container');
+        if (!container) return;
 
-    setInterval(() => {
-        for (let i = 0; i < 5; i++) {
-            const sparkle = document.createElement('div');
-            sparkle.className = 'sparkle';
+        const sp = document.createElement('div');
+        sp.className = 'spark';
 
-            const colors = ['', 'green', 'orange'];
-            sparkle.classList.add(colors[Math.floor(Math.random() * colors.length)]);
+        // posição horizontal aleatória (em px)
+        const left = Math.random() * window.innerWidth;
+        sp.style.left = left + 'px';
 
-            const duration = 3 + Math.random() * 2;
-            sparkle.style.setProperty('--duration', duration + 's');
+        // variação de tamanho
+        const size = (Math.random() * 6) + 3; // 3px a 9px
+        sp.style.width = size + 'px';
+        sp.style.height = size + 'px';
 
-            const leftPos = Math.random() * window.innerWidth;
-            sparkle.style.left = leftPos + 'px';
+        // drift lateral pequeno
+        const drift = (Math.random() * 240) - 120; // -120px .. +120px
+        sp.style.setProperty('transform-origin', 'center bottom');
+        // duração aleatória
+        const duration = 2.6 + Math.random() * 2.2; // 2.6s a 4.8s
+        sp.style.animationDuration = duration + 's';
 
-            container.appendChild(sparkle);
+        // escolher cor aleatória
+        const colorPick = Math.random();
+        if (colorPick < 0.12) sp.classList.add('green');
+        else if (colorPick < 0.28) sp.classList.add('orange');
 
-            setTimeout(() => sparkle.remove(), duration * 1000);
+        // aplicar deslocamento lateral via keyframe dinamicamente (usarei CSS var hack)
+        // Para compatibilidade simples, aplico um translateX por style no final (via setTimeout)
+        container.appendChild(sp);
+
+        // aplicar um pequeno translateX gradual via transition (ajuste visual)
+        sp.style.transition = `transform ${duration}s linear, opacity ${duration}s linear`;
+        requestAnimationFrame(() => {
+            sp.style.transform = `translateY(-125vh) translateX(${drift}px) scale(0.45)`;
+            sp.style.opacity = '0';
+        });
+
+        // remover ao final
+        setTimeout(() => {
+            sp.remove();
+        }, (duration + 0.1) * 1000);
+    }
+
+    // emissor: cria várias fagulhas periodicamente
+    function startEmitter() {
+        // cria um lote inicial rápido pra encher o fundo
+        for (let i = 0; i < 12; i++) {
+            setTimeout(createSpark, i * 120);
         }
-    }, 500);
-}
+        // depois cria lotes periódicos
+        return setInterval(() => {
+            for (let i = 0; i < 6; i++) {
+                setTimeout(createSpark, i * 90);
+            }
+        }, 700);
+    }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createSparkles);
-} else {
-    createSparkles();
-}
+    // iniciar quando a janela carregar (funciona melhor no Streamlit)
+    window.addEventListener('load', () => {
+        // pequena proteção: não inicializar duas vezes
+        if (!window.__sparkles_started) {
+            window.__sparkles_started = true;
+            window.__sparkles_interval = startEmitter();
+            // pause when tab hidden to economizar CPU
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    clearInterval(window.__sparkles_interval);
+                    window.__sparkles_interval = null;
+                } else if (!window.__sparkles_interval) {
+                    window.__sparkles_interval = startEmitter();
+                }
+            });
+        }
+    });
+})();
 </script>
 """, unsafe_allow_html=True)
 
+# ================================================================================
 # CONFIGURAÇÕES
+# ================================================================================
+
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
@@ -337,49 +518,79 @@ CORES = {
     'CONHECIMENTOS ESPECÍFICOS': '#f57c00'
 }
 
-# FUNÇÕES
+EMOJIS = {
+    'LÍNGUA PORTUGUESA': '📖',
+    'RLM': '🧮',
+    'REALIDADE DE GOIÁS': '🗺️',
+    'LEGISLAÇÃO APLICADA': '⚖️',
+    'CONHECIMENTOS ESPECÍFICOS': '💡'
+}
+
+# ================================================================================
+# FUNÇÕES AUXILIARES
+# ================================================================================
+
 def obter_data():
+    """Retorna data formatada em português"""
     hoje = datetime.now()
-    meses = {1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril', 5: 'Maio', 6: 'Junho',
-             7: 'Julho', 8: 'Agosto', 9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'}
+    meses = {
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril', 5: 'Maio', 6: 'Junho',
+        7: 'Julho', 8: 'Agosto', 9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    }
     return f"{hoje.day} de {meses[hoje.month]} de {hoje.year}"
 
 @st.cache_data(ttl=600)
 def obter_temp():
+    """Obtém temperatura de Goiânia em tempo real"""
     try:
-        r = requests.get('https://api.open-meteo.com/v1/forecast',
-                        params={'latitude': -15.8267, 'longitude': -48.9626, 'current': 'temperature_2m',
-                                'temperature_unit': 'celsius', 'timezone': 'America/Sao_Paulo'}, timeout=5)
+        r = requests.get(
+            'https://api.open-meteo.com/v1/forecast',
+            params={
+                'latitude': -15.8267,
+                'longitude': -48.9626,
+                'current': 'temperature_2m',
+                'temperature_unit': 'celsius',
+                'timezone': 'America/Sao_Paulo'
+            },
+            timeout=5
+        )
         if r.status_code == 200:
             return round(r.json()['current']['temperature_2m'], 1)
-    except:
+    except Exception:
         pass
     return "N/A"
 
 def conectar():
-    """NÃO cachear - gspread.Client não é hashable"""
+    """Conecta ao Google Sheets"""
     try:
         if 'gcp_service_account' in st.secrets:
             creds = dict(st.secrets["gcp_service_account"])
         else:
             with open('credentials.json', 'r') as f:
                 creds = json.load(f)
-        c = Credentials.from_service_account_info(creds,
-            scopes=['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'])
+        c = Credentials.from_service_account_info(
+            creds,
+            scopes=[
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+        )
         return gspread.authorize(c)
     except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"❌ Erro ao conectar: {e}")
         return None
 
-def carregar_dados(client):
-    """NÃO cachear - client não é hashable"""
+@st.cache_data(ttl=60)
+def carregar_dados(_client):
+    """Carrega dados da planilha - com _ no client para evitar hash"""
     try:
-        ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+        ws = _client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         df = pd.DataFrame(ws.get_all_records())
         df['Status'] = df['Status'].astype(str).str.upper()
         df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES'])
         return df
-    except:
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar dados: {e}")
         return None
 
 def atualizar(client, linha, novo_status):
@@ -388,7 +599,8 @@ def atualizar(client, linha, novo_status):
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         ws.update_cell(linha, 4, str(novo_status))
         return True
-    except:
+    except Exception as e:
+        st.error(f"❌ Erro ao atualizar: {e}")
         return False
 
 def criar_pizza_chart(estudados, total):
@@ -398,80 +610,124 @@ def criar_pizza_chart(estudados, total):
         'Quantidade': [estudados, total - estudados]
     })
 
-    chart = alt.Chart(data).mark_arc(innerRadius=50, stroke=None).encode(
+    chart = alt.Chart(data).mark_arc(
+        innerRadius=50,
+        stroke=None,
+        cornerRadius=8
+    ).encode(
         theta=alt.Theta('Quantidade:Q'),
-        color=alt.Color('Status:N', scale=alt.Scale(domain=['Estudado', 'Faltando'], 
-                                                      range=['#34a853', '#ef5350'])),
+        color=alt.Color(
+            'Status:N',
+            scale=alt.Scale(
+                domain=['Estudado', 'Faltando'],
+                range=['#34a853', '#ef5350']
+            )
+        ),
         tooltip=[]
-    ).properties(width=200, height=200).configure_arc(cornerRadius=8)
+    ).properties(width=200, height=200)
 
     return chart
 
-# INTERFACE
+def calcular_stats(df_cargo):
+    """Calcula estatísticas do cargo"""
+    total = len(df_cargo)
+    estudados = df_cargo['Estudado'].sum()
+    faltam = total - estudados
+    pct = (estudados / total * 100) if total > 0 else 0
+
+    stats_disc = df_cargo.groupby('Disciplinas').agg({
+        'Estudado': ['sum', 'count']
+    }).reset_index()
+    stats_disc.columns = ['Disciplina', 'Estudados', 'Total']
+    stats_disc['Percentual'] = (stats_disc['Estudados'] / stats_disc['Total'] * 100).round(1)
+
+    return {
+        'total': total,
+        'estudados': estudados,
+        'faltam': faltam,
+        'percentual': pct,
+        'por_disc': stats_disc
+    }
+
+# ================================================================================
+# INTERFACE PRINCIPAL
+# ================================================================================
+
 def main():
+    """Função principal"""
     data = obter_data()
     temp = obter_temp()
 
     # Header
     st.markdown(f"""
-    <div class="header-box">
-        <div class="header-wrapper">
+    <div style="position: relative; margin-bottom: 2rem;">
+        <div class="header-container">
             <div class="header-logo">
-                <img src="{LOGO_URL}" alt="Logo">
+                <img src="{LOGO_URL}" alt="Logo Câmara de Goiânia">
             </div>
-            <div class="header-center">
+            <div class="header-content">
                 <h1>📚 Dashboard de Estudos</h1>
                 <p>Acompanhamento - Concurso Câmara de Goiânia</p>
             </div>
         </div>
-        <div class="header-right">
+        <div class="header-info">
             <div class="info-item">
-                <div class="info-label">📍 Local</div>
-                <div class="info-value">Goiânia - GO</div>
+                <span class="info-label">📍 Local</span>
+                <span class="info-value">Goiânia - GO</span>
             </div>
             <div class="info-item">
-                <div class="info-label">📅 Data</div>
-                <div class="info-value">{data}</div>
+                <span class="info-label">📅 Data</span>
+                <span class="info-value">{data}</span>
             </div>
             <div class="info-item">
-                <div class="info-label">🌡️ Temp</div>
-                <div class="info-value">{temp}°C</div>
+                <span class="info-label">🌡️ Temp</span>
+                <span class="info-value">{temp}°C</span>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
+    # Sidebar
     with st.sidebar:
-        st.markdown("### ⚙️ Config")
-        cargo = st.selectbox("Cargo:", ["Analista Técnico Legislativo", "Agente Administrativo"])
+        st.markdown("### ⚙️ Configurações")
+        cargo = st.selectbox(
+            "Seu Cargo:",
+            ["Analista Técnico Legislativo", "Agente Administrativo"],
+            key="cargo_select"
+        )
         st.markdown("---")
-        if st.button("🔄 Recarregar"):
-            st.cache_data.clear()
-            st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔄 Recarregar", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
+        with col2:
+            if st.button("❌ Limpar", use_container_width=True):
+                st.session_state.clear()
+                st.rerun()
 
-    # Conectar - SEM cache
+    # Conectar
     client = conectar()
     if client is None:
         st.stop()
 
-    # Carregar dados - SEM cache (client não é hashable)
-    with st.spinner("Carregando..."):
+    # Carregar dados
+    with st.spinner("📥 Carregando dados..."):
         df = carregar_dados(client)
 
     if df is None or len(df) == 0:
-        st.error("Nenhum dado")
+        st.error("❌ Nenhum dado encontrado na planilha")
         st.stop()
 
-    # Stats
+    # Filtrar por cargo
     df_cargo = df[df['Cargo'] == cargo].copy()
     if len(df_cargo) == 0:
-        st.warning("Sem dados")
+        st.warning(f"⚠️ Sem dados para: {cargo}")
         st.stop()
 
-    total = len(df_cargo)
-    estudados = df_cargo['Estudado'].sum()
-    faltam = total - estudados
-    pct = (estudados / total * 100) if total > 0 else 0
+    # Calcular stats
+    stats = calcular_stats(df_cargo)
+    df_cargo['linha'] = df_cargo.index + 2
 
     # Métricas
     st.markdown('<div class="section-title">📊 Visão Geral</div>', unsafe_allow_html=True)
@@ -479,29 +735,29 @@ def main():
 
     with col1:
         st.markdown(f"""<div class="metric-card">
-            <div style="font-size: 2rem;">📚</div>
-            <div class="metric-value">{total}</div>
+            <div style="font-size: 2.2rem;">📚</div>
+            <div class="metric-value">{stats['total']}</div>
             <div class="metric-label">Total</div>
         </div>""", unsafe_allow_html=True)
 
     with col2:
         st.markdown(f"""<div class="metric-card">
-            <div style="font-size: 2rem;">✅</div>
-            <div class="metric-value">{estudados}</div>
+            <div style="font-size: 2.2rem;">✅</div>
+            <div class="metric-value">{stats['estudados']}</div>
             <div class="metric-label">Estudados</div>
         </div>""", unsafe_allow_html=True)
 
     with col3:
         st.markdown(f"""<div class="metric-card">
-            <div style="font-size: 2rem;">⏳</div>
-            <div class="metric-value">{faltam}</div>
+            <div style="font-size: 2.2rem;">⏳</div>
+            <div class="metric-value">{stats['faltam']}</div>
             <div class="metric-label">Faltando</div>
         </div>""", unsafe_allow_html=True)
 
     with col4:
         st.markdown(f"""<div class="metric-card">
-            <div style="font-size: 2rem;">🎯</div>
-            <div class="metric-value">{pct:.0f}%</div>
+            <div style="font-size: 2.2rem;">🎯</div>
+            <div class="metric-value">{stats['percentual']:.0f}%</div>
             <div class="metric-label">Progresso</div>
         </div>""", unsafe_allow_html=True)
 
@@ -511,69 +767,73 @@ def main():
     col1, col2 = st.columns(2)
 
     with col1:
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
         data_pizza = pd.DataFrame({
             'Status': ['Estudado', 'Faltando'],
-            'Quantidade': [estudados, faltam]
+            'Quantidade': [stats['estudados'], stats['faltam']]
         })
-        chart = alt.Chart(data_pizza).mark_arc(innerRadius=60, stroke=None).encode(
+        chart = alt.Chart(data_pizza).mark_arc(
+            innerRadius=60,
+            stroke=None,
+            cornerRadius=8
+        ).encode(
             theta=alt.Theta('Quantidade:Q'),
-            color=alt.Color('Status:N', scale=alt.Scale(domain=['Estudado', 'Faltando'], 
-                                                          color=['#34a853', '#ef5350'])),
+            color=alt.Color(
+                'Status:N',
+                scale=alt.Scale(domain=['Estudado', 'Faltando'],
+                                range=['#34a853', '#ef5350'])
+            ),
             tooltip=[]
-        ).properties(width=300, height=300).configure_arc(cornerRadius=8)
-        st.altair_chart(chart, use_container_width=True)
+        ).properties(width=300, height=300)
+        st.altair_chart(chart, width='stretch')
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        stats_disc = df_cargo.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
-        stats_disc.columns = ['Disciplina', 'Estudados', 'Total']
-        stats_disc['Percentual'] = (stats_disc['Estudados'] / stats_disc['Total'] * 100).round(1)
-        stats_disc = stats_disc.sort_values('Percentual', ascending=True)
-
-        chart = alt.Chart(stats_disc).mark_bar(cornerRadius=6, stroke=None).encode(
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        stats_disc_sorted = stats['por_disc'].sort_values('Percentual', ascending=True)
+        chart = alt.Chart(stats_disc_sorted).mark_bar(
+            cornerRadius=6,
+            stroke=None
+        ).encode(
             x=alt.X('Percentual:Q', scale=alt.Scale(domain=[0, 100])),
             y=alt.Y('Disciplina:N', sort='-x'),
             color=alt.Color('Percentual:Q', scale=alt.Scale(scheme='greens')),
             tooltip=[]
         ).properties(width=500, height=300)
-        st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, width='stretch')
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # Pizza Charts por Disciplina
+    # Pizzas por Disciplina
     st.markdown('<div class="section-title">🥧 Pizzas por Disciplina</div>', unsafe_allow_html=True)
 
-    stats_disc = df_cargo.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
-    stats_disc.columns = ['Disciplina', 'Estudados', 'Total']
-    stats_disc['Percentual'] = (stats_disc['Estudados'] / stats_disc['Total'] * 100).round(1)
-
     cols = st.columns(3)
-    for idx, (_, row) in enumerate(stats_disc.iterrows()):
+    for idx, (_, row) in enumerate(stats['por_disc'].iterrows()):
         with cols[idx % 3]:
             cor = CORES.get(row['Disciplina'], '#1a73e8')
 
             st.markdown(f"""
-            <div style="text-align: center; color: {cor}; font-weight: 700; margin-bottom: 0.5rem;">
+            <div class="pizza-title" style="color: {cor};">
                 {row['Disciplina']}
             </div>
             """, unsafe_allow_html=True)
 
             chart = criar_pizza_chart(int(row['Estudados']), int(row['Total']))
-            st.altair_chart(chart, use_container_width=True)
+            st.altair_chart(chart, width='stretch')
 
             st.markdown(f"""
-            <div style="text-align: center; color: {cor}; font-weight: 700; font-size: 1.4rem;">
+            <div style="text-align: center; color: {cor}; font-weight: 700; font-size: 1.4rem; margin-top: -0.5rem;">
                 {row['Percentual']:.0f}%
             </div>
             """, unsafe_allow_html=True)
 
-    # Disciplinas
+    # Conteúdos por Disciplina
     st.markdown('<div class="section-title">📚 Conteúdos por Disciplina</div>', unsafe_allow_html=True)
 
     disciplinas = sorted(df_cargo['Disciplinas'].unique().tolist())
-    filtro = st.selectbox("Filtrar:", ["Todas"] + disciplinas)
+    filtro = st.selectbox("Filtrar por Disciplina:", ["Todas"] + disciplinas, key="filtro_disc")
 
     if filtro != "Todas":
         df_cargo = df_cargo[df_cargo['Disciplinas'] == filtro]
-
-    df_cargo['linha'] = df_cargo.index + 2
 
     for disc in sorted(df_cargo['Disciplinas'].unique()):
         df_disc = df_cargo[df_cargo['Disciplinas'] == disc].copy()
@@ -581,10 +841,11 @@ def main():
         n_tot = len(df_disc)
         p = (n_est / n_tot * 100) if n_tot > 0 else 0
         cor = CORES.get(disc, '#1a73e8')
+        emoji = EMOJIS.get(disc, '📖')
 
         st.markdown(f"""
         <div class="disc-card" style="--cor: {cor};">
-            <div class="disc-name">{disc}</div>
+            <div class="disc-name">{emoji} {disc}</div>
             <div class="progress">
                 <div class="progress-bar" style="width: {p}%; background: {cor};"></div>
             </div>
@@ -592,18 +853,22 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-        with st.expander(f"📋 {n_tot} conteúdos"):
+        with st.expander(f"📋 Ver {n_tot} conteúdos ({n_est} estudados)"):
             for idx, row in df_disc.iterrows():
                 col1, col2 = st.columns([0.05, 0.95])
 
                 with col1:
-                    check = st.checkbox("✓", value=bool(row['Estudado']), key=f"ch_{idx}",
-                                      label_visibility="collapsed")
+                    check = st.checkbox(
+                        "✓",
+                        value=bool(row['Estudado']),
+                        key=f"ch_{idx}",
+                        label_visibility="collapsed"
+                    )
 
                     if check != bool(row['Estudado']):
-                        with st.spinner("Salvando..."):
+                        with st.spinner("💾 Salvando..."):
                             if atualizar(client, int(row['linha']), 'TRUE' if check else 'FALSE'):
-                                time.sleep(0.2)
+                                time.sleep(0.3)
                                 st.rerun()
 
                 with col2:
@@ -612,7 +877,8 @@ def main():
                         {'✓ ' if row['Estudado'] else ''}{row['Conteúdos']}
                     </div>""", unsafe_allow_html=True)
 
-    st.markdown(f'<div class="footer">Dashboard | Câmara Municipal de Goiânia | {datetime.now().strftime("%H:%M:%S")}</div>', 
+    # Footer
+    st.markdown(f'<div class="footer">✨ Dashboard Interativo | Câmara Municipal de Goiânia | Atualizado em {datetime.now().strftime("%H:%M:%S")}</div>', 
                unsafe_allow_html=True)
 
 if __name__ == "__main__":
