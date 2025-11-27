@@ -4,14 +4,12 @@
 ================================================================================
 🎯 DASHBOARD VISUAL COM ANÁLISES - CONCURSO CÂMARA DE GOIÂNIA
 ================================================================================
-Interface visual + Análises avançadas + Logo Oficial
-- Logo da Câmara Municipal de Goiânia (à esquerda)
-- Informações de Goiânia (data DINÂMICA, temperatura em tempo real)
-- Disciplinas em containers coloridos separados
-- Checkboxes em cards individuais
-- Atualização em tempo real no Google Sheets
-- Análises visuais e insights inteligentes
-- Design limpo e profissional
+🎨 Design Profissional com:
+- Cores vibrantes e contrastantes
+- Lista de conteúdos expansível/colapsável
+- Gráficos com fundo transparente
+- Pizza chart para cada disciplina
+- UI/UX moderno e intuitivo
 
 Tecnologias:
 - Streamlit (interface)
@@ -39,7 +37,6 @@ import locale
 
 warnings.filterwarnings('ignore')
 
-# Tentar configurar locale para português
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except:
@@ -57,27 +54,32 @@ st.set_page_config(
 )
 
 # ================================================================================
-# CSS CUSTOMIZADO
+# CSS CUSTOMIZADO - CORES VIBRANTES E PROFISSIONAIS
 # ================================================================================
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
     * {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
+    html, body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #f0f4f8 100%);
+    }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
+    /* Header */
     .header-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
         padding: 2rem;
         border-radius: 20px;
         color: white;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 15px 50px rgba(13, 71, 161, 0.3);
         display: flex;
         align-items: center;
         gap: 2rem;
@@ -90,212 +92,216 @@ st.markdown("""
     .logo-section img {
         max-width: 250px;
         height: auto;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
     }
 
     .header-content {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
     }
 
     .header-title {
-        font-size: 2.5rem;
-        font-weight: 700;
+        font-size: 2.8rem;
+        font-weight: 800;
         margin: 0;
-        text-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        letter-spacing: -0.5px;
     }
 
     .header-subtitle {
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         opacity: 0.95;
-        font-weight: 300;
+        font-weight: 400;
         margin-top: 0.5rem;
     }
 
     .header-info {
         flex: 0 0 auto;
-        text-align: right;
-        padding: 1rem 1.5rem;
-        background: rgba(255,255,255,0.1);
-        border-radius: 12px;
+        background: rgba(255,255,255,0.15);
         backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 1.2rem 1.8rem;
+        border: 1px solid rgba(255,255,255,0.2);
     }
 
     .info-item {
-        font-size: 0.95rem;
-        opacity: 0.95;
-        margin: 0.5rem 0;
+        margin: 0.6rem 0;
         line-height: 1.4;
     }
 
     .info-label {
-        opacity: 0.8;
-        font-size: 0.85rem;
+        opacity: 0.85;
+        font-size: 0.8rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
-    }
-
-    .info-value {
-        font-size: 1.1rem;
+        letter-spacing: 1px;
         font-weight: 600;
     }
 
-    .temp-display {
-        font-size: 1.8rem;
+    .info-value {
+        font-size: 1.15rem;
         font-weight: 700;
-        margin-top: 0.3rem;
+        margin-top: 0.2rem;
     }
 
+    .temp-display {
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    /* Métricas */
     .metric-card {
         background: white;
-        padding: 1.8rem;
-        border-radius: 15px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        border-left: 5px solid #667eea;
-        transition: all 0.3s ease;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        border-top: 4px solid #1a73e8;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .metric-card:hover {
         transform: translateY(-8px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        box-shadow: 0 20px 45px rgba(0,0,0,0.12);
     }
 
     .metric-value {
-        font-size: 2.8rem;
-        font-weight: 700;
-        color: #667eea;
+        font-size: 3.2rem;
+        font-weight: 800;
+        color: #1a73e8;
         line-height: 1;
     }
 
     .metric-label {
-        font-size: 0.95rem;
-        color: #999;
+        font-size: 0.9rem;
+        color: #5f6368;
         text-transform: uppercase;
         letter-spacing: 0.8px;
         margin-top: 0.8rem;
-        font-weight: 500;
+        font-weight: 600;
     }
 
+    /* Disciplinas */
     .disciplina-container {
-        background: linear-gradient(135deg, var(--cor-principal) 0%, var(--cor-secundaria) 100%);
-        border-radius: 20px;
+        background: white;
+        border-radius: 16px;
         padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-        color: white;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        border-left: 6px solid var(--cor-principal);
     }
 
     .disciplina-header {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: 700;
-        margin-bottom: 0.5rem;
+        margin-bottom: 1rem;
         display: flex;
         align-items: center;
         gap: 1rem;
+        color: var(--cor-principal);
     }
 
     .disciplina-stats {
         font-size: 0.95rem;
-        opacity: 0.95;
+        color: #5f6368;
         margin-bottom: 1.5rem;
-        padding: 0.8rem 1.2rem;
-        background: rgba(255,255,255,0.2);
+        font-weight: 600;
+    }
+
+    .progress-bar-container {
+        background: #e8f0fe;
         border-radius: 10px;
-        width: fit-content;
+        height: 10px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #1a73e8, #34a853);
+        border-radius: 10px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .conteudo-card {
-        background: rgba(255,255,255,0.95);
+        background: #f8f9fa;
         border-radius: 12px;
         padding: 1rem 1.2rem;
         margin-bottom: 0.8rem;
         display: flex;
         align-items: center;
         gap: 1rem;
+        border-left: 4px solid #e8eaed;
         transition: all 0.2s ease;
-        color: #333;
     }
 
     .conteudo-card:hover {
-        background: white;
-        transform: translateX(8px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        background: #f0f4f8;
+        border-left-color: #1a73e8;
     }
 
     .conteudo-card.estudado {
-        opacity: 0.7;
+        background: #e6f4ea;
+        border-left-color: #34a853;
+        opacity: 0.9;
     }
 
     .conteudo-text {
         flex: 1;
         font-size: 0.95rem;
         font-weight: 500;
-        line-height: 1.4;
     }
 
     .conteudo-card.estudado .conteudo-text {
         text-decoration: line-through;
-        color: #999;
+        color: #5f6368;
     }
 
+    /* Seções */
     .section-header {
         font-size: 1.8rem;
-        font-weight: 700;
-        color: #333;
+        font-weight: 800;
+        color: #202124;
         margin: 2.5rem 0 1.5rem 0;
-        padding-bottom: 0.8rem;
-        border-bottom: 4px solid #667eea;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #1a73e8;
         display: flex;
         align-items: center;
         gap: 1rem;
+        letter-spacing: -0.5px;
     }
 
     .chart-container {
         background: white;
-        border-radius: 15px;
+        border-radius: 16px;
         padding: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
         margin-bottom: 1.5rem;
     }
 
-    .progress-bar-container {
-        background: rgba(255,255,255,0.2);
-        border-radius: 10px;
-        height: 8px;
-        overflow: hidden;
-        margin-top: 1rem;
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1rem;
     }
 
-    .progress-bar {
-        height: 100%;
-        background: rgba(255,255,255,0.9);
-        border-radius: 10px;
-        transition: width 0.6s ease;
+    .stTabs [data-baseweb="tab"] {
+        font-weight: 600;
+        font-size: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px 12px 0 0;
+        border: 2px solid #e8eaed;
+        color: #5f6368;
     }
 
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .stTabs [aria-selected="true"] {
+        background: #1a73e8;
+        color: white !important;
+        border-color: #1a73e8;
     }
 
-    .animate-slide {
-        animation: slideIn 0.5s ease;
-    }
-
+    /* Footer */
     .footer-text {
         text-align: center;
-        color: #999;
+        color: #80868b;
         padding: 2rem 0 1rem;
         font-size: 0.9rem;
-        border-top: 1px solid #eee;
+        border-top: 2px solid #e8eaed;
         margin-top: 3rem;
     }
 
@@ -317,10 +323,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================================================================
-# ✅ CONFIGURAÇÕES - SPREADSHEET_ID E ID REAIS
+# CONFIGURAÇÕES - SPREADSHEET_ID E ID REAIS
 # ================================================================================
 
-SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'  # ✅ SEU ID REAL!
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 
 # URL do logo da Câmara
@@ -328,28 +334,28 @@ LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assin
 
 CORES_DISCIPLINAS = {
     'LÍNGUA PORTUGUESA': {
-        'principal': '#FF6B6B',
-        'secundaria': '#FF8787',
+        'principal': '#d33427',
+        'secundaria': '#ea4335',
         'emoji': '📖'
     },
     'RLM': {
-        'principal': '#4ECDC4',
-        'secundaria': '#45B7D1',
+        'principal': '#1f7c5c',
+        'secundaria': '#34a853',
         'emoji': '🧮'
     },
     'REALIDADE DE GOIÁS': {
-        'principal': '#45B7D1',
-        'secundaria': '#3498DB',
+        'principal': '#0d47a1',
+        'secundaria': '#1a73e8',
         'emoji': '🗺️'
     },
     'LEGISLAÇÃO APLICADA': {
-        'principal': '#96CEB4',
-        'secundaria': '#81C784',
+        'principal': '#6d28d9',
+        'secundaria': '#7c3aed',
         'emoji': '⚖️'
     },
     'CONHECIMENTOS ESPECÍFICOS': {
-        'principal': '#FFD93D',
-        'secundaria': '#FFC300',
+        'principal': '#f57c00',
+        'secundaria': '#fb8500',
         'emoji': '💡'
     }
 }
@@ -501,72 +507,85 @@ def gerar_insights(stats):
     insights = []
 
     if stats['percentual'] >= 90:
-        insights.append(("🏆", "Você está quase lá! Continue firme!", "#2ecc71"))
+        insights.append(("🏆", "Você está quase lá! Continue firme!", "#1a73e8"))
     elif stats['percentual'] >= 70:
-        insights.append(("💪", "Excelente progresso! Mantenha o ritmo!", "#3498db"))
+        insights.append(("💪", "Excelente progresso! Mantenha o ritmo!", "#34a853"))
     elif stats['percentual'] >= 50:
-        insights.append(("🚀", "Você já passou da metade! Força!", "#f39c12"))
+        insights.append(("🚀", "Você já passou da metade! Força!", "#f57c00"))
     elif stats['percentual'] >= 25:
-        insights.append(("📚", "Bom começo! Intensifique os estudos", "#e74c3c"))
+        insights.append(("📚", "Bom começo! Intensifique os estudos", "#d33427"))
     else:
-        insights.append(("⚡", "É hora de acelerar! Vamos lá!", "#e67e22"))
+        insights.append(("⚡", "É hora de acelerar! Vamos lá!", "#f57c00"))
 
     df_disc = stats['por_disciplina']
     disc_critica = df_disc[df_disc['Percentual'] < 40]
     if len(disc_critica) > 0:
         piores = disc_critica.sort_values('Percentual').iloc[0]
-        insights.append(("⚠️", f"Foco em {piores['Disciplina']}: apenas {piores['Percentual']:.0f}%", "#e74c3c"))
+        insights.append(("⚠️", f"Foco em {piores['Disciplina']}: apenas {piores['Percentual']:.0f}%", "#d33427"))
 
     disc_melhor = df_disc.sort_values('Percentual', ascending=False).iloc[0]
     if disc_melhor['Percentual'] == 100:
-        insights.append(("⭐", f"Perfeito em {disc_melhor['Disciplina']}!", "#2ecc71"))
+        insights.append(("⭐", f"Perfeito em {disc_melhor['Disciplina']}!", "#34a853"))
 
     dias_estimados = max(1, stats['faltam'] // 5) if stats['faltam'] > 0 else 0
     if dias_estimados > 0:
-        insights.append(("📅", f"Com 5 conteúdos/dia: {dias_estimados} dias para terminar", "#3498db"))
+        insights.append(("📅", f"Com 5 conteúdos/dia: {dias_estimados} dias para terminar", "#1a73e8"))
 
     return insights
 
-def criar_card_metrica(valor, label, icon="📊"):
+def criar_card_metrica(valor, label, icon="📊", cor="#1a73e8"):
     """Cria card de métrica"""
     return f"""
-    <div class="metric-card animate-slide">
+    <div class="metric-card">
         <div style="display: flex; align-items: center; gap: 1.2rem;">
             <div style="font-size: 3.5rem;">{icon}</div>
             <div>
-                <div class="metric-value">{valor}</div>
+                <div class="metric-value" style="color: {cor};">{valor}</div>
                 <div class="metric-label">{label}</div>
             </div>
         </div>
     </div>
     """
 
-def criar_grafico_pizza(stats):
-    """Gráfico de pizza - CORRIGIDO"""
+def criar_grafico_pizza_disciplina(estudados, total):
+    """Cria gráfico de pizza para disciplina"""
     data = pd.DataFrame({
-        'Categoria': ['Estudados', 'Faltando'],
-        'Quantidade': [stats['estudados'], stats['faltam']]
+        'Status': ['Estudado', 'Faltando'],
+        'Quantidade': [estudados, total - estudados]
     })
 
-    chart = alt.Chart(data).mark_arc(innerRadius=100, cornerRadius=8).encode(
+    chart = alt.Chart(data).mark_arc(innerRadius=50, stroke=None).encode(
+        theta=alt.Theta('Quantidade:Q'),
+        color=alt.Color('Status:N', scale=alt.Scale(domain=['Estudado', 'Faltando'], 
+                                                      range=['#34a853', '#dadce0']))
+    ).properties(width=150, height=150).configure_arc(cornerRadius=0)
+
+    return chart
+
+def criar_grafico_pizza_geral(estudados, faltam):
+    """Gráfico de pizza geral"""
+    data = pd.DataFrame({
+        'Categoria': ['Estudados', 'Faltando'],
+        'Quantidade': [estudados, faltam]
+    })
+
+    chart = alt.Chart(data).mark_arc(innerRadius=80, cornerRadius=8, stroke=None).encode(
         theta=alt.Theta('Quantidade:Q'),
         color=alt.Color('Categoria:N', scale=alt.Scale(domain=['Estudados', 'Faltando'], 
-                                                        range=['#2ecc71', '#e74c3c']), legend=None),
-        tooltip=['Categoria:N', 'Quantidade:Q']
-    ).properties(width=350, height=350).configure_arc(stroke='white', strokeWidth=3)
+                                                        range=['#1a73e8', '#dadce0']))
+    ).properties(width=300, height=300).configure_arc(cornerRadius=0)
 
     return chart
 
 def criar_grafico_barras(stats):
-    """Gráfico de barras - CORRIGIDO"""
+    """Gráfico de barras"""
     df = stats['por_disciplina'].sort_values('Percentual', ascending=True)
 
-    chart = alt.Chart(df).mark_bar(cornerRadius=8).encode(
+    chart = alt.Chart(df).mark_bar(cornerRadius=6, stroke=None).encode(
         x=alt.X('Percentual:Q', scale=alt.Scale(domain=[0, 100])),
         y=alt.Y('Disciplina:N', sort='-x'),
-        color=alt.Color('Disciplina:N', legend=None),
-        tooltip=['Disciplina:N', 'Estudados:Q', 'Total:Q', 'Percentual:Q']
-    ).properties(width=600, height=350)
+        color=alt.Color('Percentual:Q', scale=alt.Scale(scheme='blues'))
+    ).properties(width=600, height=300)
 
     return chart
 
@@ -591,12 +610,12 @@ def main():
     """Interface principal"""
 
     # Obter informações DINÂMICAS
-    data_hoje = obter_data_formatada()  # ✅ DATA DINÂMICA
-    temperatura = obter_temperatura_goiania()  # ✅ TEMPERATURA EM TEMPO REAL
+    data_hoje = obter_data_formatada()
+    temperatura = obter_temperatura_goiania()
 
-    # Header com logo e informações - CORRIGIDO
+    # Header com logo e informações
     st.markdown(f"""
-    <div class="header-container animate-slide">
+    <div class="header-container">
         <div class="logo-section">
             <img src="{LOGO_URL}" alt="Câmara Municipal de Goiânia">
         </div>
@@ -647,11 +666,11 @@ def main():
     if client is None:
         st.stop()
 
-    with st.spinner("📥 Carregando..."):
+    with st.spinner("📥 Carregando dados..."):
         df = carregar_dados_sheets(client, SPREADSHEET_ID, WORKSHEET_NAME)
 
     if df is None or len(df) == 0:
-        st.error("❌ Nenhum dado")
+        st.error("❌ Nenhum dado encontrado")
         st.stop()
 
     stats = calcular_estatisticas(df, cargo_selecionado)
@@ -668,16 +687,16 @@ def main():
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.markdown(criar_card_metrica(stats['total'], "Total", "📚"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['total'], "Total", "📚", "#1a73e8"), unsafe_allow_html=True)
 
     with col2:
-        st.markdown(criar_card_metrica(stats['estudados'], "Estudados", "✅"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['estudados'], "Estudados", "✅", "#34a853"), unsafe_allow_html=True)
 
     with col3:
-        st.markdown(criar_card_metrica(stats['faltam'], "Faltando", "⏳"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['faltam'], "Faltando", "⏳", "#f57c00"), unsafe_allow_html=True)
 
     with col4:
-        st.markdown(criar_card_metrica(f"{stats['percentual']:.1f}%", "Progresso", "🎯"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(f"{stats['percentual']:.1f}%", "Progresso", "🎯", "#1a73e8"), unsafe_allow_html=True)
 
     # ============================================================================
     # GRÁFICOS
@@ -689,7 +708,7 @@ def main():
 
     with col1:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        st.altair_chart(criar_grafico_pizza(stats), use_container_width=True)
+        st.altair_chart(criar_grafico_pizza_geral(stats['estudados'], stats['faltam']), use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
@@ -709,7 +728,7 @@ def main():
     for idx, (emoji, texto, cor) in enumerate(insights_list):
         with cols[idx % len(cols)]:
             st.markdown(f"""
-            <div style="background: {cor}20; border-left: 4px solid {cor}; padding: 1rem; border-radius: 8px;">
+            <div style="background: {cor}15; border-left: 4px solid {cor}; padding: 1rem; border-radius: 8px;">
                 <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">{emoji}</div>
                 <div style="color: #333; font-size: 0.95rem; font-weight: 500;">{texto}</div>
             </div>
@@ -731,7 +750,7 @@ def main():
         for col, (_, row) in zip(cols, df_resumo.iterrows()):
             with col:
                 pct = stats['por_disciplina'][stats['por_disciplina']['Disciplina'] == row['Disciplina']]['Percentual'].values[0]
-                cor_card = CORES_DISCIPLINAS.get(row['Disciplina'], {}).get('principal', '#667eea')
+                cor_card = CORES_DISCIPLINAS.get(row['Disciplina'], {}).get('principal', '#1a73e8')
 
                 st.markdown(f"""
                 <div style="background: {cor_card}15; border: 2px solid {cor_card}; border-radius: 12px; padding: 1rem; text-align: center;">
@@ -763,7 +782,7 @@ def main():
 
         for _, row in df_disc.head(3).iterrows():
             pct = row['Percentual']
-            cor = '#2ecc71' if pct >= 75 else '#f39c12' if pct >= 50 else '#e74c3c'
+            cor = '#34a853' if pct >= 75 else '#f57c00' if pct >= 50 else '#d33427'
 
             st.markdown(f"""
             <div style="background: {cor}15; border-left: 4px solid {cor}; padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem;">
@@ -812,7 +831,7 @@ def main():
         df_cargo = df_cargo[df_cargo['Disciplinas'] == disciplina_filtro]
 
     for disciplina in sorted(df_cargo['Disciplinas'].unique()):
-        cores = CORES_DISCIPLINAS.get(disciplina, {'principal': '#667eea', 'secundaria': '#764ba2', 'emoji': '📖'})
+        cores = CORES_DISCIPLINAS.get(disciplina, {'principal': '#1a73e8', 'emoji': '📖'})
 
         df_disc = df_cargo[df_cargo['Disciplinas'] == disciplina].copy()
         n_estudados = df_disc['Estudado'].sum()
@@ -820,57 +839,62 @@ def main():
         pct = (n_estudados / n_total * 100) if n_total > 0 else 0
 
         st.markdown(f"""
-        <div class="disciplina-container animate-slide" style="--cor-principal: {cores['principal']}; --cor-secundaria: {cores['secundaria']};">
-            <div class="disciplina-header">
+        <div class="disciplina-container" style="--cor-principal: {cores['principal']};">
+            <div class="disciplina-header" style="color: {cores['principal']};">
                 {cores['emoji']} {disciplina}
             </div>
             <div class="disciplina-stats">
-                {n_estudados}/{n_total} conteúdos ({pct:.0f}%)
+                ✓ {n_estudados}/{n_total} conteúdos ({pct:.0f}%)
             </div>
             <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {pct}%"></div>
+                <div class="progress-bar" style="width: {pct}%; background: {cores['principal']};"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        for idx, row in df_disc.iterrows():
-            col1, col2 = st.columns([0.08, 0.92])
+        # Layout com gráfico e accordion
+        col1, col2 = st.columns([3, 1])
 
-            with col1:
-                checked = st.checkbox(
-                    "✓",
-                    value=bool(row['Estudado']),
-                    key=f"check_{idx}",
-                    label_visibility="collapsed"
-                )
+        with col2:
+            st.altair_chart(criar_grafico_pizza_disciplina(n_estudados, n_total), use_container_width=True)
 
-                if checked != bool(row['Estudado']):
-                    with st.spinner("💾"):
-                        sucesso = atualizar_status_sheets(
-                            client, SPREADSHEET_ID, WORKSHEET_NAME,
-                            int(row['linha_planilha']),
-                            'TRUE' if checked else 'FALSE'
+        with col1:
+            # Accordion com conteúdos
+            with st.expander(f"📋 Ver {n_total} conteúdos", expanded=False):
+                for idx, row in df_disc.iterrows():
+                    col_check, col_text = st.columns([0.08, 0.92])
+
+                    with col_check:
+                        checked = st.checkbox(
+                            "✓",
+                            value=bool(row['Estudado']),
+                            key=f"check_{idx}",
+                            label_visibility="collapsed"
                         )
-                        if sucesso:
-                            time.sleep(0.3)
-                            st.cache_data.clear()
-                            st.rerun()
 
-            with col2:
-                classe = "estudado" if row['Estudado'] else ""
-                st.markdown(f"""
-                <div class="conteudo-card {classe}">
-                    <div class="conteudo-text">{row['Conteúdos']}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                        if checked != bool(row['Estudado']):
+                            with st.spinner("💾"):
+                                sucesso = atualizar_status_sheets(
+                                    client, SPREADSHEET_ID, WORKSHEET_NAME,
+                                    int(row['linha_planilha']),
+                                    'TRUE' if checked else 'FALSE'
+                                )
+                                if sucesso:
+                                    time.sleep(0.3)
+                                    st.cache_data.clear()
+                                    st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
+                    with col_text:
+                        classe = "estudado" if row['Estudado'] else ""
+                        st.markdown(f"""
+                        <div class="conteudo-card {classe}">
+                            <div class="conteudo-text">{'✓ ' if row['Estudado'] else ''}{row['Conteúdos']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="footer-text">
-        ✨ Dashboard Interativo com Análises | Câmara Municipal de Goiânia | {datetime.now().strftime('%H:%M:%S')}
-    </div>
-    """, unsafe_allow_html=True)
+        st.markdown("")
+
+    st.markdown(f'<div class="footer-text">✨ Dashboard Interativo com Análises | Câmara Municipal de Goiânia | {datetime.now().strftime("%H:%M:%S")}</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
