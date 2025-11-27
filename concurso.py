@@ -1,3 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Dashboard de Estudos - Câmara de Goiânia
+VERSÃO FINAL CORRIGIDA
+"""
+
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -77,11 +84,15 @@ st.markdown("""
         background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
         padding: 2rem;
         border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(26, 115, 232, 0.3);
+        position: relative;
+    }
+
+    .header-wrapper {
         display: flex;
         align-items: center;
         gap: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(26, 115, 232, 0.3);
     }
 
     .header-logo {
@@ -89,33 +100,38 @@ st.markdown("""
     }
 
     .header-logo img {
-        max-width: 180px;
+        max-width: 150px;
         height: auto;
     }
 
-    .header-content {
+    .header-center {
         flex: 1;
+        text-align: center;
         color: white;
     }
 
-    .header-content h1 {
+    .header-center h1 {
         margin: 0;
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 800;
     }
 
-    .header-content p {
+    .header-center p {
         margin: 0.3rem 0 0 0;
         font-size: 0.95rem;
         opacity: 0.9;
     }
 
-    .header-info {
+    .header-right {
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
         display: flex;
         gap: 1.5rem;
         background: rgba(255,255,255,0.1);
         padding: 1rem 1.5rem;
         border-radius: 12px;
+        backdrop-filter: blur(10px);
     }
 
     .info-item {
@@ -123,7 +139,7 @@ st.markdown("""
     }
 
     .info-label {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         opacity: 0.7;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -131,7 +147,7 @@ st.markdown("""
     }
 
     .info-value {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 700;
         margin-top: 0.2rem;
     }
@@ -251,43 +267,6 @@ st.markdown("""
         border-left-color: #34a853;
     }
 
-    .pizza-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .pizza-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-
-    .pizza-card:hover {
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(255,255,255,0.2);
-        transform: translateY(-4px);
-    }
-
-    .pizza-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: white;
-        margin-bottom: 0.8rem;
-        text-align: center;
-    }
-
-    .pizza-pct {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--cor);
-        margin-top: 0.5rem;
-    }
-
     .footer {
         text-align: center;
         color: #80868b;
@@ -297,15 +276,17 @@ st.markdown("""
         font-size: 0.85rem;
     }
 
-    @media (max-width: 1024px) {
-        .pizza-grid {
-            grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 768px) {
+        .header-right {
+            position: relative;
+            top: auto;
+            right: auto;
+            width: 100%;
+            margin-top: 1rem;
         }
-    }
 
-    @media (max-width: 640px) {
-        .pizza-grid {
-            grid-template-columns: 1fr;
+        .header-wrapper {
+            flex-direction: column;
         }
     }
 </style>
@@ -375,8 +356,8 @@ def obter_temp():
         pass
     return "N/A"
 
-@st.cache_resource
 def conectar():
+    """NÃO cachear - gspread.Client não é hashable"""
     try:
         if 'gcp_service_account' in st.secrets:
             creds = dict(st.secrets["gcp_service_account"])
@@ -390,8 +371,8 @@ def conectar():
         st.error(f"Erro: {e}")
         return None
 
-@st.cache_data(ttl=60)
 def carregar_dados(client):
+    """NÃO cachear - client não é hashable"""
     try:
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         df = pd.DataFrame(ws.get_all_records())
@@ -402,6 +383,7 @@ def carregar_dados(client):
         return None
 
 def atualizar(client, linha, novo_status):
+    """Atualiza o status no Google Sheets"""
     try:
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
         ws.update_cell(linha, 4, str(novo_status))
@@ -421,9 +403,7 @@ def criar_pizza_chart(estudados, total):
         color=alt.Color('Status:N', scale=alt.Scale(domain=['Estudado', 'Faltando'], 
                                                       range=['#34a853', '#ef5350'])),
         tooltip=[]
-    ).properties(width=200, height=200).configure_arc(
-        cornerRadius=8
-    )
+    ).properties(width=200, height=200).configure_arc(cornerRadius=8)
 
     return chart
 
@@ -435,14 +415,16 @@ def main():
     # Header
     st.markdown(f"""
     <div class="header-box">
-        <div class="header-logo">
-            <img src="{LOGO_URL}" alt="Logo">
+        <div class="header-wrapper">
+            <div class="header-logo">
+                <img src="{LOGO_URL}" alt="Logo">
+            </div>
+            <div class="header-center">
+                <h1>📚 Dashboard de Estudos</h1>
+                <p>Acompanhamento - Concurso Câmara de Goiânia</p>
+            </div>
         </div>
-        <div class="header-content">
-            <h1>📚 Dashboard de Estudos</h1>
-            <p>Acompanhamento - Concurso Câmara de Goiânia</p>
-        </div>
-        <div class="header-info">
+        <div class="header-right">
             <div class="info-item">
                 <div class="info-label">📍 Local</div>
                 <div class="info-value">Goiânia - GO</div>
@@ -467,10 +449,12 @@ def main():
             st.cache_data.clear()
             st.rerun()
 
+    # Conectar - SEM cache
     client = conectar()
     if client is None:
         st.stop()
 
+    # Carregar dados - SEM cache (client não é hashable)
     with st.spinner("Carregando..."):
         df = carregar_dados(client)
 
@@ -521,7 +505,7 @@ def main():
             <div class="metric-label">Progresso</div>
         </div>""", unsafe_allow_html=True)
 
-    # Análise Visual - Gráficos Gerais
+    # Análise Visual
     st.markdown('<div class="section-title">📈 Análise Visual</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
@@ -534,7 +518,7 @@ def main():
         chart = alt.Chart(data_pizza).mark_arc(innerRadius=60, stroke=None).encode(
             theta=alt.Theta('Quantidade:Q'),
             color=alt.Color('Status:N', scale=alt.Scale(domain=['Estudado', 'Faltando'], 
-                                                          range=['#34a853', '#ef5350'])),
+                                                          color=['#34a853', '#ef5350'])),
             tooltip=[]
         ).properties(width=300, height=300).configure_arc(cornerRadius=8)
         st.altair_chart(chart, use_container_width=True)
@@ -553,21 +537,21 @@ def main():
         ).properties(width=500, height=300)
         st.altair_chart(chart, use_container_width=True)
 
-    # Pizza Charts por Disciplina em Grid 3x2
+    # Pizza Charts por Disciplina
     st.markdown('<div class="section-title">🥧 Pizzas por Disciplina</div>', unsafe_allow_html=True)
 
     stats_disc = df_cargo.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
     stats_disc.columns = ['Disciplina', 'Estudados', 'Total']
     stats_disc['Percentual'] = (stats_disc['Estudados'] / stats_disc['Total'] * 100).round(1)
 
-    # Criar grid de pizzas
     cols = st.columns(3)
     for idx, (_, row) in enumerate(stats_disc.iterrows()):
         with cols[idx % 3]:
             cor = CORES.get(row['Disciplina'], '#1a73e8')
+
             st.markdown(f"""
-            <div class="pizza-card" style="--cor: {cor};">
-                <div class="pizza-title">{row['Disciplina']}</div>
+            <div style="text-align: center; color: {cor}; font-weight: 700; margin-bottom: 0.5rem;">
+                {row['Disciplina']}
             </div>
             """, unsafe_allow_html=True)
 
@@ -620,7 +604,6 @@ def main():
                         with st.spinner("Salvando..."):
                             if atualizar(client, int(row['linha']), 'TRUE' if check else 'FALSE'):
                                 time.sleep(0.2)
-                                st.cache_data.clear()
                                 st.rerun()
 
                 with col2:
