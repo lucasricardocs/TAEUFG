@@ -4,18 +4,19 @@
 ================================================================================
 🎯 DASHBOARD VISUAL COM ANÁLISES - CONCURSO CÂMARA DE GOIÂNIA
 ================================================================================
-🎨 Design Limpo e Profissional com:
-- Cores vibrantes (verde estudado, vermelho não estudado)
-- Pizza charts na seção de análise visual
-- Layout simples e elegante
-- Containers menores para disciplinas
-- UI/UX minimalista
+🎨 Design Refinado e Moderno com:
+- UI/UX minimalista e elegante
+- Animações suaves e sofisticadas
+- Fundo com efeito de faiscas subindo
+- Expansível extremamente simples
+- Cores vibrantes e intuitivas
 
 Tecnologias:
 - Streamlit (interface)
 - Altair (gráficos)
 - gspread + OAuth2 (Google Sheets API)
 - Requests (weather API)
+- CSS3 Animations
 
 Data: 2025-11-27
 SPREADSHEET_ID: 17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM ✅ CONFIGURADO
@@ -28,23 +29,12 @@ import altair as alt
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from gspread.exceptions import SpreadsheetNotFound, APIError
 import warnings
 import json
 import time
 import requests
-import locale
 
 warnings.filterwarnings('ignore')
-
-try:
-    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except:
-    pass
-
-# ================================================================================
-# CONFIGURAÇÕES
-# ================================================================================
 
 st.set_page_config(
     page_title="Dashboard de Estudos - Câmara de Goiânia",
@@ -54,35 +44,119 @@ st.set_page_config(
 )
 
 # ================================================================================
-# CSS CUSTOMIZADO
+# CSS CUSTOMIZADO - UI/UX PREMIUM COM ANIMAÇÕES E FUNDO DE FAISCAS
 # ================================================================================
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
     * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* BACKGROUND COM FAISCAS */
+    @keyframes sparkle {
+        0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(-100vh) scale(0);
+        }
+    }
+
+    @keyframes twinkle {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
     }
 
     html, body {
-        background: linear-gradient(135deg, #f5f7fa 0%, #f0f4f8 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0f172a 100%);
+        background-attachment: fixed;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    html::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 20% 50%, rgba(26, 115, 232, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(52, 168, 83, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Faiscas */
+    .sparkle {
+        position: fixed;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .spark {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: radial-gradient(circle, #1a73e8, transparent);
+        border-radius: 50%;
+        animation: sparkle 3s ease-out forwards;
+    }
+
+    .spark::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: inherit;
+        border-radius: 50%;
+        animation: twinkle 1.5s ease-in-out infinite;
     }
 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* Header */
+    /* HEADER */
+    .header-wrapper {
+        animation: slideDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .header-container {
-        background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+        background: linear-gradient(135deg, rgba(26, 115, 232, 0.95) 0%, rgba(13, 71, 161, 0.95) 100%);
+        backdrop-filter: blur(20px);
         padding: 2rem;
         border-radius: 20px;
         color: white;
         margin-bottom: 2rem;
-        box-shadow: 0 15px 50px rgba(13, 71, 161, 0.3);
+        box-shadow: 0 20px 60px rgba(26, 115, 232, 0.25), 
+                    inset 1px 1px 0 rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
         gap: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .header-container:hover {
+        box-shadow: 0 30px 80px rgba(26, 115, 232, 0.35),
+                    inset 1px 1px 0 rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
     }
 
     .logo-section {
@@ -90,9 +164,14 @@ st.markdown("""
     }
 
     .logo-section img {
-        max-width: 200px;
+        max-width: 180px;
         height: auto;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2));
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.3));
+        transition: transform 0.3s ease;
+    }
+
+    .logo-section img:hover {
+        transform: scale(1.05);
     }
 
     .header-content {
@@ -100,101 +179,128 @@ st.markdown("""
     }
 
     .header-title {
-        font-size: 2.5rem;
-        font-weight: 800;
+        font-size: 2.2rem;
+        font-weight: 700;
         margin: 0;
-        letter-spacing: -0.5px;
-        line-height: 1.2;
+        letter-spacing: -1px;
+        background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .header-subtitle {
-        font-size: 1rem;
-        opacity: 0.95;
+        font-size: 0.95rem;
+        opacity: 0.9;
         font-weight: 400;
         margin-top: 0.3rem;
+        letter-spacing: 0.5px;
     }
 
     .header-info {
         flex: 0 0 auto;
-        background: rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.08);
         backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 1.2rem 1.8rem;
-        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 16px;
+        padding: 1.2rem 1.5rem;
+        border: 1px solid rgba(255,255,255,0.15);
+        transition: all 0.3s ease;
+    }
+
+    .header-info:hover {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,255,255,0.25);
     }
 
     .info-item {
         margin: 0.5rem 0;
-        line-height: 1.3;
     }
 
     .info-label {
-        opacity: 0.85;
-        font-size: 0.75rem;
+        opacity: 0.7;
+        font-size: 0.7rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
         font-weight: 600;
     }
 
     .info-value {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 700;
-        margin-top: 0.1rem;
+        margin-top: 0.2rem;
     }
 
     .temp-display {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: 800;
     }
 
-    /* Métricas */
+    /* MÉTRICAS */
     .metric-card {
         background: white;
-        padding: 1.5rem;
+        padding: 1.8rem;
         border-radius: 16px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-        border-top: 4px solid #1a73e8;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid rgba(26, 115, 232, 0.1);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .metric-card:hover {
         transform: translateY(-8px);
-        box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+        border-color: rgba(26, 115, 232, 0.3);
     }
 
     .metric-value {
         font-size: 2.8rem;
         font-weight: 800;
-        color: #1a73e8;
         line-height: 1;
+        background: linear-gradient(135deg, #1a73e8 0%, #34a853 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .metric-label {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #5f6368;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-top: 0.6rem;
+        letter-spacing: 1px;
+        margin-top: 0.8rem;
         font-weight: 600;
     }
 
-    /* Disciplinas Container Simples */
-    .disciplina-simples {
+    /* DISCIPLINA SIMPLES */
+    .disciplina-header {
         background: white;
         border-radius: 12px;
-        padding: 1rem 1.5rem;
+        padding: 1.2rem;
         margin-bottom: 0.8rem;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 1.2rem;
         box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        border-left: 5px solid var(--cor-principal);
+        border-left: 4px solid var(--cor-principal);
+        cursor: pointer;
         transition: all 0.2s ease;
+        animation: fadeInUp 0.6s ease-out;
     }
 
-    .disciplina-simples:hover {
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    .disciplina-header:hover {
         transform: translateX(4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 
     .disciplina-info {
@@ -202,40 +308,50 @@ st.markdown("""
     }
 
     .disciplina-nome {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 700;
         color: var(--cor-principal);
         margin: 0;
     }
 
     .disciplina-stats {
-        font-size: 0.85rem;
-        color: #5f6368;
-        margin-top: 0.3rem;
+        font-size: 0.8rem;
+        color: #80868b;
+        margin-top: 0.2rem;
+    }
+
+    .progress-bar-wrapper {
+        flex: 1.2;
+        margin: 0 1rem;
     }
 
     .progress-bar-container {
-        background: #e8f0fe;
-        border-radius: 8px;
-        height: 6px;
+        background: #f0f4f8;
+        border-radius: 6px;
+        height: 5px;
         overflow: hidden;
-        flex: 1;
-        margin: 0 1rem;
-        min-width: 100px;
     }
 
     .progress-bar {
         height: 100%;
         background: linear-gradient(90deg, #1a73e8, #34a853);
-        border-radius: 8px;
-        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 6px;
+        transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    /* Conteúdo Card Simples */
+    .pct-display {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--cor-principal);
+        min-width: 50px;
+        text-align: right;
+    }
+
+    /* CONTEÚDO SIMPLES */
     .conteudo-item {
         background: #f8f9fa;
         border-radius: 8px;
-        padding: 0.8rem 1rem;
+        padding: 0.9rem 1rem;
         margin-bottom: 0.6rem;
         display: flex;
         align-items: center;
@@ -243,11 +359,24 @@ st.markdown("""
         border-left: 3px solid #e8eaed;
         transition: all 0.2s ease;
         font-size: 0.95rem;
+        animation: fadeInLeft 0.3s ease-out;
+    }
+
+    @keyframes fadeInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
 
     .conteudo-item:hover {
         background: #f0f4f8;
         border-left-color: #1a73e8;
+        transform: translateX(4px);
     }
 
     .conteudo-item.estudado {
@@ -261,38 +390,67 @@ st.markdown("""
         color: #80868b;
     }
 
-    /* Seções */
+    /* SEÇÃO */
     .section-header {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         font-weight: 800;
-        color: #202124;
-        margin: 2rem 0 1.2rem 0;
-        padding-bottom: 0.8rem;
-        border-bottom: 3px solid #1a73e8;
+        color: white;
+        margin: 2.5rem 0 1.5rem 0;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, rgba(26, 115, 232, 0.9) 0%, rgba(52, 168, 83, 0.9) 100%);
+        border-radius: 12px;
         display: flex;
         align-items: center;
         gap: 1rem;
         letter-spacing: -0.5px;
+        box-shadow: 0 8px 20px rgba(26, 115, 232, 0.2);
+        animation: fadeInDown 0.6s ease-out;
     }
 
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* CHART */
     .chart-container {
         background: white;
         border-radius: 16px;
         padding: 1.5rem;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid rgba(26, 115, 232, 0.1);
         margin-bottom: 1.5rem;
+        animation: fadeInUp 0.6s ease-out;
     }
 
-    /* Footer */
+    /* FOOTER */
     .footer-text {
         text-align: center;
-        color: #80868b;
+        color: rgba(255,255,255,0.5);
         padding: 2rem 0 1rem;
         font-size: 0.85rem;
-        border-top: 2px solid #e8eaed;
+        border-top: 1px solid rgba(255,255,255,0.1);
         margin-top: 3rem;
     }
 
+    /* EXPANDER SIMPLES */
+    .stExpander {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    .stExpander > div {
+        background: transparent !important;
+    }
+
+    /* RESPONSIVE */
     @media (max-width: 768px) {
         .header-container {
             flex-direction: column;
@@ -303,16 +461,49 @@ st.markdown("""
             text-align: center;
         }
 
-        .logo-section img {
-            max-width: 120px;
-        }
-
-        .disciplina-simples {
+        .disciplina-header {
             flex-direction: column;
             align-items: flex-start;
         }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            margin: 0.8rem 0 0 0;
+        }
     }
 </style>
+
+<!-- Script para gerar faiscas -->
+<script>
+function createSparks() {
+    const container = document.createElement('div');
+    container.className = 'sparkle';
+    document.body.appendChild(container);
+
+    const sparkCount = 15;
+
+    setInterval(() => {
+        for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            spark.style.left = Math.random() * 100 + '%';
+            spark.style.bottom = '-10px';
+            spark.style.background = ['#1a73e8', '#34a853', '#f57c00'][Math.floor(Math.random() * 3)];
+            spark.style.animationDuration = (2 + Math.random() * 2) + 's';
+
+            container.appendChild(spark);
+
+            setTimeout(() => spark.remove(), 5000);
+        }
+    }, 800);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createSparks);
+} else {
+    createSparks();
+}
+</script>
 """, unsafe_allow_html=True)
 
 # ================================================================================
@@ -332,7 +523,7 @@ CORES_DISCIPLINAS = {
 }
 
 # ================================================================================
-# FUNÇÕES
+# FUNÇÕES AUXILIARES
 # ================================================================================
 
 def obter_data_formatada():
@@ -415,13 +606,13 @@ def calcular_estatisticas(df, cargo):
         'df_cargo': df_cargo
     }
 
-def criar_card_metrica(valor, label, icon="📊", cor="#1a73e8"):
+def criar_card_metrica(valor, label, icon="📊"):
     return f"""
     <div class="metric-card">
         <div style="display: flex; align-items: center; gap: 1rem;">
-            <div style="font-size: 3rem;">{icon}</div>
+            <div style="font-size: 2.8rem;">{icon}</div>
             <div>
-                <div class="metric-value" style="color: {cor};">{valor}</div>
+                <div class="metric-value">{valor}</div>
                 <div class="metric-label">{label}</div>
             </div>
         </div>
@@ -476,6 +667,7 @@ def main():
     temperatura = obter_temperatura_goiania()
 
     # Header
+    st.markdown('<div class="header-wrapper">', unsafe_allow_html=True)
     st.markdown(f"""
     <div class="header-container">
         <div class="logo-section">
@@ -503,6 +695,7 @@ def main():
         </div>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     with st.sidebar:
         st.markdown("### ⚙️ Configurações")
@@ -533,13 +726,13 @@ def main():
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.markdown(criar_card_metrica(stats['total'], "Total", "📚", "#1a73e8"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['total'], "Total", "📚"), unsafe_allow_html=True)
     with col2:
-        st.markdown(criar_card_metrica(stats['estudados'], "Estudados", "✅", "#34a853"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['estudados'], "Estudados", "✅"), unsafe_allow_html=True)
     with col3:
-        st.markdown(criar_card_metrica(stats['faltam'], "Faltando", "⏳", "#ef5350"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(stats['faltam'], "Faltando", "⏳"), unsafe_allow_html=True)
     with col4:
-        st.markdown(criar_card_metrica(f"{stats['percentual']:.1f}%", "Progresso", "🎯", "#1a73e8"), unsafe_allow_html=True)
+        st.markdown(criar_card_metrica(f"{stats['percentual']:.1f}%", "Progresso", "🎯"), unsafe_allow_html=True)
 
     # Análise Visual
     st.markdown('<div class="section-header">📈 Análise Visual</div>', unsafe_allow_html=True)
@@ -557,7 +750,7 @@ def main():
 
     with col3:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        st.markdown("**Pizza Charts por Disciplina**")
+        st.markdown("**Pizzas por Disciplina**")
 
         for _, row in stats['por_disciplina'].iterrows():
             st.altair_chart(criar_grafico_pizza_disciplina(int(row['Estudados']), int(row['Total'])), 
@@ -585,23 +778,26 @@ def main():
         n_total = len(df_disc)
         pct = (n_estudados / n_total * 100) if n_total > 0 else 0
 
-        # Container simples da disciplina
+        # Header da disciplina
         st.markdown(f"""
-        <div class="disciplina-simples" style="--cor-principal: {cores['principal']};">
+        <div class="disciplina-header" style="--cor-principal: {cores['principal']};">
             <div class="disciplina-info">
                 <p class="disciplina-nome">{cores['emoji']} {disciplina}</p>
-                <div class="disciplina-stats">✓ {n_estudados}/{n_total} ({pct:.0f}%)</div>
+                <div class="disciplina-stats">✓ {n_estudados}/{n_total} conteúdos</div>
             </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {pct}%; background: {cores['principal']};"></div>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {pct}%; background: {cores['principal']};"></div>
+                </div>
             </div>
+            <div class="pct-display">{pct:.0f}%</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Accordion
-        with st.expander(f"📋 Ver {n_total} conteúdos", expanded=False):
+        # Conteúdos em accordion
+        with st.expander(f"📋 {n_total} conteúdos"):
             for idx, row in df_disc.iterrows():
-                col_check, col_text = st.columns([0.06, 0.94])
+                col_check, col_text = st.columns([0.05, 0.95])
 
                 with col_check:
                     checked = st.checkbox("✓", value=bool(row['Estudado']), key=f"check_{idx}", 
@@ -623,9 +819,7 @@ def main():
                     </div>
                     """, unsafe_allow_html=True)
 
-        st.markdown("")
-
-    st.markdown(f'<div class="footer-text">✨ Dashboard Interativo | Câmara Municipal de Goiânia | {datetime.now().strftime("%H:%M:%S")}</div>', 
+    st.markdown(f'<div class="footer-text">✨ Dashboard Premium | Câmara Municipal de Goiânia | {datetime.now().strftime("%H:%M:%S")}</div>', 
                unsafe_allow_html=True)
 
 if __name__ == "__main__":
