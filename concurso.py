@@ -6,7 +6,7 @@
 ================================================================================
 Interface visual + Análises avançadas + Logo Oficial
 - Logo da Câmara Municipal de Goiânia (à esquerda)
-- Informações de Goiânia (data, temperatura)
+- Informações de Goiânia (data DINÂMICA, temperatura em tempo real)
 - Disciplinas em containers coloridos separados
 - Checkboxes em cards individuais
 - Atualização em tempo real no Google Sheets
@@ -20,7 +20,7 @@ Tecnologias:
 - Requests (weather API)
 
 Data: 2025-11-27
-SPREADSHEET_ID: 1A2B3C4D5E6F7G8H9I0J ✅ JÁ CONFIGURADO
+SPREADSHEET_ID: 17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM ✅ CONFIGURADO
 ================================================================================
 """
 
@@ -35,8 +35,15 @@ import warnings
 import json
 import time
 import requests
+import locale
 
 warnings.filterwarnings('ignore')
+
+# Tentar configurar locale para português
+try:
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+except:
+    pass
 
 # ================================================================================
 # CONFIGURAÇÕES
@@ -310,10 +317,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================================================================
-# ✅ CONFIGURAÇÕES - SPREADSHEET_ID JÁ CONFIGURADO
+# ✅ CONFIGURAÇÕES - SPREADSHEET_ID E ID REAIS
 # ================================================================================
 
-SPREADSHEET_ID = '1A2B3C4D5E6F7G8H9I0J'  # ✅ JÁ CONFIGURADO!
+SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'  # ✅ SEU ID REAL!
 WORKSHEET_NAME = 'Registro'
 
 # URL do logo da Câmara
@@ -348,12 +355,28 @@ CORES_DISCIPLINAS = {
 }
 
 # ================================================================================
-# FUNÇÕES DE CLIMA
+# FUNÇÕES DE DATA E CLIMA
 # ================================================================================
+
+def obter_data_formatada():
+    """Retorna a data dinâmica do dia que está sendo acessado"""
+    hoje = datetime.now()
+
+    meses = {
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    }
+
+    dia = hoje.day
+    mes = meses[hoje.month]
+    ano = hoje.year
+
+    return f"{dia} de {mes} de {ano}"
 
 @st.cache_data(ttl=600)
 def obter_temperatura_goiania():
-    """Obtém temperatura atual de Goiânia"""
+    """Obtém temperatura atual de Goiânia em tempo real"""
     try:
         response = requests.get(
             'https://api.open-meteo.com/v1/forecast',
@@ -372,10 +395,10 @@ def obter_temperatura_goiania():
             temp = data['current']['temperature_2m']
             return round(temp, 1)
         else:
-            return None
+            return "N/A"
 
     except Exception as e:
-        return None
+        return "N/A"
 
 # ================================================================================
 # CONEXÃO GOOGLE SHEETS
@@ -567,9 +590,9 @@ def criar_tabela_resumo(stats):
 def main():
     """Interface principal"""
 
-    # Obter informações
-    data_hoje = datetime.now().strftime('%d de %B de %Y').replace('January', 'Janeiro').replace('February', 'Fevereiro').replace('March', 'Março').replace('April', 'Abril').replace('May', 'Maio').replace('June', 'Junho').replace('July', 'Julho').replace('August', 'Agosto').replace('September', 'Setembro').replace('October', 'Outubro').replace('November', 'Novembro').replace('December', 'Dezembro')
-    temperatura = obter_temperatura_goiania()
+    # Obter informações DINÂMICAS
+    data_hoje = obter_data_formatada()  # ✅ DATA DINÂMICA
+    temperatura = obter_temperatura_goiania()  # ✅ TEMPERATURA EM TEMPO REAL
 
     # Header com logo e informações
     st.markdown(f"""
