@@ -4,15 +4,13 @@
 ================================================================================
 📊 DASHBOARD DE ESTUDOS - CÂMARA MUNICIPAL DE GOIÂNIA
 ================================================================================
-VERSÃO: 4.1 - PROFISSIONAL INTERATIVO
-DATA: 2025-11-28 00:12
+VERSÃO: 4.5 - HEATMAP ESTILO GITHUB
+DATA: 2025-11-28 08:08
 
-MELHORIAS v4.1:
-✓ Containers expansíveis por disciplina
-✓ Barra de progresso horizontal em cada matéria
-✓ Hover effects sutis e profissionais
-✓ Seleção de cargo na sidebar
-✓ Design responsivo com width controlado
+MELHORIAS v4.5:
+✓ Heatmap com cores do GitHub (tons de verde)
+✓ Tooltip mostra matérias estudadas em cada dia
+✓ Detalhamento completo por data
 ================================================================================
 """
 
@@ -27,6 +25,7 @@ import json
 import time
 import requests
 import locale
+import pytz
 from typing import Optional, List, Dict
 
 # ================================================================================
@@ -58,7 +57,6 @@ SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
 
-# Paleta Profissional
 CORES_DISCIPLINAS = {
     'LÍNGUA PORTUGUESA': '#2563eb',
     'RLM': '#059669',
@@ -67,8 +65,18 @@ CORES_DISCIPLINAS = {
     'CONHECIMENTOS ESPECÍFICOS': '#ea580c'
 }
 
+TIMEZONE_BRASILIA = pytz.timezone('America/Sao_Paulo')
+
 # ================================================================================
-# 3. CSS PROFISSIONAL COM HOVER
+# 3. FUNÇÕES UTILITÁRIAS
+# ================================================================================
+
+def obter_horario_brasilia():
+    """Retorna datetime atual no fuso de Brasília"""
+    return datetime.now(TIMEZONE_BRASILIA)
+
+# ================================================================================
+# 4. CSS PROFISSIONAL
 # ================================================================================
 
 def injetar_css_profissional():
@@ -81,6 +89,8 @@ def injetar_css_profissional():
         text_secondary = '#94a3b8'
         border_color = '#334155'
         hover_bg = '#334155'
+        header_bg = 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+        header_text = '#f1f5f9'
     else:
         bg_main = '#f8fafc'
         bg_card = '#ffffff'
@@ -88,6 +98,8 @@ def injetar_css_profissional():
         text_secondary = '#64748b'
         border_color = '#e2e8f0'
         hover_bg = '#f1f5f9'
+        header_bg = 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%)'
+        header_text = '#1e293b'
     
     st.markdown(f"""
     <style>
@@ -108,22 +120,42 @@ def injetar_css_profissional():
 
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* HEADER PROFISSIONAL */
-        .header-container {{
-            background: {bg_card};
-            border: 1px solid {border_color};
+        /* SIDEBAR */
+        [data-testid="stSidebar"] {{
+            background-color: {bg_card};
+            border-right: 2px solid {border_color};
+        }}
+
+        [data-testid="stSidebar"] .stSelectbox {{
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            padding: 1rem;
             border-radius: 8px;
-            padding: 2rem;
+            margin-bottom: 1rem;
+        }}
+
+        [data-testid="stSidebar"] .stSelectbox label {{
+            color: white !important;
+            font-weight: 700 !important;
+            font-size: 1rem !important;
+        }}
+
+        /* HEADER */
+        .header-container {{
+            background: {header_bg};
+            border: 1px solid {border_color};
+            border-radius: 12px;
+            padding: 2rem 2.5rem;
             margin-bottom: 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
 
         .header-container:hover {{
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }}
 
         .header-left {{
@@ -136,6 +168,7 @@ def injetar_css_profissional():
             max-width: 220px;
             height: auto;
             transition: transform 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }}
 
         .header-logo img:hover {{
@@ -145,7 +178,7 @@ def injetar_css_profissional():
         .header-title {{
             font-size: 1.5rem;
             font-weight: 700;
-            color: {text_main};
+            color: {header_text};
             margin: 0;
         }}
 
@@ -165,28 +198,20 @@ def injetar_css_profissional():
         .info-item {{
             font-size: 0.813rem;
             color: {text_secondary};
-            font-weight: 500;
+            font-weight: 600;
             transition: color 0.2s ease;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
         }}
 
         .info-item:hover {{
             color: {text_main};
+            background: rgba(255, 255, 255, 0.8);
         }}
 
-        /* CONTAINERS COM WIDTH */
-        .content-wrapper {{
-            max-width: 1200px;
-            margin: 0 auto;
-        }}
-
-        /* KPI CARDS COM HOVER */
-        .kpi-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }}
-
+        /* KPI CARDS */
         .kpi-card {{
             background: {bg_card};
             border: 1px solid {border_color};
@@ -194,6 +219,13 @@ def injetar_css_profissional():
             padding: 1.5rem;
             transition: all 0.3s ease;
             cursor: pointer;
+            min-height: 140px;
+            max-height: 140px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }}
 
         .kpi-card:hover {{
@@ -203,28 +235,28 @@ def injetar_css_profissional():
         }}
 
         .kpi-label {{
-            font-size: 0.813rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: {text_secondary};
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
         }}
 
         .kpi-value {{
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: {text_main};
             line-height: 1;
+            margin-bottom: 0.5rem;
         }}
 
         .kpi-detail {{
-            font-size: 0.875rem;
+            font-size: 0.813rem;
             color: {text_secondary};
-            margin-top: 0.5rem;
         }}
 
-        /* SECTIONS COM HOVER */
+        /* SECTION */
         .section {{
             background: {bg_card};
             border: 1px solid {border_color};
@@ -247,7 +279,7 @@ def injetar_css_profissional():
             border-bottom: 2px solid {border_color};
         }}
 
-        /* PROGRESS BAR HORIZONTAL */
+        /* PROGRESS BAR */
         .progress-bar-container {{
             margin: 1rem 0;
             background: {bg_main};
@@ -281,22 +313,7 @@ def injetar_css_profissional():
             color: {text_secondary};
         }}
 
-        /* EXPANDER CUSTOMIZADO */
-        .streamlit-expanderHeader {{
-            background: {bg_card};
-            border: 1px solid {border_color};
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }}
-
-        .streamlit-expanderHeader:hover {{
-            background: {hover_bg};
-            border-color: #2563eb;
-        }}
-
-        /* TOPIC ITEM COM HOVER */
+        /* TOPIC ITEM */
         .topic-item {{
             display: flex;
             align-items: center;
@@ -313,10 +330,6 @@ def injetar_css_profissional():
 
         .topic-item:last-child {{
             border-bottom: none;
-        }}
-
-        .topic-checkbox {{
-            margin-right: 0.75rem;
         }}
 
         .topic-text {{
@@ -379,31 +392,44 @@ def injetar_css_profissional():
             box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
         }}
 
-        /* DONUT GRID */
-        .donut-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
+        /* DONUT */
+        .donut-wrapper {{
+            background: transparent;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
         }}
 
-        .donut-item {{
-            text-align: center;
-            transition: transform 0.2s ease;
-        }}
-
-        .donut-item:hover {{
-            transform: scale(1.05);
+        .donut-wrapper:hover {{
+            transform: scale(1.03);
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
         }}
 
         .donut-title {{
-            font-size: 0.938rem;
+            font-size: 1rem;
             font-weight: 600;
             color: {text_main};
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }}
+
+        .donut-stats {{
+            text-align: center;
+            font-size: 0.875rem;
+            color: {text_secondary};
             margin-bottom: 1rem;
+            font-weight: 500;
         }}
 
         /* RESPONSIVO */
+        @media (max-width: 1024px) {{
+            .kpi-grid {{
+                grid-template-columns: repeat(2, 1fr);
+            }}
+        }}
+
         @media (max-width: 768px) {{
             .header-container {{
                 flex-direction: column;
@@ -419,10 +445,6 @@ def injetar_css_profissional():
                 text-align: center;
             }}
 
-            .kpi-grid {{
-                grid-template-columns: 1fr;
-            }}
-
             [data-testid="stMainBlockContainer"] {{
                 padding: 1rem;
             }}
@@ -431,7 +453,7 @@ def injetar_css_profissional():
     """, unsafe_allow_html=True)
 
 # ================================================================================
-# 4. BACKEND
+# 5. BACKEND
 # ================================================================================
 
 @st.cache_resource
@@ -490,11 +512,12 @@ def carregar_dados(_client) -> Optional[pd.DataFrame]:
 def atualizar_lote(client, updates: List[Dict]) -> bool:
     try:
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
+        agora_brasilia = obter_horario_brasilia()
         
         for update in updates:
             linha = update['linha']
             status = 'TRUE' if update['status'] else 'FALSE'
-            data = datetime.now().strftime('%d/%m/%Y') if update['status'] else ''
+            data = agora_brasilia.strftime('%d/%m/%Y') if update['status'] else ''
             
             range_celulas = f"D{linha}:E{linha}"
             ws.update(range_celulas, [[status, data]])
@@ -523,41 +546,81 @@ def obter_clima_local() -> str:
     return "--"
 
 # ================================================================================
-# 5. VISUALIZAÇÃO
+# 6. VISUALIZAÇÃO
 # ================================================================================
 
 def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
+    """
+    Gera heatmap estilo GitHub com tooltip mostrando matérias estudadas por dia
+    """
     df_validos = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     
     if df_validos.empty:
         return None
-        
-    dados_heatmap = df_validos.groupby('Data_Real').size().reset_index(name='count')
     
-    chart = alt.Chart(dados_heatmap).mark_rect(
-        cornerRadius=2,
-        stroke='white',
-        strokeWidth=1
+    # Agrupa por data e coleta informações das disciplinas
+    dados_agrupados = df_validos.groupby('Data_Real').agg({
+        'Disciplinas': lambda x: ', '.join(sorted(set(x))),  # Lista de matérias únicas
+        'Conteúdos': 'count'  # Quantidade de tópicos
+    }).reset_index()
+    
+    dados_agrupados.columns = ['Data_Real', 'Materias', 'Quantidade']
+    
+    # Cores do GitHub (verde)
+    # #ebedf0 (sem atividade) -> #9be9a8 -> #40c463 -> #30a14e -> #216e39 (máximo)
+    chart = alt.Chart(dados_agrupados).mark_rect(
+        cornerRadius=3,
+        stroke='#d1d5db',
+        strokeWidth=1.5
     ).encode(
         x=alt.X('yearmonthdate(Data_Real):O',
                 title='Data',
-                axis=alt.Axis(format='%d/%m', labelAngle=0, labelFontSize=10)
+                axis=alt.Axis(
+                    format='%d/%m',
+                    labelAngle=0,
+                    labelFontSize=10,
+                    labelColor='#64748b',
+                    titleFontSize=12,
+                    titleFontWeight=600
+                )
         ),
         y=alt.Y('day(Data_Real):O',
                 title='Dia da Semana',
-                axis=alt.Axis(labelFontSize=10)
+                axis=alt.Axis(
+                    labelFontSize=10,
+                    labelColor='#64748b',
+                    titleFontSize=12,
+                    titleFontWeight=600
+                )
         ),
-        color=alt.Color('count:Q',
-                        scale=alt.Scale(scheme='blues'),
-                        legend=alt.Legend(title='Conteúdos')
+        color=alt.Color('Quantidade:Q',
+                        scale=alt.Scale(
+                            domain=[1, 3, 6, 10, 15],
+                            range=['#9be9a8', '#40c463', '#30a14e', '#216e39', '#0d4429']
+                        ),
+                        legend=alt.Legend(
+                            title='Tópicos Estudados',
+                            titleFontSize=11,
+                            titleFontWeight=600,
+                            labelFontSize=10,
+                            orient='right'
+                        )
         ),
         tooltip=[
-            alt.Tooltip('Data_Real', title='Data', format='%d/%m/%Y'),
-            alt.Tooltip('count', title='Conteúdos')
+            alt.Tooltip('Data_Real:T', title='Data', format='%d/%m/%Y (%A)'),
+            alt.Tooltip('Quantidade:Q', title='Total de Tópicos'),
+            alt.Tooltip('Materias:N', title='Matérias Estudadas')
         ]
     ).properties(
-        height=200,
+        height=220,
         width='container'
+    ).configure_view(
+        strokeWidth=0
+    ).configure_axis(
+        grid=False,
+        domain=True,
+        domainColor='#e2e8f0',
+        domainWidth=1
     )
     
     return chart
@@ -574,14 +637,14 @@ def renderizar_donut(concluido: int, total: int, cor_hex: str) -> alt.Chart:
     )
     
     pie = base.mark_arc(
-        outerRadius=60,
-        innerRadius=40,
-        stroke='white',
+        outerRadius=90,
+        innerRadius=65,
+        stroke='#e5e7eb',
         strokeWidth=2
     ).encode(
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluído', 'Pendente'],
-                                        range=[cor_hex, '#e2e8f0']),
+                                        range=[cor_hex, '#f3f4f6']),
                         legend=None),
         tooltip=[
             alt.Tooltip('Status:N', title='Status'),
@@ -592,7 +655,7 @@ def renderizar_donut(concluido: int, total: int, cor_hex: str) -> alt.Chart:
     pct = int(concluido/total*100) if total > 0 else 0
     texto = base.mark_text(
         radius=0,
-        size=18,
+        size=24,
         color='#1e293b',
         fontWeight='bold',
         font='Inter'
@@ -600,7 +663,13 @@ def renderizar_donut(concluido: int, total: int, cor_hex: str) -> alt.Chart:
         text=alt.value(f"{pct}%")
     )
     
-    return (pie + texto).properties(width=140, height=140)
+    return (pie + texto).properties(
+        width=220,
+        height=220,
+        background='transparent'
+    ).configure_view(
+        strokeWidth=0
+    )
 
 def calcular_streak(df: pd.DataFrame) -> int:
     datas = df[df['Estudado'] & df['Data_Real'].notnull()]['Data_Real'].dt.date.unique()
@@ -621,7 +690,7 @@ def calcular_streak(df: pd.DataFrame) -> int:
     return streak
 
 # ================================================================================
-# 6. MAIN
+# 7. MAIN
 # ================================================================================
 
 def main():
@@ -630,8 +699,9 @@ def main():
     
     injetar_css_profissional()
     
-    data_hoje = datetime.now().strftime('%d/%m/%Y')
-    hora_atual = datetime.now().strftime('%H:%M')
+    agora_brasilia = obter_horario_brasilia()
+    data_hoje = agora_brasilia.strftime('%d/%m/%Y')
+    hora_atual = agora_brasilia.strftime('%H:%M')
     temperatura = obter_clima_local()
 
     # HEADER
@@ -664,21 +734,25 @@ def main():
         st.warning("Carregando dados...")
         st.stop()
 
-    # SIDEBAR - SELEÇÃO DE CARGO
+    # SIDEBAR
     with st.sidebar:
-        st.markdown("### ⚙️ Configurações")
+        st.markdown("### 📋 SELEÇÃO DE CARGO")
+        st.markdown("---")
         
-        # Seleção de Cargo
         lista_cargos = sorted(df['Cargo'].unique().tolist())
         cargo_selecionado = st.selectbox(
-            "📋 Selecione o Cargo:",
+            "Escolha o cargo:",
             lista_cargos,
-            help="Escolha o cargo para visualizar os dados específicos"
+            help="Selecione o cargo para visualizar os dados",
+            key="select_cargo"
         )
         
-        st.divider()
+        st.markdown("---")
+        st.info(f"**Cargo Selecionado:**\n\n{cargo_selecionado}")
         
-        # Toggle Tema
+        st.markdown("---")
+        st.markdown("### ⚙️ Configurações")
+        
         tema_atual = st.session_state['tema']
         if st.button(f"🌓 Tema: {tema_atual.title()}", use_container_width=True):
             st.session_state['tema'] = 'escuro' if tema_atual == 'claro' else 'claro'
@@ -686,14 +760,9 @@ def main():
         
         st.divider()
         
-        # Atualizar
         if st.button("🔄 Atualizar Dados", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
-        
-        st.divider()
-        st.caption(f"**Cargo Atual:** {cargo_selecionado}")
-        st.caption("v4.1 - Profissional")
 
     # FILTRO
     df_cargo = df[df['Cargo'] == cargo_selecionado].copy()
@@ -707,8 +776,6 @@ def main():
     streak_dias = calcular_streak(df_cargo)
 
     # KPIs
-    st.markdown('<div class="content-wrapper">', unsafe_allow_html=True)
-    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -745,22 +812,20 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-    # HEATMAP
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">📊 Histórico de Atividades</div>', unsafe_allow_html=True)
+    # HEATMAP ESTILO GITHUB
+    st.markdown('<div class="section"><div class="section-title">📊 Histórico de Atividades</div>', unsafe_allow_html=True)
     
     grafico_heatmap = renderizar_heatmap(df_cargo)
     
     if grafico_heatmap:
         st.altair_chart(grafico_heatmap, use_container_width=True)
     else:
-        st.info("Nenhum histórico disponível. Marque tópicos para visualizar.")
+        st.info("Nenhum histórico disponível. Marque tópicos para visualizar seu heatmap estilo GitHub!")
         
     st.markdown('</div>', unsafe_allow_html=True)
 
     # PROGRESSO POR DISCIPLINA
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">📈 Progresso por Disciplina</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section"><div class="section-title">📈 Progresso por Disciplina</div>', unsafe_allow_html=True)
     
     stats_disciplina = df_cargo.groupby('Disciplinas').agg({
         'Estudado': ['sum', 'count']
@@ -776,19 +841,21 @@ def main():
             nome_disciplina = row['Disciplina']
             cor_tema = CORES_DISCIPLINAS.get(nome_disciplina, '#2563eb')
             
-            st.markdown(f'<div class="donut-title">{nome_disciplina}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div style="text-align:center; font-size:0.875rem; color:#64748b; margin-bottom:0.5rem;">{row["Estudados"]} de {row["Total"]} tópicos</div>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="donut-wrapper">
+                <div class="donut-title">{nome_disciplina}</div>
+                <div class="donut-stats">{row["Estudados"]} de {row["Total"]} tópicos</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             chart_donut = renderizar_donut(row['Estudados'], row['Total'], cor_tema)
             st.altair_chart(chart_donut, use_container_width=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # CHECKLIST COM EXPANDERS E PROGRESS BAR
-    st.markdown('<div class="section">', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">✓ Conteúdo Programático</div>', unsafe_allow_html=True)
+    # CHECKLIST
+    st.markdown('<div class="section"><div class="section-title">✓ Conteúdo Programático</div>', unsafe_allow_html=True)
 
-    # Para cada disciplina, criar um expander
     for disciplina in sorted(df_cargo['Disciplinas'].unique()):
         sub_df = df_cargo[df_cargo['Disciplinas'] == disciplina]
         cor_tema = CORES_DISCIPLINAS.get(disciplina, '#2563eb')
@@ -798,7 +865,6 @@ def main():
         percentual = (concluidos / total * 100) if total > 0 else 0
         
         with st.expander(f"**{disciplina}** ({concluidos}/{total})", expanded=False):
-            # PROGRESS BAR HORIZONTAL
             st.markdown(f"""
             <div class="progress-info">
                 <span class="progress-label">{disciplina}</span>
@@ -809,9 +875,6 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # FORM COM CHECKBOXES
             with st.form(key=f"form_{disciplina}"):
                 updates_pendentes = []
                 
@@ -857,20 +920,19 @@ def main():
                         sucesso = atualizar_lote(client, updates_pendentes)
                         
                         if sucesso:
-                            st.success("✅ Alterações salvas com sucesso!")
+                            st.success("✅ Alterações salvas!")
                             time.sleep(1)
                             st.cache_data.clear()
                             st.rerun()
                         else:
-                            st.error("❌ Erro ao salvar alterações")
+                            st.error("❌ Erro ao salvar")
     
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # RODAPÉ
     st.markdown(f"""
     <div style="text-align: center; color: #94a3b8; padding: 2rem 0 1rem 0; font-size: 0.813rem; border-top: 1px solid #e2e8f0; margin-top: 2rem;">
-        Dashboard de Estudos v4.1 • Última atualização: {datetime.now().strftime("%d/%m/%Y às %H:%M:%S")}
+        Dashboard v4.5 • Horário de Brasília: {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
     </div>
     """, unsafe_allow_html=True)
 
