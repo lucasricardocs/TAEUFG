@@ -115,48 +115,58 @@ st.markdown("""
     */
     .header-container {
         display: flex;
+        flex-direction: row;
         align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); /* Fundo Escuro Profundo */
-        padding: 2rem 3rem;
+        justify-content: flex-start;
+        background: #ffffff; /* Fundo Branco */
+        padding: 1.5rem 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
-        border: 4px solid #ffffff;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         position: relative;
         overflow: hidden;
-        color: white;
+        color: #0f172a;
+        gap: 2rem;
+    }
+
+    .header-logo {
+        flex-shrink: 0;
+    }
+
+    .header-logo img {
+        max-width: 180px;
+        height: auto;
+        display: block;
+    }
+
+    .header-content {
+        flex-grow: 1;
+        text-align: left;
     }
 
     .header-content h1 { 
-        font-size: 3rem; 
+        font-size: 2.5rem; 
         font-weight: 800; 
         margin: 0; 
-        background: linear-gradient(90deg, #ffffff 0%, #38bdf8 50%, #ffffff 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: shimmer 5s linear infinite;
+        color: #0f172a; /* Texto Escuro */
         letter-spacing: -1px;
+        line-height: 1.2;
     }
     
     .header-info { 
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
+        flex-shrink: 0;
         text-align: right;
         display: flex;
         flex-direction: column;
-        gap: 0.2rem;
+        justify-content: center;
     }
     
     .info-row {
-        font-size: 0.75rem;
-        color: #94a3b8;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        color: #64748b;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
     }
 
     /* ==========================================================================
@@ -294,7 +304,9 @@ st.markdown("""
 
     /* Responsividade */
     @media (max-width: 768px) {
-        .header-container { flex-direction: column; text-align: center; padding: 1.5rem; }
+        .header-container { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; }
+        .header-content { text-align: center; }
+        .header-info { text-align: center; }
         .metric-value { font-size: 2.5rem; }
     }
 </style>
@@ -413,17 +425,18 @@ def criar_heatmap_produtividade(df):
 
 def criar_grafico_donut(concluido, total, cor_primaria):
     """
-    Gráfico de Donut Ampliado para melhor visualização
+    Gráfico de Donut Ampliado para melhor visualização.
+    Correção do erro de validação (radius removido do mark_text e texto isolado).
     """
     restante = total - concluido
     dados = pd.DataFrame({'Categoria': ['Concluído', 'Restante'], 'Valor': [concluido, restante]})
     
     base = alt.Chart(dados).encode(theta=alt.Theta("Valor", stack=True))
     
-    # Raio AUMENTADO para gráfico maior
+    # Arco do Donut
     pie = base.mark_arc(
-        outerRadius=110,  # Aumentado de 75 para 110
-        innerRadius=85,   # Aumentado de 58 para 85
+        outerRadius=110,
+        innerRadius=85,
         stroke='white', 
         strokeWidth=4,
         cornerRadius=6
@@ -436,11 +449,18 @@ def criar_grafico_donut(concluido, total, cor_primaria):
     )
     
     percentual = int(concluido/total*100) if total > 0 else 0
-    texto = base.mark_text(
-        radius=0, size=28, color=cor_primaria, fontWeight='900', font='Inter'
-    ).encode(text=alt.value(f"{percentual}%"))
     
-    # Área do gráfico aumentada
+    # Texto Central (Criado como um gráfico independente para evitar herança de theta e erros de validação)
+    texto = alt.Chart(pd.DataFrame({'dummy': [1]})).mark_text(
+        size=28, 
+        color=cor_primaria, 
+        fontWeight='bold', 
+        font='Inter'
+    ).encode(
+        text=alt.value(f"{percentual}%")
+    )
+    
+    # Área do gráfico
     return (pie + texto).properties(width=280, height=280)
 
 # ================================================================================
@@ -450,19 +470,20 @@ def criar_grafico_donut(concluido, total, cor_primaria):
 def main():
     # Header
     temp = obter_temperatura_local()
+    data_formatada = datetime.now().strftime('%d/%m')
+    info_texto = f"Goiânia, {data_formatada} - {temp}º C"
+
     st.markdown(f"""
     <div class="header-container section-fade">
-        <div style="z-index:1; text-align:center;">
-            <div class="header-logo"><img src="{LOGO_URL}" style="max-width:200px; margin-bottom:15px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));"></div>
-            <div class="header-content">
-                <h1>DASHBOARD ULTIMATE</h1>
-                <p style="color:#e2e8f0; margin-top:5px; font-weight:500;">Performance • Constância • Aprovação</p>
-            </div>
+        <div class="header-logo">
+            <img src="{LOGO_URL}" alt="Logo">
+        </div>
+        <div class="header-content">
+            <h1>DASHBOARD ULTIMATE</h1>
+            <p style="color:#64748b; margin-top:5px; font-weight:500;">Performance • Constância • Aprovação</p>
         </div>
         <div class="header-info">
-            <div class="info-row">📍 GOIÂNIA - GO</div>
-            <div class="info-row">📅 {datetime.now().strftime('%d/%m/%Y')}</div>
-            <div class="info-row">🌡️ {temp}°C</div>
+            <div class="info-row">{info_texto}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -507,12 +528,18 @@ def main():
     c4.markdown(f'<div class="metric-card section-fade"><div class="metric-value" style="color:#8b5cf6">{porcentagem:.0f}%</div><div class="metric-label">Conquista</div></div>', unsafe_allow_html=True)
 
     st.write("")
+    
+    # Separador
+    st.markdown("---")
 
     # Heatmap
     st.markdown("### 🔥 Ritmo de Estudos")
     grafico_heatmap = criar_heatmap_produtividade(df_cargo)
     if grafico_heatmap: st.altair_chart(grafico_heatmap, use_container_width=True)
     else: st.info("Histórico vazio. Estude hoje para marcar o gráfico!")
+    
+    # Separador
+    st.markdown("---")
 
     # Gráficos de Donut Ampliados
     st.markdown("### 🍩 Progresso por Disciplina")
@@ -528,6 +555,9 @@ def main():
             st.markdown(f"<h4 style='text-align:center; color:{cor}; margin-bottom:0;'>{nome}</h4>", unsafe_allow_html=True)
             chart = criar_grafico_donut(row['Estudados'], row['Total'], cor)
             st.altair_chart(chart, use_container_width=True)
+
+    # Separador
+    st.markdown("---")
 
     # Lista de Conteúdos
     st.markdown("### 📚 Conteúdo Programático")
@@ -576,7 +606,7 @@ def main():
             </div>
             """, unsafe_allow_html=True)
 
-    st.markdown("<br><br><div style='text-align:center; color:#cbd5e1; font-size:0.8rem;'>Dashboard Ultimate v4.0 • High Contrast Edition</div>", unsafe_allow_html=True)
+    st.markdown("<br><br><div style='text-align:center; color:#cbd5e1; font-size:0.8rem;'>Dashboard Ultimate v4.1 • High Contrast Edition</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
