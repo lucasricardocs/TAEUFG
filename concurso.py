@@ -4,13 +4,16 @@
 ================================================================================
 📊 DASHBOARD DE ESTUDOS - CÂMARA MUNICIPAL DE GOIÂNIA
 ================================================================================
-VERSÃO: 4.6 - LAYOUT SIMPLIFICADO
-DATA: 2025-11-28 08:14
+VERSÃO: 5.0 - POMODORO, METODOLOGIAS, SIDEBAR E RELOGIO
+DATA: 2025-11-28 08:34
 
-MELHORIAS v4.6:
-✓ Removidos containers nos títulos
-✓ Separadores markdown (---) entre seções
-✓ Layout mais limpo e direto
+MELHORIAS v5.0:
+✓ Relógio em tempo real (até segundos)
+✓ Pomodoro Timer (30 min) com notificação sonora
+✓ Sidebar com seleção de cargo
+✓ Aba com metodologias de estudo
+✓ Informações de local, data e horário em containers translúcidos centralizados
+✓ Fonte Nunito em todo o site
 ================================================================================
 """
 
@@ -102,11 +105,10 @@ def injetar_css_profissional():
         header_text = '#1e293b'
     
     st.markdown(f"""
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
         * {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Nunito', sans-serif;
             box-sizing: border-box;
         }}
 
@@ -147,8 +149,9 @@ def injetar_css_profissional():
             padding: 2rem 2.5rem;
             margin-bottom: 2rem;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }}
@@ -158,17 +161,12 @@ def injetar_css_profissional():
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }}
 
-        .header-left {{
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-        }}
-
         .header-logo img {{
             max-width: 220px;
             height: auto;
             transition: transform 0.3s ease;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            animation: spin 4s linear infinite;
         }}
 
         .header-logo img:hover {{
@@ -176,39 +174,40 @@ def injetar_css_profissional():
         }}
 
         .header-title {{
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: {header_text};
             margin: 0;
         }}
 
         .header-subtitle {{
-            font-size: 0.875rem;
+            font-size: 1.1rem;
             color: {text_secondary};
-            margin-top: 0.25rem;
+            margin: 0;
         }}
 
         .header-info {{
             display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            text-align: right;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
         }}
 
         .info-item {{
-            font-size: 0.813rem;
-            color: {text_secondary};
-            font-weight: 600;
-            transition: color 0.2s ease;
-            background: rgba(255, 255, 255, 0.5);
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: {text_secondary};
+            text-align: center;
+            min-width: 120px;
         }}
 
         .info-item:hover {{
-            color: {text_main};
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.3);
         }}
 
         /* KPI CARDS */
@@ -413,18 +412,19 @@ def injetar_css_profissional():
                 gap: 1.5rem;
             }}
 
-            .header-left {{
-                flex-direction: column;
-                text-align: center;
-            }}
-
             .header-info {{
+                flex-direction: column;
                 text-align: center;
             }}
 
             [data-testid="stMainBlockContainer"] {{
                 padding: 1rem;
             }}
+        }}
+
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -527,7 +527,6 @@ def obter_clima_local() -> str:
 # ================================================================================
 
 def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
-    """Gera heatmap estilo GitHub com tooltip mostrando matérias estudadas por dia"""
     df_validos = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     
     if df_validos.empty:
@@ -570,13 +569,7 @@ def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
                             domain=[1, 3, 6, 10, 15],
                             range=['#9be9a8', '#40c463', '#30a14e', '#216e39', '#0d4429']
                         ),
-                        legend=alt.Legend(
-                            title='Tópicos Estudados',
-                            titleFontSize=11,
-                            titleFontWeight=600,
-                            labelFontSize=10,
-                            orient='right'
-                        )
+                        legend=None
         ),
         tooltip=[
             alt.Tooltip('Data_Real:T', title='Data', format='%d/%m/%Y (%A)'),
@@ -630,7 +623,7 @@ def renderizar_donut(concluido: int, total: int, cor_hex: str) -> alt.Chart:
         size=24,
         color='#1e293b',
         fontWeight='bold',
-        font='Inter'
+        font='Nunito'
     ).encode(
         text=alt.value(f"{pct}%")
     )
@@ -662,7 +655,59 @@ def calcular_streak(df: pd.DataFrame) -> int:
     return streak
 
 # ================================================================================
-# 7. MAIN
+# 7. POMODORO TIMER
+# ================================================================================
+
+def pomodoro_timer():
+    st.header("⏱️ Pomodoro Timer")
+    
+    if 'pomodoro_running' not in st.session_state:
+        st.session_state.pomodoro_running = False
+        st.session_state.pomodoro_time = 30 * 60  # 30 minutos em segundos
+        st.session_state.pomodoro_end = None
+    
+    if st.button("Iniciar Pomodoro"):
+        st.session_state.pomodoro_running = True
+        st.session_state.pomodoro_time = 30 * 60
+        st.session_state.pomodoro_end = time.time() + 30 * 60
+    
+    if st.session_state.pomodoro_running:
+        tempo_restante = int(st.session_state.pomodoro_end - time.time())
+        
+        if tempo_restante > 0:
+            mins, secs = divmod(tempo_restante, 60)
+            st.write(f"Tempo restante: {mins:02d}:{secs:02d}")
+            time.sleep(1)
+            st.rerun()
+        else:
+            st.session_state.pomodoro_running = False
+            st.success("Pomodoro concluído!")
+            st.audio("https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3", autoplay=True)
+
+# ================================================================================
+# 8. METODOLOGIAS DE ESTUDO
+# ================================================================================
+
+def metodologias_estudo():
+    st.header("📚 Principais Metodologias de Estudo")
+    
+    st.markdown("### 1. Pomodoro")
+    st.markdown("Técnica de gerenciamento de tempo que divide o trabalho em blocos de 25 minutos, com pausas curtas entre eles.")
+    
+    st.markdown("### 2. Feynman")
+    st.markdown("Ensine o que aprendeu como se estivesse explicando para uma criança, simplificando o conteúdo.")
+    
+    st.markdown("### 3. Cornell")
+    st.markdown("Organize anotações em três colunas: anotações, resumo e perguntas.")
+    
+    st.markdown("### 4. Mapas Mentais")
+    st.markdown("Organize informações em diagramas visuais para facilitar a memorização.")
+    
+    st.markdown("### 5. Spaced Repetition")
+    st.markdown("Revise o conteúdo em intervalos crescentes para melhorar a retenção.")
+
+# ================================================================================
+# 9. MAIN
 # ================================================================================
 
 def main():
@@ -673,43 +718,41 @@ def main():
     
     agora_brasilia = obter_horario_brasilia()
     data_hoje = agora_brasilia.strftime('%d/%m/%Y')
-    hora_atual = agora_brasilia.strftime('%H:%M')
+    hora_atual = agora_brasilia.strftime('%H:%M:%S')
     temperatura = obter_clima_local()
 
     # HEADER
-    st.markdown(f"""
+    st.markdown("""
     <div class="header-container">
-        <div class="header-left">
-            <div class="header-logo">
-                <img src="{LOGO_URL}" alt="Logo Câmara Municipal">
-            </div>
-            <div>
-                <h1 class="header-title">Dashboard de Estudos</h1>
-                <p class="header-subtitle">Câmara Municipal de Goiânia</p>
-            </div>
+        <div class="header-logo">
+            <img src="{LOGO_URL}" alt="Logo Câmara Municipal">
+        </div>
+        <div>
+            <h1 class="header-title">Dashboard de Estudos</h1>
+            <p class="header-subtitle">Câmara Municipal de Goiânia</p>
         </div>
         <div class="header-info">
             <div class="info-item">📍 Goiânia - GO</div>
-            <div class="info-item">📅 {data_hoje} • {hora_atual}</div>
+            <div class="info-item">📅 {data_hoje}</div>
+            <div class="info-item">⏰ {hora_atual}</div>
             <div class="info-item">🌡️ {temperatura}</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-
-    # CONEXÃO
-    client = conectar_google_sheets()
-    if not client:
-        st.stop()
-        
-    df = carregar_dados(client)
-    if df is None:
-        st.warning("Carregando dados...")
-        st.stop()
+    """.format(LOGO_URL=LOGO_URL, data_hoje=data_hoje, hora_atual=hora_atual, temperatura=temperatura), unsafe_allow_html=True)
 
     # SIDEBAR
     with st.sidebar:
         st.markdown("### 📋 SELEÇÃO DE CARGO")
         st.markdown("---")
+        
+        client = conectar_google_sheets()
+        if not client:
+            st.stop()
+            
+        df = carregar_dados(client)
+        if df is None:
+            st.warning("Carregando dados...")
+            st.stop()
         
         lista_cargos = sorted(df['Cargo'].unique().tolist())
         cargo_selecionado = st.selectbox(
@@ -734,6 +777,16 @@ def main():
         
         if st.button("🔄 Atualizar Dados", use_container_width=True):
             st.cache_data.clear()
+            st.rerun()
+        
+        st.divider()
+        st.markdown("### 🎯 Técnicas de Estudo")
+        if st.button("Pomodoro Timer", use_container_width=True):
+            st.session_state['pagina'] = 'pomodoro'
+            st.rerun()
+        
+        if st.button("Metodologias", use_container_width=True):
+            st.session_state['pagina'] = 'metodologias'
             st.rerun()
 
     # FILTRO
@@ -787,122 +840,172 @@ def main():
     # SEPARADOR
     st.markdown("---")
 
-    # HEATMAP
-    st.markdown("## 📊 Histórico de Atividades")
+    # PÁGINA PRINCIPAL OU POMODORO/METODOLOGIAS
+    pagina = st.session_state.get('pagina', 'principal')
     
-    grafico_heatmap = renderizar_heatmap(df_cargo)
-    
-    if grafico_heatmap:
-        st.altair_chart(grafico_heatmap, use_container_width=True)
+    if pagina == 'pomodoro':
+        pomodoro_timer()
+    elif pagina == 'metodologias':
+        metodologias_estudo()
     else:
-        st.info("Nenhum histórico disponível. Marque tópicos para visualizar seu heatmap estilo GitHub!")
-
-    # SEPARADOR
-    st.markdown("---")
-
-    # PROGRESSO POR DISCIPLINA
-    st.markdown("## 📈 Progresso por Disciplina")
-    
-    stats_disciplina = df_cargo.groupby('Disciplinas').agg({
-        'Estudado': ['sum', 'count']
-    }).reset_index()
-    stats_disciplina.columns = ['Disciplina', 'Estudados', 'Total']
-    
-    cols = st.columns(min(3, len(stats_disciplina)))
-    
-    for idx, row in stats_disciplina.iterrows():
-        col_idx = cols[idx % len(cols)]
+        # HEATMAP
+        st.markdown("## 📊 Histórico de Atividades")
         
-        with col_idx:
-            nome_disciplina = row['Disciplina']
-            cor_tema = CORES_DISCIPLINAS.get(nome_disciplina, '#2563eb')
-            
-            st.markdown(f"""
-            <div class="donut-wrapper">
-                <div class="donut-title">{nome_disciplina}</div>
-                <div class="donut-stats">{row["Estudados"]} de {row["Total"]} tópicos</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            chart_donut = renderizar_donut(row['Estudados'], row['Total'], cor_tema)
-            st.altair_chart(chart_donut, use_container_width=True)
-
-    # SEPARADOR
-    st.markdown("---")
-
-    # CHECKLIST
-    st.markdown("## ✓ Conteúdo Programático")
-
-    for disciplina in sorted(df_cargo['Disciplinas'].unique()):
-        sub_df = df_cargo[df_cargo['Disciplinas'] == disciplina]
-        cor_tema = CORES_DISCIPLINAS.get(disciplina, '#2563eb')
+        grafico_heatmap = renderizar_heatmap(df_cargo)
         
-        concluidos = sub_df['Estudado'].sum()
-        total = len(sub_df)
-        percentual = (concluidos / total * 100) if total > 0 else 0
+        if grafico_heatmap:
+            st.altair_chart(grafico_heatmap, use_container_width=True)
+        else:
+            st.info("Nenhum histórico disponível. Marque tópicos para visualizar seu heatmap estilo GitHub!")
+
+        # SEPARADOR
+        st.markdown("---")
+
+        # PROGRESSO POR DISCIPLINA
+        st.markdown("## 📈 Progresso por Disciplina")
+        st.markdown("<hr style='border:none;border-top:1px solid rgba(148,163,184,0.4);margin:0.25rem auto 1rem auto;width:60%;'>", unsafe_allow_html=True)
         
-        with st.expander(f"**{disciplina}** ({concluidos}/{total})", expanded=False):
-            st.markdown(f"""
-            <div class="progress-info">
-                <span class="progress-label">{disciplina}</span>
-                <span class="progress-percentage">{percentual:.1f}%</span>
-            </div>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill" style="width: {percentual}%; background: {cor_tema};"></div>
-            </div>
-            """, unsafe_allow_html=True)
+        stats_disciplina = df_cargo.groupby('Disciplinas').agg({
+            'Estudado': ['sum', 'count']
+        }).reset_index()
+        stats_disciplina.columns = ['Disciplina', 'Estudados', 'Total']
+        
+        # Gráfico de barras horizontal grande
+        dados_grafico = []
+        for _, row in stats_disciplina.iterrows():
+            dados_grafico.append({
+                'Disciplina': row['Disciplina'],
+                'Status': 'Concluído',
+                'Percentual': row['Estudados'] / row['Total'] * 100 if row['Total'] > 0 else 0
+            })
+            dados_grafico.append({
+                'Disciplina': row['Disciplina'],
+                'Status': 'Pendente',
+                'Percentual': 100 - (row['Estudados'] / row['Total'] * 100) if row['Total'] > 0 else 0
+            })
+        
+        df_grafico = pd.DataFrame(dados_grafico)
+        
+        chart = alt.Chart(df_grafico).mark_bar(size=20).encode(
+            y=alt.Y('Disciplina:N', title=None, axis=alt.Axis(labelFontSize=12)),
+            x=alt.X('Percentual:Q', title='Percentual', axis=alt.Axis(labelFontSize=10)),
+            color=alt.Color('Status:N',
+                           scale=alt.Scale(domain=['Concluído', 'Pendente'], range=['#16a34a', '#dc2626']),
+                           legend=None),
+            tooltip=[
+                alt.Tooltip('Disciplina:N', title='Disciplina'),
+                alt.Tooltip('Percentual:Q', title='Percentual', format='.1f')
+            ]
+        ).properties(
+            height=280,
+            width='container'
+        ).configure_axis(
+            grid=False
+        )
+        
+        st.altair_chart(chart, use_container_width=True)
+
+        # SEPARADOR
+        st.markdown("---")
+
+        # DONUTS
+        st.markdown("## 🍩 Progresso por Disciplina")
+        
+        cols = st.columns(min(3, len(stats_disciplina)))
+        
+        for idx, row in stats_disciplina.iterrows():
+            col_idx = cols[idx % len(cols)]
             
-            with st.form(key=f"form_{disciplina}"):
-                updates_pendentes = []
+            with col_idx:
+                nome_disciplina = row['Disciplina']
+                cor_tema = CORES_DISCIPLINAS.get(nome_disciplina, '#2563eb')
                 
-                for _, row in sub_df.iterrows():
-                    col_check, col_texto = st.columns([0.05, 0.95])
+                st.markdown(f"""
+                <div class="donut-wrapper">
+                    <div class="donut-title">{nome_disciplina}</div>
+                    <div class="donut-stats">{row["Estudados"]} de {row["Total"]} tópicos</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                chart_donut = renderizar_donut(row['Estudados'], row['Total'], cor_tema)
+                st.altair_chart(chart_donut, use_container_width=True)
+
+        # SEPARADOR
+        st.markdown("---")
+
+        # CHECKLIST
+        st.markdown("## ✓ Conteúdo Programático")
+
+        for disciplina in sorted(df_cargo['Disciplinas'].unique()):
+            sub_df = df_cargo[df_cargo['Disciplinas'] == disciplina]
+            cor_tema = CORES_DISCIPLINAS.get(disciplina, '#2563eb')
+            
+            concluidos = sub_df['Estudado'].sum()
+            total = len(sub_df)
+            percentual = (concluidos / total * 100) if total > 0 else 0
+            
+            with st.expander(f"**{disciplina}** ({concluidos}/{total})", expanded=False):
+                st.markdown(f"""
+                <div class="progress-info">
+                    <span class="progress-label">{disciplina}</span>
+                    <span class="progress-percentage">{percentual:.1f}%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: {percentual}%; background: {cor_tema};"></div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                with st.form(key=f"form_{disciplina}"):
+                    updates_pendentes = []
                     
-                    with col_check:
-                        key_widget = f"chk_{row['linha_planilha']}"
+                    for _, row in sub_df.iterrows():
+                        col_check, col_texto = st.columns([0.05, 0.95])
                         
-                        is_checked = st.checkbox(
-                            "",
-                            value=bool(row['Estudado']),
-                            key=key_widget,
-                            label_visibility="collapsed"
-                        )
+                        with col_check:
+                            key_widget = f"chk_{row['linha_planilha']}"
+                            
+                            is_checked = st.checkbox(
+                                "",
+                                value=bool(row['Estudado']),
+                                key=key_widget,
+                                label_visibility="collapsed"
+                            )
+                            
+                            if is_checked != bool(row['Estudado']):
+                                updates_pendentes.append({
+                                    'linha': int(row['linha_planilha']),
+                                    'status': is_checked
+                                })
                         
-                        if is_checked != bool(row['Estudado']):
-                            updates_pendentes.append({
-                                'linha': int(row['linha_planilha']),
-                                'status': is_checked
-                            })
-                    
-                    classe_css = "done" if row['Estudado'] else ""
-                    badge_data_html = ""
-                    
-                    if row['Estudado'] and pd.notnull(row['Data_Real']):
-                        data_str = row['Data_Real'].strftime('%d/%m/%Y')
-                        badge_data_html = f"<span class='topic-date'>{data_str}</span>"
-                    
-                    col_texto.markdown(f"""
-                    <div class="topic-item">
-                        <div class="topic-text {classe_css}">
-                            {row['Conteúdos']}
+                        classe_css = "done" if row['Estudado'] else ""
+                        badge_data_html = ""
+                        
+                        if row['Estudado'] and pd.notnull(row['Data_Real']):
+                            data_str = row['Data_Real'].strftime('%d/%m/%Y')
+                            badge_data_html = f"<span class='topic-date'>{data_str}</span>"
+                        
+                        col_texto.markdown(f"""
+                        <div class="topic-item">
+                            <div class="topic-text {classe_css}">
+                                {row['Conteúdos']}
+                            </div>
+                            {badge_data_html}
                         </div>
-                        {badge_data_html}
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                submitted = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
-                
-                if submitted and updates_pendentes:
-                    with st.spinner("Salvando..."):
-                        sucesso = atualizar_lote(client, updates_pendentes)
-                        
-                        if sucesso:
-                            st.success("✅ Alterações salvas!")
-                            time.sleep(1)
-                            st.cache_data.clear()
-                            st.rerun()
-                        else:
-                            st.error("❌ Erro ao salvar")
+                        """, unsafe_allow_html=True)
+                    
+                    submitted = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
+                    
+                    if submitted and updates_pendentes:
+                        with st.spinner("Salvando..."):
+                            sucesso = atualizar_lote(client, updates_pendentes)
+                            
+                            if sucesso:
+                                st.success("✅ Alterações salvas!")
+                                time.sleep(1)
+                                st.cache_data.clear()
+                                st.rerun()
+                            else:
+                                st.error("❌ Erro ao salvar")
 
     # SEPARADOR
     st.markdown("---")
@@ -910,7 +1013,7 @@ def main():
     # RODAPÉ
     st.markdown(f"""
     <div style="text-align: center; color: #94a3b8; padding: 1rem 0; font-size: 0.813rem;">
-        Dashboard v4.6 • Horário de Brasília: {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
+        Dashboard v5.0 • Horário de Brasília: {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
     </div>
     """, unsafe_allow_html=True)
 
