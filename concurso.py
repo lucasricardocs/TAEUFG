@@ -4,13 +4,13 @@
 ================================================================================
 📊 DASHBOARD DE ESTUDOS - CÂMARA MUNICIPAL DE GOIÂNIA
 ================================================================================
-VERSÃO: 4.5 - HEATMAP ESTILO GITHUB
-DATA: 2025-11-28 08:08
+VERSÃO: 4.6 - LAYOUT SIMPLIFICADO
+DATA: 2025-11-28 08:14
 
-MELHORIAS v4.5:
-✓ Heatmap com cores do GitHub (tons de verde)
-✓ Tooltip mostra matérias estudadas em cada dia
-✓ Detalhamento completo por data
+MELHORIAS v4.6:
+✓ Removidos containers nos títulos
+✓ Separadores markdown (---) entre seções
+✓ Layout mais limpo e direto
 ================================================================================
 """
 
@@ -254,29 +254,6 @@ def injetar_css_profissional():
         .kpi-detail {{
             font-size: 0.813rem;
             color: {text_secondary};
-        }}
-
-        /* SECTION */
-        .section {{
-            background: {bg_card};
-            border: 1px solid {border_color};
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            transition: box-shadow 0.2s ease;
-        }}
-
-        .section:hover {{
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        }}
-
-        .section-title {{
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: {text_main};
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid {border_color};
         }}
 
         /* PROGRESS BAR */
@@ -550,24 +527,19 @@ def obter_clima_local() -> str:
 # ================================================================================
 
 def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
-    """
-    Gera heatmap estilo GitHub com tooltip mostrando matérias estudadas por dia
-    """
+    """Gera heatmap estilo GitHub com tooltip mostrando matérias estudadas por dia"""
     df_validos = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     
     if df_validos.empty:
         return None
     
-    # Agrupa por data e coleta informações das disciplinas
     dados_agrupados = df_validos.groupby('Data_Real').agg({
-        'Disciplinas': lambda x: ', '.join(sorted(set(x))),  # Lista de matérias únicas
-        'Conteúdos': 'count'  # Quantidade de tópicos
+        'Disciplinas': lambda x: ', '.join(sorted(set(x))),
+        'Conteúdos': 'count'
     }).reset_index()
     
     dados_agrupados.columns = ['Data_Real', 'Materias', 'Quantidade']
     
-    # Cores do GitHub (verde)
-    # #ebedf0 (sem atividade) -> #9be9a8 -> #40c463 -> #30a14e -> #216e39 (máximo)
     chart = alt.Chart(dados_agrupados).mark_rect(
         cornerRadius=3,
         stroke='#d1d5db',
@@ -812,8 +784,11 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
-    # HEATMAP ESTILO GITHUB
-    st.markdown('<div class="section"><div class="section-title">📊 Histórico de Atividades</div>', unsafe_allow_html=True)
+    # SEPARADOR
+    st.markdown("---")
+
+    # HEATMAP
+    st.markdown("## 📊 Histórico de Atividades")
     
     grafico_heatmap = renderizar_heatmap(df_cargo)
     
@@ -821,11 +796,12 @@ def main():
         st.altair_chart(grafico_heatmap, use_container_width=True)
     else:
         st.info("Nenhum histórico disponível. Marque tópicos para visualizar seu heatmap estilo GitHub!")
-        
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    # SEPARADOR
+    st.markdown("---")
 
     # PROGRESSO POR DISCIPLINA
-    st.markdown('<div class="section"><div class="section-title">📈 Progresso por Disciplina</div>', unsafe_allow_html=True)
+    st.markdown("## 📈 Progresso por Disciplina")
     
     stats_disciplina = df_cargo.groupby('Disciplinas').agg({
         'Estudado': ['sum', 'count']
@@ -850,11 +826,12 @@ def main():
             
             chart_donut = renderizar_donut(row['Estudados'], row['Total'], cor_tema)
             st.altair_chart(chart_donut, use_container_width=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    # SEPARADOR
+    st.markdown("---")
 
     # CHECKLIST
-    st.markdown('<div class="section"><div class="section-title">✓ Conteúdo Programático</div>', unsafe_allow_html=True)
+    st.markdown("## ✓ Conteúdo Programático")
 
     for disciplina in sorted(df_cargo['Disciplinas'].unique()):
         sub_df = df_cargo[df_cargo['Disciplinas'] == disciplina]
@@ -926,13 +903,14 @@ def main():
                             st.rerun()
                         else:
                             st.error("❌ Erro ao salvar")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    # SEPARADOR
+    st.markdown("---")
 
     # RODAPÉ
     st.markdown(f"""
-    <div style="text-align: center; color: #94a3b8; padding: 2rem 0 1rem 0; font-size: 0.813rem; border-top: 1px solid #e2e8f0; margin-top: 2rem;">
-        Dashboard v4.5 • Horário de Brasília: {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
+    <div style="text-align: center; color: #94a3b8; padding: 1rem 0; font-size: 0.813rem;">
+        Dashboard v4.6 • Horário de Brasília: {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
     </div>
     """, unsafe_allow_html=True)
 
