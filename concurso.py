@@ -4,15 +4,15 @@
 ================================================================================
 📊 DASHBOARD DE ESTUDOS - CÂMARA MUNICIPAL DE GOIÂNIA
 ================================================================================
-VERSÃO: 6.0 - LAYOUT FINAL
-DATA: 2025-11-28 15:57
+VERSÃO: 6.1 - LAYOUT COMPLETO E REVISADO
+DATA: 2025-11-28 16:29
 
-FUNCIONALIDADES:
-✓ Header: Logo à esquerda (95% altura), título centralizado, info à direita
-✓ Sidebar com configurações
-✓ Cards de progresso com donuts integrados
-✓ Sem Pomodoro, sem tabs
-✓ Layout limpo e profissional
+MELHORIAS v6.1:
+✓ Header: 300px, logo esquerda (95%), título centralizado, info direita
+✓ Sidebar: Configurações
+✓ Cards: Nome disciplina, progresso, donut grande integrado
+✓ Layout limpo: Sem Pomodoro, sem tabs
+✓ Design responsivo e profissional
 ================================================================================
 """
 
@@ -116,14 +116,14 @@ def injetar_css_profissional():
         text_main = '#f1f5f9'
         text_secondary = '#94a3b8'
         border_color = '#334155'
-        hover_bg = '#334155'
+        header_bg = 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
     else:
         bg_main = '#f8fafc'
         bg_card = '#ffffff'
         text_main = '#1e293b'
         text_secondary = '#64748b'
         border_color = '#e2e8f0'
-        hover_bg = '#f1f5f9'
+        header_bg = 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #dbeafe 100%)'
     
     st.markdown(f"""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -143,22 +143,23 @@ def injetar_css_profissional():
 
         #MainMenu, footer, header {{visibility: hidden;}}
 
-        /* HEADER */
+        /* HEADER 300PX */
         .header-container {{
-            background: {bg_card};
+            background: {header_bg};
             border: 1px solid {border_color};
-            border-radius: 12px;
-            padding: 1rem 2rem;
-            margin-bottom: 2rem;
+            border-radius: 18px;
+            padding: 1.5rem 2.5rem;
+            margin-bottom: 2.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            height: 120px;
+            box-shadow: 0 10px 25px rgba(15,23,42,0.12);
+            height: 300px;
+            position: relative;
         }}
 
         .header-left {{
-            flex: 0 0 25%;
+            flex: 0 0 30%;
             display: flex;
             align-items: center;
             justify-content: flex-start;
@@ -177,36 +178,48 @@ def injetar_css_profissional():
             align-items: center;
             justify-content: center;
             height: 100%;
+            position: absolute;
+            left: 0;
+            right: 0;
+            pointer-events: none;
         }}
 
         .header-title {{
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 800;
             color: {text_main};
             margin: 0;
             text-align: center;
+            pointer-events: auto;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }}
 
         .header-right {{
-            flex: 0 0 25%;
+            flex: 0 0 30%;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            justify-content: center;
-            gap: 0.25rem;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            z-index: 2;
+            padding-top: 1rem;
         }}
 
         .info-text {{
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.2rem;
+            font-weight: 700;
             color: {text_secondary};
+            background: rgba(255,255,255,0.5);
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
         }}
 
         /* KPI CARDS */
         .kpi-card {{
             background: {bg_card};
             border: 1px solid {border_color};
-            border-radius: 8px;
+            border-radius: 14px;
             padding: 1.5rem;
             transition: all 0.3s ease;
             cursor: pointer;
@@ -216,17 +229,18 @@ def injetar_css_profissional():
             justify-content: center;
             align-items: center;
             text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         }}
 
         .kpi-card:hover {{
             transform: translateY(-4px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
             border-color: #2563eb;
         }}
 
         .kpi-label {{
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.8rem;
+            font-weight: 700;
             color: {text_secondary};
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -235,14 +249,14 @@ def injetar_css_profissional():
 
         .kpi-value {{
             font-size: 2.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: {text_main};
             line-height: 1;
             margin-bottom: 0.5rem;
         }}
 
         .kpi-detail {{
-            font-size: 0.813rem;
+            font-size: 0.85rem;
             color: {text_secondary};
         }}
 
@@ -250,29 +264,36 @@ def injetar_css_profissional():
         .chart-container {{
             background: {bg_card};
             border: 1px solid {border_color};
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
+            height: 100%;
+            min-height: 380px;
         }}
 
         .chart-title {{
-            font-size: 1rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 800;
             color: {text_main};
             margin-bottom: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.02em;
+            min-height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }}
 
         .chart-subtitle {{
-            font-size: 0.875rem;
+            font-size: 0.95rem;
             color: {text_secondary};
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
         }}
 
         /* PROGRESS BAR */
@@ -319,7 +340,7 @@ def injetar_css_profissional():
         }}
 
         .topic-item:hover {{
-            background: {hover_bg};
+            background: {bg_main};
             padding-left: 0.5rem;
             border-left: 3px solid #2563eb;
         }}
@@ -330,7 +351,7 @@ def injetar_css_profissional():
 
         .topic-text {{
             flex: 1;
-            font-size: 0.938rem;
+            font-size: 0.95rem;
             color: {text_main};
             line-height: 1.5;
         }}
@@ -341,98 +362,72 @@ def injetar_css_profissional():
         }}
 
         .topic-date {{
-            font-size: 0.813rem;
+            font-size: 0.85rem;
             color: {text_secondary};
             background: {bg_main};
             padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            margin-left: 1rem;
-            transition: all 0.2s ease;
-        }}
-
-        .topic-date:hover {{
-            background: #2563eb;
-            color: white;
-        }}
-
-        /* CHECKBOX */
-        input[type="checkbox"] {{
-            width: 18px;
-            height: 18px;
-            border: 2px solid {border_color};
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }}
-
-        input[type="checkbox"]:hover {{
-            border-color: #2563eb;
-            transform: scale(1.1);
-        }}
-
-        /* BOTÃO */
-        .stButton > button {{
-            background: #2563eb;
-            color: white;
-            border: none;
             border-radius: 6px;
-            padding: 0.625rem 1.5rem;
+            margin-left: 1rem;
             font-weight: 600;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-        }}
-
-        .stButton > button:hover {{
-            background: #1d4ed8;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
         }}
 
         /* INSIGHT BOX */
         .insight-box {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 16px;
             padding: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
         }}
 
         .insight-box h3 {{
             margin: 0 0 0.5rem 0;
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-size: 1.2rem;
+            font-weight: 800;
         }}
 
         .insight-box p {{
             margin: 0;
-            font-size: 0.95rem;
+            font-size: 1rem;
             line-height: 1.6;
+            font-weight: 500;
         }}
 
         /* RESPONSIVO */
-        @media (max-width: 768px) {{
+        @media (max-width: 900px) {{
             .header-container {{
                 flex-direction: column;
-                gap: 1rem;
-                padding: 1rem;
                 height: auto;
+                padding: 2rem 1.5rem;
+                gap: 1.5rem;
             }}
-
-            .header-title {{
-                font-size: 1.5rem;
-            }}
-
-            .header-logo {{
-                max-height: 80px;
-            }}
-
-            .header-right {{
+            
+            .header-left, .header-right {{
+                flex: 1;
+                width: 100%;
                 align-items: center;
+                justify-content: center;
             }}
-
-            [data-testid="stMainBlockContainer"] {{
-                padding: 1rem;
+            
+            .header-center {{
+                position: static;
+                height: auto;
+                margin: 1rem 0;
+            }}
+            
+            .header-logo {{
+                height: auto;
+                max-height: 100px;
+                width: auto;
+            }}
+            
+            .header-title {{
+                font-size: 1.8rem;
+            }}
+            
+            .chart-container {{
+                min-height: auto;
             }}
         }}
     </style>
@@ -549,16 +544,16 @@ def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
     dados_agrupados.columns = ['Data_Real', 'Materias', 'Quantidade']
     
     chart = alt.Chart(dados_agrupados).mark_rect(
-        cornerRadius=3,
-        stroke='#d1d5db',
-        strokeWidth=1.5
+        cornerRadius=4,
+        stroke='#e2e8f0',
+        strokeWidth=1
     ).encode(
         x=alt.X('yearmonthdate(Data_Real):O',
                 title=None,
                 axis=alt.Axis(
                     format='%d/%m',
                     labelAngle=0,
-                    labelFontSize=10,
+                    labelFontSize=11,
                     labelColor='#64748b'
                 )
         ),
@@ -566,13 +561,14 @@ def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
                 title=None,
                 axis=alt.Axis(
                     labels=False,
-                    ticks=False
+                    ticks=False,
+                    domain=False
                 )
         ),
         color=alt.Color('Quantidade:Q',
                         scale=alt.Scale(
                             domain=[1, 3, 6, 10, 15],
-                            range=['#9be9a8', '#40c463', '#30a14e', '#216e39', '#0d4429']
+                            range=['#dcfce7', '#86efac', '#4ade80', '#22c55e', '#15803d']
                         ),
                         legend=None
         ),
@@ -582,7 +578,7 @@ def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
             alt.Tooltip('Materias:N', title='Matérias Estudadas')
         ]
     ).properties(
-        height=220,
+        height=240,
         width='container'
     ).configure_view(
         strokeWidth=0
@@ -604,15 +600,16 @@ def renderizar_donut(concluido: int, total: int) -> alt.Chart:
         theta=alt.Theta("Valor:Q", stack=True)
     )
     
+    # Anel principal (dados)
     pie = base.mark_arc(
-        outerRadius=90,
-        innerRadius=65,
-        stroke='#e5e7eb',
+        outerRadius=110,
+        innerRadius=80,
+        stroke='#ffffff',
         strokeWidth=2
     ).encode(
         color=alt.Color("Status:N",
                         scale=alt.Scale(domain=['Concluído', 'Pendente'],
-                                        range=['#1e7e34', '#991b1b']),
+                                        range=['#15803d', '#b91c1c']),
                         legend=None),
         tooltip=[
             alt.Tooltip('Status:N', title='Status'),
@@ -620,20 +617,29 @@ def renderizar_donut(concluido: int, total: int) -> alt.Chart:
         ]
     )
     
+    # Anel de fundo (cinza)
+    background = base.mark_arc(
+        outerRadius=110,
+        innerRadius=80,
+        color='#f1f5f9'
+    ).encode(
+        order=alt.value(0)  # Fica atrás
+    )
+    
     pct = int(concluido/total*100) if total > 0 else 0
     texto = base.mark_text(
         radius=0,
-        size=24,
+        size=32,
         color='#1e293b',
-        fontWeight='bold',
+        fontWeight=800,
         font='Nunito'
     ).encode(
         text=alt.value(f"{pct}%")
     )
     
-    return (pie + texto).properties(
-        width=220,
-        height=220,
+    return (background + pie + texto).properties(
+        width=260,
+        height=260,
         background='transparent'
     ).configure_view(
         strokeWidth=0
@@ -669,7 +675,6 @@ def main():
     
     agora_brasilia = obter_horario_brasilia()
     
-    # Formatar data como "28/Nov"
     meses = {
         1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
         7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
@@ -692,7 +697,7 @@ def main():
             st.cache_data.clear()
             st.rerun()
 
-    # HEADER
+    # HEADER 300PX
     st.markdown(f"""
     <div class="header-container">
         <div class="header-left">
@@ -764,7 +769,7 @@ def main():
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-label">Concluídos</div>
-            <div class="kpi-value" style="color: #1e7e34;">{total_concluidos}</div>
+            <div class="kpi-value" style="color: #15803d;">{total_concluidos}</div>
             <div class="kpi-detail">{progresso_percentual:.1f}% do total</div>
         </div>
         """, unsafe_allow_html=True)
@@ -773,7 +778,7 @@ def main():
         st.markdown(f"""
         <div class="kpi-card">
             <div class="kpi-label">Restantes</div>
-            <div class="kpi-value" style="color: #991b1b;">{total_restantes}</div>
+            <div class="kpi-value" style="color: #b91c1c;">{total_restantes}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -804,7 +809,7 @@ def main():
 
     st.markdown("---")
 
-    # PROGRESSO POR DISCIPLINA
+    # PROGRESSO POR DISCIPLINA (CARDS COM DONUTS GRANDES)
     st.markdown("## 📈 Progresso de Estudos")
     
     stats_disciplina = df_cargo.groupby('Disciplinas').agg({
@@ -812,14 +817,14 @@ def main():
     }).reset_index()
     stats_disciplina.columns = ['Disciplina', 'Estudados', 'Total']
     
-    # Grid de cards
-    num_cols = len(stats_disciplina) + 1  # +1 para gráfico geral
-    cols = st.columns(min(4, num_cols))
+    # Cards Grid
+    # Vamos criar 3 colunas por linha para os cards ficarem grandes
+    cols = st.columns(3)
     
-    # Card Geral
+    # Card Geral (Primeiro)
     with cols[0]:
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-        st.markdown('<div class="chart-title">📊 Progresso Geral</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chart-title">📊 PROGRESSO GERAL</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="chart-subtitle">{total_concluidos} de {total_topicos} tópicos</div>', unsafe_allow_html=True)
         chart_geral = renderizar_donut(total_concluidos, total_topicos)
         st.altair_chart(chart_geral, use_container_width=True)
@@ -827,7 +832,8 @@ def main():
     
     # Cards por Disciplina
     for idx, row in stats_disciplina.iterrows():
-        col_idx = cols[(idx + 1) % len(cols)]
+        # Ajuste para pular a primeira coluna que já foi usada pelo Geral
+        col_idx = cols[(idx + 1) % 3]
         
         with col_idx:
             nome_disciplina = row['Disciplina']
@@ -922,7 +928,7 @@ def main():
     # RODAPÉ
     st.markdown(f"""
     <div style="text-align: center; color: #94a3b8; padding: 1rem 0; font-size: 0.813rem;">
-        Dashboard v6.0 • {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
+        Dashboard v6.1 • {agora_brasilia.strftime("%d/%m/%Y às %H:%M:%S")}
     </div>
     """, unsafe_allow_html=True)
 
