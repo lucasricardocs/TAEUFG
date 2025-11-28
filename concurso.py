@@ -2,19 +2,21 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-🚀 DASHBOARD DE ESTUDOS ULTIMATE - CÂMARA MUNICIPAL DE GOIÂNIA
+🚀 DASHBOARD DE ESTUDOS ULTIMATE v3.1 - OTIMIZADO UI/UX
 ================================================================================
-VERSÃO: ULTIMATE MERGED (HIGH CONTRAST & ANIMATIONS)
+VERSÃO: 3.1 - MELHORIAS APLICADAS
 DATA: 2025-11-27
 
-DESCRIÇÃO:
-Código unificado com novas animações CSS, cores de alto contraste e
-gráficos de visualização ampliados. Agora com listas expansíveis (Accordions).
-
-REQUISITOS:
-- Python 3.8+
-- Bibliotecas: streamlit, pandas, altair, gspread, google-auth
-- Arquivo 'credentials.json' (Google Service Account)
+MELHORIAS IMPLEMENTADAS:
+✅ Checkboxes COLADOS ao texto (0.02 | 0.98)
+✅ Espaçamento máximo 2 linhas (st.space)
+✅ Toggle Tema Claro/Escuro
+✅ Forms por Disciplina (batch updates)
+✅ Streak Counter + Leaderboard
+✅ Animações: Glow hover, confetti 100%
+✅ Cards altura uniforme + tooltips
+✅ Progress bars coloridos por disciplina
+✅ Mobile responsivo aprimorado
 ================================================================================
 """
 
@@ -29,343 +31,424 @@ import json
 import time
 import requests
 import locale
+from typing import Optional, List, Dict
 
 # ================================================================================
-# 1. CONFIGURAÇÃO INICIAL DO AMBIENTE
+# 1. CONFIGURAÇÃO
 # ================================================================================
 
 warnings.filterwarnings('ignore')
 
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-except Exception:
+except:
     try:
         locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil.1252')
     except:
         pass
 
 st.set_page_config(
-    page_title="Dashboard Ultimate",
+    page_title="Dashboard Ultimate v3.1",
     page_icon="🔥",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ================================================================================
-# 2. ESTILOS CSS UNIFICADOS (LAYOUT + ANIMAÇÕES + CORES NOVAS)
+# 2. CONSTANTES
 # ================================================================================
 
-st.markdown("""
-<style>
-    /* ==========================================================================
-    FONTS & RESET
-    ==========================================================================
-    */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
-
-    * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        box-sizing: border-box;
-    }
-
-    [data-testid="stMainBlockContainer"] {
-        background-color: #f8fafc; /* Fundo claro para contraste */
-        color: #0f172a;
-        padding-top: 2rem;
-        padding-bottom: 4rem;
-    }
-
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    /* ==========================================================================
-    ANIMAÇÕES (KEYFRAMES)
-    ==========================================================================
-    */
-    @keyframes slideUpFade {
-        0% { opacity: 0; transform: translateY(20px); }
-        100% { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes popIn {
-        0% { opacity: 0; transform: scale(0.5); }
-        70% { transform: scale(1.1); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-
-    @keyframes fillProgress {
-        from { width: 0; }
-        to { width: 100%; }
-    }
-
-    @keyframes shimmer {
-        to { background-position: 200% center; }
-    }
-    
-    @keyframes sectionFadeIn {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ==========================================================================
-    HEADER & LAYOUT
-    ==========================================================================
-    */
-    .header-container {
-        display: flex;
-        align-items: center;
-        justify-content: center; /* Centraliza o conteúdo principal (texto) */
-        background: #ffffff;
-        padding: 1.5rem 2rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        position: relative; /* Necessário para posicionamento absoluto dos filhos */
-        overflow: visible; /* Permite sombras externas */
-        color: #0f172a;
-        min-height: 160px; /* Altura garantida para centralização vertical */
-    }
-
-    .header-logo {
-        position: absolute;
-        left: 2rem;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    .header-logo img {
-        height: 100px; /* Aumentado para equilibrar com o texto */
-        width: auto;
-        display: block;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-    }
-
-    .header-content {
-        text-align: center;
-        z-index: 1;
-        /* O Flexbox do container já centraliza este item horizontalmente e verticalmente */
-    }
-
-    .header-content h1 { 
-        font-size: 2.8rem; 
-        font-weight: 800; 
-        margin: 0; 
-        color: #0f172a; 
-        letter-spacing: -1.5px;
-        line-height: 1.1;
-    }
-    
-    .header-info { 
-        position: absolute;
-        top: 1.5rem;   /* Bem no alto */
-        right: 1.5rem; /* Bem na direita */
-        
-        background: rgba(255, 255, 255, 0.95);
-        padding: 8px 16px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        z-index: 2;
-    }
-    
-    .info-row {
-        font-size: 0.95rem;
-        color: #475569;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    /* ==========================================================================
-    PROGRESS BAR ANIMADA (NOVO)
-    ==========================================================================
-    */
-    .progress-bar-container {
-        width: 100%;
-        height: 12px;
-        background: #e2e8f0;
-        border-radius: 10px;
-        overflow: hidden;
-        margin: 20px 0;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .progress-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #f59e0b, #ea580c); /* Laranja Vibrante */
-        border-radius: 10px;
-        animation: fillProgress 1.5s ease-out forwards;
-        box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
-    }
-
-    /* ==========================================================================
-    CARDS DE MÉTRICAS
-    ==========================================================================
-    */
-    .metric-card { 
-        background: white; 
-        padding: 1.5rem; 
-        border-radius: 16px; 
-        border: 1px solid #cbd5e1; 
-        text-align: center; 
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-        transition: all 0.3s ease;
-    }
-    
-    .metric-card:hover { 
-        transform: translateY(-5px) scale(1.02); 
-        border-color: #3b82f6;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .metric-value { 
-        font-size: 3.2rem; 
-        font-weight: 800; 
-        line-height: 1;
-        margin-bottom: 0.5rem;
-        letter-spacing: -2px;
-    }
-    
-    /* ==========================================================================
-    BADGES & GAMIFICAÇÃO
-    ==========================================================================
-    */
-    .badge-container { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
-    .badge { 
-        background: linear-gradient(135deg, #10b981, #059669); 
-        color: white; 
-        padding: 6px 16px; 
-        border-radius: 50px; 
-        font-weight: 700; 
-        font-size: 0.8rem; 
-        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-        animation: popIn 0.5s ease forwards;
-    }
-
-    /* ==========================================================================
-    LISTA DE TÓPICOS
-    ==========================================================================
-    */
-    .topic-row {
-        display: flex;
-        align-items: center;
-        padding: 10px 10px;
-        border-bottom: 1px solid #f1f5f9;
-        transition: background-color 0.2s;
-        border-radius: 6px;
-    }
-    
-    .topic-row:hover {
-        background-color: #f8fafc;
-    }
-    
-    .topic-text {
-        font-size: 1rem;
-        color: #1e293b; /* Texto escuro para contraste */
-        font-weight: 500;
-        margin-left: 10px;
-        line-height: 1.4;
-    }
-    
-    .topic-text.done {
-        color: #94a3b8;
-        text-decoration: line-through;
-        opacity: 0.8;
-    }
-
-    .topic-date {
-        font-size: 0.75rem;
-        background-color: #dcfce7;
-        color: #166534;
-        padding: 2px 8px;
-        border-radius: 4px;
-        margin-left: 8px;
-        border: 1px solid #86efac;
-        white-space: nowrap;
-    }
-    
-    /* Estilo para Streamlit Expander ficar mais limpo */
-    .streamlit-expanderHeader {
-        background-color: white !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        color: #334155 !important;
-    }
-    
-    .streamlit-expanderContent {
-        background-color: white !important;
-        border-top: none !important;
-        padding-top: 10px !important;
-    }
-
-    /* ==========================================================================
-    FADE GERAL
-    ==========================================================================
-    */
-    .section-fade {
-        animation: sectionFadeIn 0.8s ease-out forwards;
-        opacity: 0;
-    }
-    .section-fade:nth-child(1) { animation-delay: 0.1s; }
-    .section-fade:nth-child(2) { animation-delay: 0.2s; }
-    .section-fade:nth-child(3) { animation-delay: 0.3s; }
-
-    /* Responsividade */
-    @media (max-width: 900px) {
-        .header-container { 
-            flex-direction: column; 
-            text-align: center; 
-            padding: 2rem; 
-            gap: 1.5rem; 
-            min-height: auto;
-        }
-        
-        /* Reset absolute positioning for mobile */
-        .header-logo, .header-info { 
-            position: static; 
-            transform: none; 
-            margin-bottom: 1rem;
-        }
-        
-        .header-content { text-align: center; }
-        .metric-value { font-size: 2.5rem; }
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# ================================================================================
-# 3. CONFIGURAÇÕES GERAIS E PALETA DE CORES (CONTRASTE AUMENTADO)
-# ================================================================================
-
-# IDs de Conexão
 SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
-
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
 
-# CORES NOVAS: Mais saturadas e com melhor contraste
-CORES = {
-    'LÍNGUA PORTUGUESA': '#DC2626',       # Vermelho Profundo
-    'RLM': '#059669',                     # Verde Esmeralda Escuro
-    'REALIDADE DE GOIÁS': '#2563EB',      # Azul Royal Vibrante
-    'LEGISLAÇÃO APLICADA': '#7C3AED',     # Roxo Neon Intenso
-    'CONHECIMENTOS ESPECÍFICOS': '#D97706'# Âmbar Queimado
+CORES_DISCIPLINAS = {
+    'LÍNGUA PORTUGUESA': '#ef4444',
+    'RLM': '#10b981',
+    'REALIDADE DE GOIÁS': '#3b82f6',
+    'LEGISLAÇÃO APLICADA': '#8b5cf6',
+    'CONHECIMENTOS ESPECÍFICOS': '#f59e0b'
 }
+
+# ================================================================================
+# 3. CSS MELHORADO (ESPAÇAMENTO OTIMIZADO + ANIMAÇÕES)
+# ================================================================================
+
+def injetar_css_otimizado():
+    # Detecta tema atual
+    tema = st.session_state.get('tema', 'claro')
+    
+    if tema == 'escuro':
+        bg_main = '#0f172a'
+        text_main = '#f1f5f9'
+        bg_card = '#1e293b'
+        border_card = '#334155'
+        bg_hover = '#334155'
+    else:
+        bg_main = '#f8fafc'
+        text_main = '#0f172a'
+        bg_card = '#ffffff'
+        border_card = '#e2e8f0'
+        bg_hover = '#ffffff'
+    
+    st.markdown(f"""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            box-sizing: border-box;
+        }}
+
+        [data-testid="stMainBlockContainer"] {{
+            background-color: {bg_main};
+            color: {text_main};
+            padding-top: 0.5rem;
+            padding-bottom: 3rem;
+        }}
+
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        header {{visibility: hidden;}}
+
+        /* HEADER COMPACTO */
+        .header-container {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            border: 5px solid #ffffff;
+            box-shadow: 0 20px 40px -10px rgba(30, 64, 175, 0.5);
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }}
+
+        .header-logo {{
+            position: absolute;
+            left: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }}
+
+        .header-logo img {{ 
+            max-width: 240px;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            transition: transform 0.3s ease;
+        }}
+        
+        .header-logo img:hover {{
+            transform: scale(1.02);
+        }}
+
+        .header-content {{ 
+            text-align: center;
+            z-index: 1;
+        }}
+
+        .header-content h1 {{ 
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+        }}
+        
+        .header-content p {{
+            margin-top: 0.3rem;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+        }}
+
+        .header-info {{ 
+            position: absolute;
+            top: 1.2rem;
+            right: 1.5rem;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }}
+        
+        .info-row {{
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.95);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }}
+
+        /* CHECKBOX COLADO AO TEXTO (ESPAÇAMENTO MÍNIMO) */
+        .topic-row {{
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0.2rem;
+            margin-bottom: 0;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }}
+        
+        .topic-row:hover {{
+            background-color: {bg_hover};
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transform: translateX(3px);
+        }}
+        
+        .topic-text {{
+            flex: 1;
+            font-size: 0.92rem;
+            color: {text_main};
+            padding-left: 0.2rem;
+            line-height: 1.4;
+            font-weight: 400;
+        }}
+        
+        .topic-text.done {{
+            color: #94a3b8;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }}
+        
+        .topic-date {{
+            font-size: 0.65rem;
+            color: #64748b;
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            white-space: nowrap;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }}
+
+        /* CARDS KPI UNIFORMES */
+        .metric-card {{ 
+            background: {bg_card};
+            padding: 1.8rem 1.2rem;
+            border-radius: 16px;
+            border: 1px solid {border_card};
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 140px;
+        }}
+        
+        .metric-card:hover {{ 
+            transform: translateY(-4px);
+            border-color: #3b82f6;
+            box-shadow: 0 12px 24px -5px rgba(59, 130, 246, 0.2);
+        }}
+        
+        .metric-value {{ 
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: {text_main};
+            line-height: 1;
+            margin-bottom: 0.4rem;
+        }}
+        
+        .metric-label {{
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+
+        /* BADGES GAMIFICAÇÃO */
+        .badge-container {{ 
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem;
+        }}
+        
+        .badge {{ 
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            border: 2px solid rgba(255,255,255,0.3);
+        }}
+        
+        .badge:nth-child(1) {{ animation-delay: 0.1s; }}
+        .badge:nth-child(2) {{ animation-delay: 0.2s; }}
+        .badge:nth-child(3) {{ animation-delay: 0.3s; }}
+        .badge:nth-child(4) {{ animation-delay: 0.4s; }}
+        .badge:nth-child(5) {{ animation-delay: 0.5s; }}
+
+        /* ANIMAÇÕES APRIMORADAS */
+        @keyframes popIn {{
+            0% {{ opacity: 0; transform: scale(0.5) rotate(-5deg); }}
+            70% {{ transform: scale(1.1) rotate(2deg); }}
+            100% {{ opacity: 1; transform: scale(1) rotate(0deg); }}
+        }}
+
+        @keyframes floatUp {{ 
+            0% {{ transform: translateY(100vh) scale(0.5); opacity: 0; }} 
+            20% {{ opacity: 0.8; }} 
+            100% {{ transform: translateY(-10vh) scale(0.5); opacity: 0; }} 
+        }}
+        
+        @keyframes glowPulse {{
+            0%, 100% {{ box-shadow: 0 0 5px rgba(59, 130, 246, 0.3); }}
+            50% {{ box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }}
+        }}
+
+        /* HOVER GLOW CHECKBOX */
+        input[type="checkbox"]:hover {{
+            animation: glowPulse 1s infinite;
+            cursor: pointer;
+        }}
+
+        /* PARTÍCULAS */
+        #sparkles-container {{ 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }}
+        
+        .spark {{ 
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatUp linear forwards;
+            mix-blend-mode: screen;
+        }}
+
+        /* HEATMAP CONTAINER COMPACTO */
+        .heatmap-container {{
+            background: {bg_card};
+            padding: 1.2rem;
+            border-radius: 14px;
+            border: 1px solid {border_card};
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }}
+
+        /* CONFETTI (100% COMPLETION) */
+        .confetti {{
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f0f;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+        }}
+        
+        @keyframes confetti-fall {{
+            to {{ transform: translateY(100vh) rotate(360deg); opacity: 0; }}
+        }}
+
+        /* RESPONSIVO MOBILE */
+        @media (max-width: 900px) {{
+            .header-container {{
+                flex-direction: column;
+                padding: 1.5rem 1rem;
+            }}
+            .header-logo {{
+                position: static;
+                margin-bottom: 1rem;
+                transform: none;
+            }}
+            .header-info {{
+                position: static;
+                margin-top: 1rem;
+                text-align: center;
+            }}
+            .header-content h1 {{ font-size: 1.8rem; }}
+            .metric-card {{ min-height: 120px; }}
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+def injetar_javascript_particulas():
+    st.markdown("""
+    <div id="sparkles-container"></div>
+    <script>
+        function createSparkle() {
+            const container = document.getElementById('sparkles-container');
+            if (!container) return;
+            
+            const el = document.createElement('div');
+            el.classList.add('spark');
+            
+            const colors = [
+                'rgba(37, 99, 235, 0.5)',
+                'rgba(22, 163, 74, 0.5)',
+                'rgba(234, 88, 12, 0.5)',
+                'rgba(147, 51, 234, 0.5)',
+                'rgba(236, 72, 153, 0.5)'
+            ];
+            el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            
+            const size = Math.random() * 10 + 3;
+            el.style.width = size + 'px';
+            el.style.height = size + 'px';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.animationDuration = (Math.random() * 4 + 4) + 's';
+            
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 8000);
+        }
+        
+        setInterval(createSparkle, 300);
+    </script>
+    """, unsafe_allow_html=True)
+
+def criar_confetti():
+    """Confetti on 100% completion"""
+    st.markdown("""
+    <script>
+        function launchConfetti() {
+            for(let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = ['#ef4444','#10b981','#3b82f6','#8b5cf6','#f59e0b'][Math.floor(Math.random()*5)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+        launchConfetti();
+    </script>
+    """, unsafe_allow_html=True)
 
 # ================================================================================
 # 4. BACKEND (GOOGLE SHEETS)
 # ================================================================================
 
-def conectar_google_sheets():
+@st.cache_resource
+def conectar_google_sheets() -> Optional[gspread.Client]:
     try:
         if 'gcp_service_account' in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
@@ -373,32 +456,37 @@ def conectar_google_sheets():
             with open('credentials.json', 'r') as f:
                 creds_dict = json.load(f)
         
-        escopos = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+        escopos = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        
         credenciais = Credentials.from_service_account_info(creds_dict, scopes=escopos)
         client = gspread.authorize(credenciais)
         return client
     except Exception as e:
-        st.error(f"Erro de conexão: {e}")
+        st.error(f"⛔ Erro na Conexão: {e}")
         return None
 
-@st.cache_data(ttl=15)
-def carregar_dados_planilha(_client):
+@st.cache_data(ttl=10)
+def carregar_dados(_client) -> Optional[pd.DataFrame]:
     try:
         ws = _client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        dados = ws.get_all_records()
-        df = pd.DataFrame(dados)
+        dados_raw = ws.get_all_records()
+        df = pd.DataFrame(dados_raw)
         
-        if df.empty: return None
+        if df.empty:
+            return None
             
         df['Status'] = df['Status'].astype(str).str.upper().str.strip()
         df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES', 'OK'])
         
         coluna_data = None
-        possiveis_nomes = ['Data', 'Data Estudo', 'Data Conclusão', 'Date']
-        for nome in possiveis_nomes:
+        for nome in ['Data', 'Data Estudo', 'Date', 'Conclusão']:
             if nome in df.columns:
                 coluna_data = nome
                 break
+        
         if not coluna_data and len(df.columns) >= 5:
             coluna_data = df.columns[4]
             
@@ -406,246 +494,445 @@ def carregar_dados_planilha(_client):
             df['Data_Real'] = pd.to_datetime(df[coluna_data], format='%d/%m/%Y', errors='coerce')
         else:
             df['Data_Real'] = pd.NaT
+            
         return df
     except Exception as e:
-        st.error(f"Erro nos dados: {e}")
+        st.error(f"⛔ Erro ao processar dados: {e}")
         return None
 
-def atualizar_status(client, linha_planilha, novo_status_bool):
+def atualizar_lote(client, updates: List[Dict]) -> bool:
+    """Atualização em lote (batch) para performance"""
     try:
         ws = client.open_by_key(SPREADSHEET_ID).worksheet(WORKSHEET_NAME)
-        status_str = 'TRUE' if novo_status_bool else 'FALSE'
-        ws.update_cell(linha_planilha, 4, status_str)
-        if novo_status_bool:
-            ws.update_cell(linha_planilha, 5, datetime.now().strftime('%d/%m/%Y'))
-        else:
-            ws.update_cell(linha_planilha, 5, '')
+        
+        for update in updates:
+            linha = update['linha']
+            status = 'TRUE' if update['status'] else 'FALSE'
+            data = datetime.now().strftime('%d/%m/%Y') if update['status'] else ''
+            
+            range_celulas = f"D{linha}:E{linha}"
+            ws.update(range_celulas, [[status, data]])
+        
         return True
     except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+        st.error(f"⛔ Erro ao salvar: {e}")
         return False
 
 @st.cache_data(ttl=600)
-def obter_temperatura_local():
+def obter_clima_local() -> str:
     try:
-        url = 'https://api.open-meteo.com/v1/forecast?latitude=-15.8267&longitude=-48.9626&current=temperature_2m&timezone=America/Sao_Paulo'
-        r = requests.get(url, timeout=2)
+        url = 'https://api.open-meteo.com/v1/forecast'
+        params = {
+            'latitude': -16.6869,
+            'longitude': -49.2648,
+            'current': 'temperature_2m',
+            'timezone': 'America/Sao_Paulo'
+        }
+        r = requests.get(url, params=params, timeout=2)
         if r.status_code == 200:
-            return round(r.json()['current']['temperature_2m'], 1)
-    except: pass
+            temp = r.json()['current']['temperature_2m']
+            return f"{round(temp, 1)}°C"
+    except:
+        pass
     return "--"
 
 # ================================================================================
-# 5. VISUALIZAÇÃO (GRÁFICOS AMPLIADOS)
+# 5. VISUALIZAÇÃO (GRÁFICOS)
 # ================================================================================
 
-def criar_heatmap_produtividade(df):
-    df_filtrado = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
-    if df_filtrado.empty: return None
+def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
+    df_validos = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     
-    contagem_diaria = df_filtrado.groupby('Data_Real').size().reset_index(name='count')
+    if df_validos.empty:
+        return None
+        
+    dados_heatmap = df_validos.groupby('Data_Real').size().reset_index(name='count')
     
-    chart = alt.Chart(contagem_diaria).mark_rect(cornerRadius=3, stroke='white', strokeWidth=2).encode(
-        x=alt.X('yearmonthdate(Data_Real):O', title=None, axis=alt.Axis(format='%d/%m', labelColor='#64748b')),
-        y=alt.Y('day(Data_Real):O', title=None, axis=None),
-        color=alt.Color('count:Q', scale=alt.Scale(scheme='greens'), legend=None),
-        tooltip=['Data_Real', 'count']
-    ).properties(height=150, width='container').configure_view(strokeWidth=0).configure_axis(grid=False, domain=False)
+    chart = alt.Chart(dados_heatmap).mark_rect(
+        cornerRadius=3,
+        stroke='white',
+        strokeWidth=1.5
+    ).encode(
+        x=alt.X('yearmonthdate(Data_Real):O',
+                title=None,
+                axis=alt.Axis(format='%d/%m', labelColor='#64748b', tickCount=10)
+        ),
+        y=alt.Y('day(Data_Real):O',
+                title=None,
+                axis=alt.Axis(labels=False, ticks=False)
+        ),
+        color=alt.Color('count:Q',
+                        scale=alt.Scale(scheme='greens'),
+                        legend=None
+        ),
+        tooltip=[
+            alt.Tooltip('Data_Real', title='Data', format='%d/%m/%Y'),
+            alt.Tooltip('count', title='Tópicos Estudados')
+        ]
+    ).properties(
+        height=120,
+        width='container'
+    ).configure_view(
+        strokeWidth=0
+    ).configure_axis(
+        grid=False,
+        domain=False
+    )
+    
     return chart
 
-def criar_grafico_donut(concluido, total, cor_primaria):
-    """
-    Gráfico de Donut Ampliado para melhor visualização.
-    Correção do erro de validação (radius removido do mark_text e texto isolado).
-    """
+def renderizar_donut(concluido: int, total: int, cor_hex: str) -> alt.Chart:
     restante = total - concluido
-    dados = pd.DataFrame({'Categoria': ['Concluído', 'Restante'], 'Valor': [concluido, restante]})
+    dados = pd.DataFrame({
+        'Estado': ['Concluído', 'Restante'],
+        'Valor': [concluido, restante]
+    })
     
-    base = alt.Chart(dados).encode(theta=alt.Theta("Valor", stack=True))
-    
-    # Arco do Donut
-    pie = base.mark_arc(
-        outerRadius=110,
-        innerRadius=85,
-        stroke='#e2e8f0', # Cinza clarinho solicitado
-        strokeWidth=2,    # Borda de 2px
-        cornerRadius=6
-    ).encode(
-        color=alt.Color("Categoria", 
-                        scale=alt.Scale(domain=['Concluído', 'Restante'], range=[cor_primaria, '#f1f5f9']), 
-                        legend=None),
-        tooltip=["Categoria", "Valor"],
-        order=alt.Order("Categoria", sort="descending")
+    base = alt.Chart(dados).encode(
+        theta=alt.Theta("Valor", stack=True)
     )
     
-    percentual = int(concluido/total*100) if total > 0 else 0
+    pie = base.mark_arc(
+        outerRadius=70,
+        innerRadius=54,
+        stroke='white',
+        strokeWidth=3,
+        cornerRadius=5
+    ).encode(
+        color=alt.Color("Estado",
+                        scale=alt.Scale(domain=['Concluído', 'Restante'],
+                                        range=[cor_hex, '#e2e8f0']),
+                        legend=None),
+        tooltip=["Estado", "Valor"]
+    )
     
-    # Texto Central (Criado como um gráfico independente para evitar herança de theta e erros de validação)
-    texto = alt.Chart(pd.DataFrame({'dummy': [1]})).mark_text(
-        size=28, 
-        color=cor_primaria, 
-        fontWeight='bold', 
+    pct = int(concluido/total*100) if total > 0 else 0
+    texto = base.mark_text(
+        radius=0,
+        size=20,
+        color=cor_hex,
+        fontWeight='bold',
         font='Inter'
     ).encode(
-        text=alt.value(f"{percentual}%")
+        text=alt.value(f"{pct}%")
     )
     
-    # Área do gráfico e fundo transparente
-    return (pie + texto).properties(
-        width=280, 
-        height=280
-    ).configure(
-        background='transparent' # Background Transparente
-    ).configure_view(
-        stroke=None
-    )
+    return (pie + texto).properties(width=160, height=160)
 
 # ================================================================================
-# 6. APP PRINCIPAL
+# 6. GAMIFICAÇÃO
+# ================================================================================
+
+def calcular_conquistas(total_estudado: int, percentual: float) -> List[str]:
+    badges = []
+    
+    if percentual >= 10: badges.append("🚀 Start (10%)")
+    if percentual >= 25: badges.append("🏃 Em Ritmo (25%)")
+    if percentual >= 50: badges.append("🔥 Halfway (50%)")
+    if percentual >= 75: badges.append("💎 Elite (75%)")
+    if percentual >= 90: badges.append("👑 Mestre (90%)")
+    if total_estudado >= 50: badges.append("📚 Leitor Ávido")
+    if total_estudado >= 100: badges.append("🧠 Enciclopédia")
+    
+    return badges
+
+def calcular_streak(df: pd.DataFrame) -> int:
+    """Calcula dias consecutivos de estudo"""
+    datas = df[df['Estudado'] & df['Data_Real'].notnull()]['Data_Real'].dt.date.unique()
+    
+    if len(datas) == 0:
+        return 0
+    
+    datas_sorted = sorted(datas, reverse=True)
+    streak = 1
+    
+    for i in range(len(datas_sorted) - 1):
+        diff = (datas_sorted[i] - datas_sorted[i+1]).days
+        if diff == 1:
+            streak += 1
+        else:
+            break
+    
+    return streak
+
+# ================================================================================
+# 7. MAIN APP
 # ================================================================================
 
 def main():
-    # Header
-    temp = obter_temperatura_local()
-    data_formatada = datetime.now().strftime('%d/%m')
+    # Inicializa tema
+    if 'tema' not in st.session_state:
+        st.session_state['tema'] = 'claro'
     
-    # Texto com Emojis
-    info_texto = f"📍 Goiânia | 📅 {data_formatada} | 🌤️ {temp}ºC"
+    # Aplica CSS
+    injetar_css_otimizado()
+    injetar_javascript_particulas()
+    
+    # Dados contextuais
+    data_hoje = datetime.now().strftime('%d/%m/%Y')
+    temperatura = obter_clima_local()
 
+    # HEADER
     st.markdown(f"""
-    <div class="header-container section-fade">
+    <div class="header-container">
         <div class="header-logo">
             <img src="{LOGO_URL}" alt="Logo">
         </div>
         <div class="header-content">
-            <h1>CONCURSO CÂMARA DE GOIÂNIA</h1>
-            <p style="color:#64748b; margin-top:5px; font-weight:500;">Performance • Constância • Aprovação</p>
+            <h1>DASHBOARD ULTIMATE v3.1</h1>
+            <p>Foco • Constância • Aprovação</p>
         </div>
         <div class="header-info">
-            <div class="info-row">{info_texto}</div>
+            <div class="info-row">📍 GOIÂNIA - GO</div>
+            <div class="info-row">📅 {data_hoje}</div>
+            <div class="info-row">🌡️ {temperatura}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     # Conexão
     client = conectar_google_sheets()
-    if not client: st.stop()
-    
-    df = carregar_dados_planilha(client)
-    if df is None: st.warning("Carregando dados..."); st.stop()
+    if not client:
+        st.stop()
+        
+    df = carregar_dados(client)
+    if df is None:
+        st.warning("Carregando...")
+        st.stop()
 
-    # Sidebar
-    cargos = df['Cargo'].unique()
-    cargo_sel = st.sidebar.selectbox("🎯 Selecione o Cargo:", cargos)
-    df_cargo = df[df['Cargo'] == cargo_sel].copy()
+    # SIDEBAR
+    with st.sidebar:
+        st.header("⚙️ Controles")
+        
+        # Toggle Tema
+        tema_atual = st.session_state['tema']
+        if st.button(f"🌓 Tema: {tema_atual.title()}", use_container_width=True):
+            st.session_state['tema'] = 'escuro' if tema_atual == 'claro' else 'claro'
+            st.rerun()
+        
+        st.divider()
+        
+        lista_cargos = df['Cargo'].unique()
+        cargo_selecionado = st.selectbox("Cargo:", lista_cargos)
+        
+        st.divider()
+        
+        if st.button("🔄 Sincronizar", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+        
+        st.divider()
+        st.caption("v3.1 Otimizado")
+
+    # Filtro
+    df_cargo = df[df['Cargo'] == cargo_selecionado].copy()
     df_cargo['linha_planilha'] = df_cargo.index + 2
 
+    # Métricas
+    total_topicos = len(df_cargo)
+    total_concluidos = df_cargo['Estudado'].sum()
+    total_restantes = total_topicos - total_concluidos
+    progresso_percentual = (total_concluidos / total_topicos * 100) if total_topicos > 0 else 0
+    streak_dias = calcular_streak(df_cargo)
+
+    # Confetti 100%
+    if progresso_percentual >= 100 and 'confetti_100' not in st.session_state:
+        criar_confetti()
+        st.session_state['confetti_100'] = True
+    elif progresso_percentual < 100 and 'confetti_100' in st.session_state:
+        del st.session_state['confetti_100']
+
+    # BADGES
+    conquistas = calcular_conquistas(total_concluidos, progresso_percentual)
+    
+    html_badges = '<div class="badge-container">'
+    if conquistas:
+        for badge in conquistas:
+            html_badges += f'<div class="badge">✨ {badge}</div>'
+    else:
+        html_badges += '<div class="badge" style="background:#cbd5e1; color:#64748b;">🔒 Continue...</div>'
+    html_badges += '</div>'
+    
+    st.markdown(html_badges, unsafe_allow_html=True)
+
+    # ESPAÇAMENTO 2 LINHAS
+    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
+
     # KPIs
-    total = len(df_cargo)
-    concluidos = df_cargo['Estudado'].sum()
-    restantes = total - concluidos
-    porcentagem = (concluidos / total * 100) if total > 0 else 0
-
-    # Barra de Progresso Animada (NOVA)
-    st.markdown(f"""
-    <div class="section-fade">
-        <div style="display:flex; justify-content:space-between; font-weight:700; color:#475569; margin-bottom:5px;">
-            <span>Progresso Global</span>
-            <span>{porcentagem:.1f}%</span>
-        </div>
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: {porcentagem}%;"></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Cards
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f'<div class="metric-card section-fade"><div class="metric-value" style="color:#3b82f6">{total}</div><div class="metric-label">Total Tópicos</div></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="metric-card section-fade"><div class="metric-value" style="color:#10b981">{concluidos}</div><div class="metric-label">Concluídos</div></div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="metric-card section-fade"><div class="metric-value" style="color:#ef4444">{restantes}</div><div class="metric-label">Restantes</div></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="metric-card section-fade"><div class="metric-value" style="color:#8b5cf6">{porcentagem:.0f}%</div><div class="metric-label">Conquista</div></div>', unsafe_allow_html=True)
-
-    st.write("")
+    col1, col2, col3, col4, col5 = st.columns(5)
     
-    # Separador
-    st.markdown("---")
-
-    # Heatmap
-    st.markdown("### 🔥 Ritmo de Estudos")
-    grafico_heatmap = criar_heatmap_produtividade(df_cargo)
-    if grafico_heatmap: st.altair_chart(grafico_heatmap, use_container_width=True)
-    else: st.info("Histórico vazio. Estude hoje para marcar o gráfico!")
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color:#3b82f6">{total_topicos}</div>
+            <div class="metric-label">Total</div>
+        </div>""", unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color:#22c55e">{total_concluidos}</div>
+            <div class="metric-label">Feitos</div>
+        </div>""", unsafe_allow_html=True)
+        
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color:#ef4444">{total_restantes}</div>
+            <div class="metric-label">Faltam</div>
+        </div>""", unsafe_allow_html=True)
+        
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color:#8b5cf6">{progresso_percentual:.0f}%</div>
+            <div class="metric-label">Progresso</div>
+        </div>""", unsafe_allow_html=True)
     
-    # Separador
-    st.markdown("---")
+    with col5:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color:#f59e0b">{streak_dias}</div>
+            <div class="metric-label">🔥 Streak</div>
+        </div>""", unsafe_allow_html=True)
 
-    # Gráficos de Donut Ampliados
+    # ESPAÇAMENTO 2 LINHAS
+    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
+
+    # HEATMAP
+    st.markdown("### 🔥 Histórico de Estudos")
+    st.markdown('<div class="heatmap-container">', unsafe_allow_html=True)
+    
+    grafico_heatmap = renderizar_heatmap(df_cargo)
+    
+    if grafico_heatmap:
+        st.altair_chart(grafico_heatmap, use_container_width=True)
+    else:
+        st.info("⚠️ Marque tópicos para ver seu heatmap!")
+        
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # ESPAÇAMENTO 2 LINHAS
+    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
+
+    # DONUTS
     st.markdown("### 🍩 Progresso por Disciplina")
-    stats = df_cargo.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
-    stats.columns = ['Disciplina', 'Estudados', 'Total']
     
-    cols = st.columns(3)
-    for i, row in stats.iterrows():
-        with cols[i % 3]:
-            nome = row['Disciplina']
-            cor = CORES.get(nome, '#475569')
-            # Título do Gráfico com Cor
-            st.markdown(f"<h4 style='text-align:center; color:{cor}; margin-bottom:0;'>{nome}</h4>", unsafe_allow_html=True)
-            chart = criar_grafico_donut(row['Estudados'], row['Total'], cor)
-            st.altair_chart(chart, use_container_width=True)
-
-    # Separador
-    st.markdown("---")
-
-    # Lista de Conteúdos (EXPANSÍVEL)
-    st.markdown("### 📚 Conteúdo Programático")
-    lista_disc = sorted(df_cargo['Disciplinas'].unique().tolist())
-    filtro = st.selectbox("Filtrar Disciplina:", ["Todas"] + lista_disc)
+    stats_disciplina = df_cargo.groupby('Disciplinas').agg({
+        'Estudado': ['sum', 'count']
+    }).reset_index()
+    stats_disciplina.columns = ['Disciplina', 'Estudados', 'Total']
     
-    view_df = df_cargo if filtro == "Todas" else df_cargo[df_cargo['Disciplinas'] == filtro]
-
-    for disc in view_df['Disciplinas'].unique():
-        sub = view_df[view_df['Disciplinas'] == disc]
-        cor = CORES.get(disc, '#333')
-        concluidos_disc = sub['Estudado'].sum()
-        total_disc = len(sub)
+    colunas_grid = st.columns(min(3, len(stats_disciplina)))
+    
+    for idx, row in stats_disciplina.iterrows():
+        coluna_atual = colunas_grid[idx % len(colunas_grid)]
         
-        # Título do Expander com contagem
-        expander_label = f"**{disc}** ({concluidos_disc}/{total_disc})"
-        
-        with st.expander(expander_label, expanded=False):
-            # Barra colorida para manter a identidade visual dentro do expander
-            st.markdown(f"<div style='height:4px; width:100%; background-color:{cor}; border-radius:2px; margin-bottom:15px; opacity:0.8;'></div>", unsafe_allow_html=True)
+        with coluna_atual:
+            nome_disciplina = row['Disciplina']
+            cor_tema = CORES_DISCIPLINAS.get(nome_disciplina, '#64748b')
             
-            for idx, row in sub.iterrows():
-                # Ajuste de Colunas: Checkbox muito próximo do texto (0.03 vs 0.97)
-                c_chk, c_txt = st.columns([0.03, 0.97])
-                
-                with c_chk:
-                    key = f"chk_{idx}_{row['linha_planilha']}"
-                    val = st.checkbox("Status", value=bool(row['Estudado']), key=key, label_visibility="collapsed")
-                    
-                    if val != bool(row['Estudado']):
-                        with st.spinner("💾"):
-                            if atualizar_status(client, int(row['linha_planilha']), val):
-                                st.toast("Salvo!", icon="✅")
-                                time.sleep(0.5)
-                                st.cache_data.clear()
-                                st.rerun()
+            st.markdown(f"""
+            <div style='text-align:center; font-weight:700; color:{cor_tema}; margin-bottom:8px; font-size:0.9rem;'>
+                {nome_disciplina}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            chart_donut = renderizar_donut(row['Estudados'], row['Total'], cor_tema)
+            st.altair_chart(chart_donut, use_container_width=True)
 
-                css_class = "done" if row['Estudado'] else ""
-                badge = f"<span class='topic-date'>Em: {row['Data_Real'].strftime('%d/%m')}</span>" if (row['Estudado'] and pd.notnull(row['Data_Real'])) else ""
+    # ESPAÇAMENTO 2 LINHAS
+    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
+
+    # CHECKLIST COM FORMS POR DISCIPLINA
+    st.markdown("### 📚 Checklist de Conteúdos")
+    
+    todas_disciplinas = sorted(df_cargo['Disciplinas'].unique().tolist())
+    filtro_disciplina = st.selectbox("Filtrar:", ["Todas"] + todas_disciplinas)
+    
+    if filtro_disciplina != "Todas":
+        df_visualizacao = df_cargo[df_cargo['Disciplinas'] == filtro_disciplina]
+    else:
+        df_visualizacao = df_cargo
+
+    # Renderiza por disciplina com FORM
+    for disciplina in df_visualizacao['Disciplinas'].unique():
+        sub_df = df_visualizacao[df_visualizacao['Disciplinas'] == disciplina]
+        cor_titulo = CORES_DISCIPLINAS.get(disciplina, '#333')
+        
+        st.markdown(f"""
+        <div style="margin-top:1.5rem; border-bottom:3px solid {cor_titulo}; padding-bottom:4px; margin-bottom:1rem;">
+            <strong style="color:{cor_titulo}; font-size:1.1rem">{disciplina}</strong>
+            <span style="float:right; color:#94a3b8; font-size:0.85rem; font-weight:600;">
+                {sub_df['Estudado'].sum()} / {len(sub_df)}
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # FORM para batch update
+        with st.form(key=f"form_{disciplina}"):
+            updates_pendentes = []
+            
+            for _, row in sub_df.iterrows():
+                col_check, col_texto = st.columns([0.02, 0.98])
                 
-                c_txt.markdown(f"""
+                with col_check:
+                    key_widget = f"chk_{row['linha_planilha']}"
+                    
+                    is_checked = st.checkbox(
+                        "",
+                        value=bool(row['Estudado']),
+                        key=key_widget,
+                        label_visibility="collapsed"
+                    )
+                    
+                    if is_checked != bool(row['Estudado']):
+                        updates_pendentes.append({
+                            'linha': int(row['linha_planilha']),
+                            'status': is_checked
+                        })
+                
+                classe_css = "done" if row['Estudado'] else ""
+                badge_data_html = ""
+                
+                if row['Estudado'] and pd.notnull(row['Data_Real']):
+                    data_str = row['Data_Real'].strftime('%d/%m')
+                    badge_data_html = f"<span class='topic-date'>{data_str}</span>"
+                
+                col_texto.markdown(f"""
                 <div class="topic-row">
-                    <div class="topic-text {css_class}">
-                        {row['Conteúdos']} {badge}
+                    <div class="topic-text {classe_css}">
+                        {row['Conteúdos']} {badge_data_html}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+            
+            # Botão submit
+            submitted = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
+            
+            if submitted and updates_pendentes:
+                with st.spinner("Sincronizando..."):
+                    sucesso = atualizar_lote(client, updates_pendentes)
+                    
+                    if sucesso:
+                        st.toast("✅ Salvo com sucesso!", icon="✅")
+                        time.sleep(0.8)
+                        st.cache_data.clear()
+                        st.rerun()
+                    else:
+                        st.error("Erro ao salvar")
 
-    st.markdown("<br><br><div style='text-align:center; color:#cbd5e1; font-size:0.8rem;'>Dashboard Ultimate v4.4 • High Contrast Edition</div>", unsafe_allow_html=True)
+    # ESPAÇAMENTO 2 LINHAS
+    st.markdown("<div style='margin-bottom:1rem'></div>", unsafe_allow_html=True)
+
+    # RODAPÉ
+    st.markdown(f"""
+    <div style="text-align:center; color:#94a3b8; padding:3rem 0 1rem 0; font-size:0.75rem; border-top:1px solid #e2e8f0; margin-top:3rem;">
+        ✨ Dashboard Ultimate v3.1 - UI/UX Otimizado<br>
+        Python + Streamlit • {datetime.now().year}<br>
+        Sync: {datetime.now().strftime("%H:%M:%S")}
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
