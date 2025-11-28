@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-📊 DASHBOARD DE ESTUDOS - VERSÃO 7.2 (CARGO NA SIDEBAR + FIX ÍCONES)
+📊 DASHBOARD DE ESTUDOS - VERSÃO 7.5 (CORREÇÃO CHECKLIST + BOTÃO SALVAR MELHOR)
 ================================================================================
 """
 
@@ -49,9 +49,10 @@ WORKSHEET_NAME = 'Registro'
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
 
 # Cores
-COR_CONCLUIDO = '#15803d'  # Verde Escuro
-COR_PENDENTE = '#b91c1c'   # Vermelho Escuro
+COR_CONCLUIDO = '#22c55e'  # Verde Vivo
+COR_PENDENTE = '#ef4444'   # Vermelho Vivo
 COR_FUNDO_DONUT = '#f1f5f9' 
+COR_DESTAQUE = '#2563eb'   # Azul
 
 # ================================================================================
 # 3. FUNÇÕES BACKEND
@@ -94,7 +95,9 @@ def carregar_dados(_client) -> Optional[pd.DataFrame]:
         df = pd.DataFrame(dados_raw)
         if df.empty: return None
         
+        # Conversão Robusta de Status
         df['Status'] = df['Status'].astype(str).str.upper().str.strip()
+        # Define o booleano base
         df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES', 'OK'])
         
         col_data = None
@@ -122,15 +125,22 @@ def atualizar_lote(client, updates: List[Dict]) -> bool:
     except:
         return False
 
-def calcular_insights(df: pd.DataFrame) -> str:
-    df_ok = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
-    if df_ok.empty: return "Sem dados de estudo."
+def calcular_previsao(df: pd.DataFrame, total_restante: int) -> str:
+    if total_restante == 0: return "Concluído! 🎉"
+    df_feitos = df[df['Estudado'] & df['Data_Real'].notnull()]
+    if df_feitos.empty: return "--"
+    
+    inicio = df_feitos['Data_Real'].min()
     hoje = datetime.now()
-    df_ok['dias'] = (hoje - df_ok['Data_Real']).dt.days
-    agrupado = df_ok.groupby('Disciplinas')['dias'].min().reset_index()
-    urgente = agrupado[agrupado['dias'] > 7].sort_values('dias', ascending=False)
-    if not urgente.empty: return f"⚠️ Revisar: **{urgente.iloc[0]['Disciplinas']}**"
-    return "✅ Revisões em dia!"
+    dias_corridos = (hoje - inicio).days
+    if dias_corridos < 1: dias_corridos = 1
+    
+    velocidade = len(df_feitos) / dias_corridos
+    if velocidade <= 0: return "--"
+    
+    dias_faltantes = total_restante / velocidade
+    data_fim = hoje + timedelta(days=dias_faltantes)
+    return data_fim.strftime("%d/%b")
 
 # ================================================================================
 # 4. VISUALIZAÇÃO E ESTILO
@@ -151,18 +161,24 @@ def injetar_css_profissional():
     st.markdown(f"""
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* FIX: Aplica fonte apenas em elementos de texto para não quebrar ícones */
         html, body, [class*="css"], [data-testid="stMarkdownContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {{
             font-family: 'Nunito', sans-serif;
         }}
         
         [data-testid="stMainBlockContainer"] {{ background-color: {bg_main}; padding: 2rem; max-width: 1600px; }}
         
+        /* ANIMAÇÃO HEADER */
+        @keyframes slideDown {{
+            from {{ transform: translateY(-50px); opacity: 0; }}
+            to {{ transform: translateY(0); opacity: 1; }}
+        }}
+
         /* HEADER 300PX */
         .header-container {{
             background: {header_bg}; border-radius: 24px; padding: 0 3rem;
             margin-bottom: 3rem; display: flex; align-items: center; justify-content: space-between;
             box-shadow: {shadow}; height: 300px; position: relative; border: 1px solid rgba(0,0,0,0.05);
+            animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }}
         .header-left {{ flex: 0 0 30%; height: 100%; display: flex; align-items: center; z-index: 2; }}
         .header-logo {{ height: 90%; object-fit: contain; }}
@@ -176,36 +192,47 @@ def injetar_css_profissional():
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }}
 
-        /* CARDS DE DISCIPLINA (Container Nativo) */
+        /* TÍTULOS */
+        .section-title-wrapper {{ margin: 2rem 0 1.5rem 0; display: flex; align-items: center; }}
+        .section-title {{
+            font-size: 1.5rem; font-weight: 800; color: {txt}; position: relative;
+            padding-bottom: 8px; text-transform: uppercase; letter-spacing: -0.5px;
+        }}
+        .section-title::after {{
+            content: ''; position: absolute; left: 0; bottom: 0; width: 100%;
+            height: 4px; background: {COR_DESTAQUE}; border-radius: 2px;
+        }}
+
+        /* CARDS */
         [data-testid="stVerticalBlockBorderWrapper"] {{
-            border-radius: 24px !important;
-            border: 1px solid #e2e8f0 !important;
-            background-color: {bg_card} !important;
-            box-shadow: {shadow} !important;
-            padding: 2rem 1rem !important;
-            transition: transform 0.3s ease;
+            border-radius: 24px !important; border: 1px solid #e2e8f0 !important;
+            background-color: {bg_card} !important; box-shadow: {shadow} !important;
+            padding: 2rem 1rem !important; transition: all 0.3s ease;
         }}
         [data-testid="stVerticalBlockBorderWrapper"]:hover {{
-            transform: translateY(-5px);
-            border-color: #2563eb !important;
+            transform: translateY(-5px); border-color: {COR_DESTAQUE} !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
         }}
 
         /* KPI CARDS */
-        .kpi-box {{ background: {bg_card}; border-radius: 16px; padding: 1.5rem; text-align: center; box-shadow: {shadow}; }}
+        .kpi-box {{ 
+            background: {bg_card}; border-radius: 16px; padding: 1.5rem; text-align: center; 
+            box-shadow: {shadow}; border: 1px solid #e2e8f0; transition: all 0.3s ease;
+        }}
+        .kpi-box:hover {{ transform: translateY(-5px); border-color: {COR_DESTAQUE}; }}
         .kpi-label {{ font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; }}
         .kpi-value {{ font-size: 2.5rem; font-weight: 800; color: {txt}; margin: 0.5rem 0; }}
-
-        /* TÍTULOS DENTRO DO CARD */
-        .card-h1 {{ font-size: 1.1rem; font-weight: 800; text-align: center; color: {txt}; text-transform: uppercase; margin-bottom: 0.25rem; min-height: 3rem; display: flex; align-items: center; justify-content: center; }}
-        .card-h2 {{ font-size: 0.9rem; font-weight: 600; text-align: center; color: #64748b; background: {bg_main}; border-radius: 20px; padding: 0.25rem 1rem; width: fit-content; margin: 0 auto 1.5rem auto; }}
 
         /* CHECKLIST */
         .stExpander {{ border-radius: 12px; border: 1px solid #e2e8f0; background: {bg_card}; }}
         .topic-row {{ padding: 0.75rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; }}
-        .topic-done {{ text-decoration: line-through; color: #94a3b8; }}
+        .topic-content {{ flex: 1; margin-left: 1rem; font-size: 0.95rem; color: {txt}; }}
+        .topic-done {{ text-decoration: line-through; color: #94a3b8 !important; }}
+        .topic-date {{ font-size: 0.75rem; font-weight: 700; background: {COR_DESTAQUE}; color: white; padding: 2px 8px; border-radius: 4px; }}
         
-        /* SIDEBAR */
-        [data-testid="stSidebar"] {{ background-color: {bg_card}; border-right: 1px solid #e2e8f0; }}
+        /* TEXTO CARD DONUT */
+        .card-h1 {{ font-size: 1.1rem; font-weight: 800; text-align: center; color: {txt}; text-transform: uppercase; min-height: 3rem; display: flex; align-items: center; justify-content: center; }}
+        .card-h2 {{ font-size: 0.9rem; font-weight: 600; text-align: center; color: #64748b; background: {bg_main}; border-radius: 20px; padding: 0.25rem 1rem; width: fit-content; margin: 0.5rem auto 1.5rem auto; }}
 
         @media (max-width: 992px) {{
             .header-container {{ height: auto; flex-direction: column; padding: 2rem; gap: 1.5rem; }}
@@ -242,12 +269,15 @@ def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
     df_ok = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     if df_ok.empty: return None
     dados = df_ok.groupby('Data_Real').size().reset_index(name='Qtd')
+    
     return alt.Chart(dados).mark_rect(cornerRadius=4, stroke='white', strokeWidth=2).encode(
         x=alt.X('yearmonthdate(Data_Real):O', title=None, axis=alt.Axis(format='%d/%m', labelFontSize=10)),
         y=alt.Y('day(Data_Real):O', title=None, axis=alt.Axis(labels=False, ticks=False, domain=False)),
-        color=alt.Color('Qtd:Q', scale=alt.Scale(range=['#dcfce7', '#166534']), legend=None),
+        color=alt.Color('Qtd:Q', scale=alt.Scale(range=['#dcfce7', '#15803d']), legend=None),
         tooltip=[alt.Tooltip('Data_Real', format='%d/%m')]
-    ).properties(height=180, width='container').configure_view(strokeWidth=0).configure_axis(grid=False)
+    ).properties(
+        height=180, width='container', background='transparent'
+    ).configure_view(strokeWidth=0).configure_axis(grid=False)
 
 # ================================================================================
 # 5. MAIN
@@ -262,17 +292,14 @@ def main():
     data_txt = f"{agora.day}/{meses[agora.month]}"
     clima = obter_clima_local()
 
-    # --- DADOS ---
-    client = conectar_google_sheets()
-    if not client: st.stop()
-    df = carregar_dados(client)
-    if df is None: st.warning("Carregando..."); st.stop()
-
     # --- SIDEBAR ---
     with st.sidebar:
         st.markdown("### ⚙️ Configurações")
+        client = conectar_google_sheets()
+        if not client: st.stop()
+        df = carregar_dados(client)
+        if df is None: st.warning("Carregando..."); st.stop()
         
-        # SELEÇÃO DE CARGO (Movido para cá)
         cargos = sorted(df['Cargo'].unique().tolist())
         st.markdown("**Selecione o Cargo:**")
         cargo_sel = st.selectbox("Cargo", cargos, label_visibility="collapsed")
@@ -289,7 +316,7 @@ def main():
     df_filtro = df[df['Cargo'] == cargo_sel].copy()
     df_filtro['linha_planilha'] = df_filtro.index + 2
 
-    # --- HEADER ---
+    # --- HEADER ANIMADO ---
     st.markdown(f"""
     <div class="header-container">
         <div class="header-left">
@@ -308,28 +335,26 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # --- KPIs ---
+    # --- KPIs (Total, Feito, Falta, Previsão) ---
     total = len(df_filtro)
     feito = df_filtro['Estudado'].sum()
     rest = total - feito
+    previsao = calcular_previsao(df_filtro, rest)
     
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(f'<div class="kpi-box"><div class="kpi-label">Total</div><div class="kpi-value">{total}</div></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="kpi-box"><div class="kpi-label">Concluído</div><div class="kpi-value" style="color:{COR_CONCLUIDO}">{feito}</div></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="kpi-box"><div class="kpi-label">Pendente</div><div class="kpi-value" style="color:{COR_PENDENTE}">{rest}</div></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="kpi-box"><div class="kpi-label">Insight</div><div style="margin-top:1rem;font-weight:700;color:#64748b">{calcular_insights(df_filtro)}</div></div>', unsafe_allow_html=True)
-
-    st.markdown("---")
+    c4.markdown(f'<div class="kpi-box"><div class="kpi-label">Previsão Fim</div><div class="kpi-value" style="color:{COR_DESTAQUE}; font-size: 2rem;">{previsao}</div></div>', unsafe_allow_html=True)
 
     # --- HEATMAP ---
-    st.markdown("### 📅 Atividade Recente")
+    st.markdown('<div class="section-title-wrapper"><div class="section-title">📅 Atividade Recente</div></div>', unsafe_allow_html=True)
     heat = renderizar_heatmap(df_filtro)
     if heat: st.altair_chart(heat, use_container_width=True)
-    
-    st.markdown("---")
+    else: st.info("Estude para gerar histórico!")
 
     # --- CARDS (Donuts) ---
-    st.markdown("### 📈 Progresso por Disciplina")
+    st.markdown('<div class="section-title-wrapper"><div class="section-title">📈 Progresso por Disciplina</div></div>', unsafe_allow_html=True)
     stats = df_filtro.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
     stats.columns = ['Disciplina', 'Feito', 'Total']
     cards = [{'Disciplina': 'GERAL', 'Feito': feito, 'Total': total}]
@@ -343,32 +368,58 @@ def main():
                 <div class="card-h1">{card['Disciplina']}</div>
                 <div class="card-h2">{card['Feito']} de {card['Total']} tópicos</div>
                 """, unsafe_allow_html=True)
-                
                 grafico = renderizar_donut(card['Feito'], card['Total'])
                 st.altair_chart(grafico, use_container_width=True)
 
-    st.markdown("---")
-
     # --- CHECKLIST ---
-    st.markdown("### ✓ Conteúdo")
+    st.markdown('<div class="section-title-wrapper"><div class="section-title">✓ Checklist de Tópicos</div></div>', unsafe_allow_html=True)
     for mat in sorted(df_filtro['Disciplinas'].unique()):
         sub = df_filtro[df_filtro['Disciplinas'] == mat]
         done = sub['Estudado'].sum()
         tot = len(sub)
+        
+        # Expander com cabeçalho
         with st.expander(f"**{mat}** ({done}/{tot})"):
             with st.form(key=f"f_{mat}"):
                 updates = []
+                # Loop seguro para evitar erro de riscado
                 for _, r in sub.iterrows():
                     c, t = st.columns([0.05, 0.95])
                     k = f"chk_{r['linha_planilha']}"
-                    chk = c.checkbox("", value=bool(r['Estudado']), key=k)
-                    if chk != bool(r['Estudado']): updates.append({'linha': int(r['linha_planilha']), 'status': chk})
-                    cls = "topic-done" if r['Estudado'] else ""
-                    t.markdown(f"<div class='topic-row'><div class='topic-content {cls}'>{r['Conteúdos']}</div></div>", unsafe_allow_html=True)
+                    
+                    # Validação explícita do booleano
+                    is_checked = bool(r['Estudado'])
+                    val = c.checkbox("", value=is_checked, key=k)
+                    
+                    if val != is_checked: 
+                        updates.append({'linha': int(r['linha_planilha']), 'status': val})
+                    
+                    # Só aplica classe de risco se REALMENTE estiver concluído
+                    cls = "topic-done" if is_checked else ""
+                    
+                    dt_badge = ""
+                    if is_checked and pd.notnull(r['Data_Real']):
+                        dt_badge = f"<span class='topic-date'>{r['Data_Real'].strftime('%d/%m')}</span>"
+                    
+                    t.markdown(f"""
+                    <div class='topic-row'>
+                        <div class='topic-content {cls}'>{r['Conteúdos']}</div>
+                        {dt_badge}
+                    </div>
+                    """, unsafe_allow_html=True)
                 
-                if st.form_submit_button("Salvar"):
-                    if atualizar_lote(client, updates):
-                        st.success("Salvo!"); time.sleep(1); st.cache_data.clear(); st.rerun()
+                # Botão de Salvar Grande
+                if st.form_submit_button("💾 Salvar Alterações", use_container_width=True):
+                    if updates:
+                        if atualizar_lote(client, updates):
+                            st.success("Salvo com sucesso!")
+                            time.sleep(1)
+                            st.cache_data.clear()
+                            st.rerun()
+                        else:
+                            st.error("Erro ao salvar.")
+                    else:
+                        st.info("Nenhuma alteração.")
 
     st.markdown(f"<div style='text-align:center;color:#94a3b8;padding:3rem 0'>Atualizado: {agora.strftime('%H:%M')}</div>", unsafe_allow_html=True)
 
