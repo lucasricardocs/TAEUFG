@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-📊 DASHBOARD DE ESTUDOS - VERSÃO FINAL CORRIGIDA (CARDS)
+📊 DASHBOARD DE ESTUDOS - VERSÃO 7.2 (CARGO NA SIDEBAR + FIX ÍCONES)
 ================================================================================
 """
 
@@ -48,31 +48,25 @@ SPREADSHEET_ID = '17yHltbtCgZfHndifV5x6tRsVQrhYs7ruwWKgrmLNmGM'
 WORKSHEET_NAME = 'Registro'
 LOGO_URL = "https://raw.githubusercontent.com/lucasricardocs/TAEUFG/main/1_Assinatura-principal_horizontal_Camara-Municipal-de-Goiania.png"
 
-# Cores Personalizadas
+# Cores
 COR_CONCLUIDO = '#15803d'  # Verde Escuro
 COR_PENDENTE = '#b91c1c'   # Vermelho Escuro
-COR_FUNDO_DONUT = '#f1f5f9' # Cinza claro
+COR_FUNDO_DONUT = '#f1f5f9' 
 
 # ================================================================================
 # 3. FUNÇÕES BACKEND
 # ================================================================================
 
 def obter_horario_brasilia():
-    """Retorna datetime atual no fuso de Brasília (UTC-3)"""
     return datetime.utcnow() - timedelta(hours=3)
 
 def obter_clima_local() -> str:
-    """Temperatura de Goiânia"""
     try:
         url = 'https://api.open-meteo.com/v1/forecast'
-        params = {
-            'latitude': -16.6869, 'longitude': -49.2648,
-            'current': 'temperature_2m', 'timezone': 'America/Sao_Paulo'
-        }
+        params = {'latitude': -16.6869, 'longitude': -49.2648, 'current': 'temperature_2m', 'timezone': 'America/Sao_Paulo'}
         r = requests.get(url, params=params, timeout=2)
         if r.status_code == 200:
-            temp = r.json()['current']['temperature_2m']
-            return f"{round(temp, 1)}°C"
+            return f"{round(r.json()['current']['temperature_2m'], 1)}°C"
     except:
         return "--"
     return "--"
@@ -82,8 +76,7 @@ def conectar_google_sheets() -> Optional[gspread.Client]:
         if 'gcp_service_account' in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
         else:
-            with open('credentials.json', 'r') as f:
-                creds_dict = json.load(f)
+            with open('credentials.json', 'r') as f: creds_dict = json.load(f)
         
         escopos = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
         credenciais = Credentials.from_service_account_info(creds_dict, scopes=escopos)
@@ -131,14 +124,12 @@ def atualizar_lote(client, updates: List[Dict]) -> bool:
 
 def calcular_insights(df: pd.DataFrame) -> str:
     df_ok = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
-    if df_ok.empty: return "Sem dados suficientes."
+    if df_ok.empty: return "Sem dados de estudo."
     hoje = datetime.now()
     df_ok['dias'] = (hoje - df_ok['Data_Real']).dt.days
     agrupado = df_ok.groupby('Disciplinas')['dias'].min().reset_index()
     urgente = agrupado[agrupado['dias'] > 7].sort_values('dias', ascending=False)
-    if not urgente.empty:
-        disc = urgente.iloc[0]['Disciplinas']
-        return f"⚠️ Revisar Urgente: **{disc}**"
+    if not urgente.empty: return f"⚠️ Revisar: **{urgente.iloc[0]['Disciplinas']}**"
     return "✅ Revisões em dia!"
 
 # ================================================================================
@@ -158,9 +149,13 @@ def injetar_css_profissional():
         shadow = '0 10px 25px -5px rgba(0,0,0,0.1)'
 
     st.markdown(f"""
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {{ font-family: 'Nunito', sans-serif !important; }}
+        /* FIX: Aplica fonte apenas em elementos de texto para não quebrar ícones */
+        html, body, [class*="css"], [data-testid="stMarkdownContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {{
+            font-family: 'Nunito', sans-serif;
+        }}
+        
         [data-testid="stMainBlockContainer"] {{ background-color: {bg_main}; padding: 2rem; max-width: 1600px; }}
         
         /* HEADER 300PX */
@@ -181,7 +176,7 @@ def injetar_css_profissional():
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }}
 
-        /* ESTILO PARA O CONTAINER NATIVO DO STREAMLIT (border=True) PARA VIRAR CARD */
+        /* CARDS DE DISCIPLINA (Container Nativo) */
         [data-testid="stVerticalBlockBorderWrapper"] {{
             border-radius: 24px !important;
             border: 1px solid #e2e8f0 !important;
@@ -190,7 +185,6 @@ def injetar_css_profissional():
             padding: 2rem 1rem !important;
             transition: transform 0.3s ease;
         }}
-        /* Efeito Hover no Card */
         [data-testid="stVerticalBlockBorderWrapper"]:hover {{
             transform: translateY(-5px);
             border-color: #2563eb !important;
@@ -201,7 +195,7 @@ def injetar_css_profissional():
         .kpi-label {{ font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; }}
         .kpi-value {{ font-size: 2.5rem; font-weight: 800; color: {txt}; margin: 0.5rem 0; }}
 
-        /* TITULOS DENTRO DO CARD */
+        /* TÍTULOS DENTRO DO CARD */
         .card-h1 {{ font-size: 1.1rem; font-weight: 800; text-align: center; color: {txt}; text-transform: uppercase; margin-bottom: 0.25rem; min-height: 3rem; display: flex; align-items: center; justify-content: center; }}
         .card-h2 {{ font-size: 0.9rem; font-weight: 600; text-align: center; color: #64748b; background: {bg_main}; border-radius: 20px; padding: 0.25rem 1rem; width: fit-content; margin: 0 auto 1.5rem auto; }}
 
@@ -209,6 +203,17 @@ def injetar_css_profissional():
         .stExpander {{ border-radius: 12px; border: 1px solid #e2e8f0; background: {bg_card}; }}
         .topic-row {{ padding: 0.75rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; }}
         .topic-done {{ text-decoration: line-through; color: #94a3b8; }}
+        
+        /* SIDEBAR */
+        [data-testid="stSidebar"] {{ background-color: {bg_card}; border-right: 1px solid #e2e8f0; }}
+
+        @media (max-width: 992px) {{
+            .header-container {{ height: auto; flex-direction: column; padding: 2rem; gap: 1.5rem; }}
+            .header-center {{ position: static; }}
+            .header-left, .header-right {{ width: 100%; justify-content: center; align-items: center; }}
+            .header-logo {{ height: 80px; }}
+            .header-title {{ font-size: 2rem; }}
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -221,17 +226,13 @@ def renderizar_donut(concluido: int, total: int) -> alt.Chart:
     
     base = alt.Chart(source).encode(theta=alt.Theta("Value:Q", stack=True))
     
-    # Anel Colorido (Verde/Vermelho)
     pie = base.mark_arc(outerRadius=110, innerRadius=80, cornerRadius=5).encode(
         color=alt.Color("Category:N", scale=alt.Scale(domain=['Concluído', 'Pendente'], range=[COR_CONCLUIDO, COR_PENDENTE]), legend=None),
         order=alt.Order("Category", sort="descending"),
         tooltip=["Category", "Value"]
     )
     
-    # Anel Fundo
     bg = base.mark_arc(outerRadius=110, innerRadius=80, color=COR_FUNDO_DONUT).encode(order=alt.value(0))
-    
-    # Texto Porcentagem
     pct = int(concluido/total*100) if total > 0 else 0
     text = base.mark_text(radius=0, size=38, color='#334155', fontWeight=800, font='Nunito').encode(text=alt.value(f"{pct}%"))
     
@@ -240,7 +241,6 @@ def renderizar_donut(concluido: int, total: int) -> alt.Chart:
 def renderizar_heatmap(df: pd.DataFrame) -> Optional[alt.Chart]:
     df_ok = df[df['Estudado'] & df['Data_Real'].notnull()].copy()
     if df_ok.empty: return None
-    
     dados = df_ok.groupby('Data_Real').size().reset_index(name='Qtd')
     return alt.Chart(dados).mark_rect(cornerRadius=4, stroke='white', strokeWidth=2).encode(
         x=alt.X('yearmonthdate(Data_Real):O', title=None, axis=alt.Axis(format='%d/%m', labelFontSize=10)),
@@ -262,8 +262,22 @@ def main():
     data_txt = f"{agora.day}/{meses[agora.month]}"
     clima = obter_clima_local()
 
+    # --- DADOS ---
+    client = conectar_google_sheets()
+    if not client: st.stop()
+    df = carregar_dados(client)
+    if df is None: st.warning("Carregando..."); st.stop()
+
+    # --- SIDEBAR ---
     with st.sidebar:
         st.markdown("### ⚙️ Configurações")
+        
+        # SELEÇÃO DE CARGO (Movido para cá)
+        cargos = sorted(df['Cargo'].unique().tolist())
+        st.markdown("**Selecione o Cargo:**")
+        cargo_sel = st.selectbox("Cargo", cargos, label_visibility="collapsed")
+        
+        st.divider()
         if st.button("🌓 Alternar Tema", use_container_width=True):
             st.session_state['tema'] = 'escuro' if st.session_state['tema'] == 'claro' else 'claro'
             st.rerun()
@@ -271,7 +285,11 @@ def main():
             st.cache_data.clear()
             st.rerun()
 
-    # HEADER
+    # FILTRAGEM
+    df_filtro = df[df['Cargo'] == cargo_sel].copy()
+    df_filtro['linha_planilha'] = df_filtro.index + 2
+
+    # --- HEADER ---
     st.markdown(f"""
     <div class="header-container">
         <div class="header-left">
@@ -290,21 +308,11 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    client = conectar_google_sheets()
-    if not client: st.stop()
-    df = carregar_dados(client)
-    if df is None: st.warning("Carregando..."); st.stop()
-
-    cargos = sorted(df['Cargo'].unique().tolist())
-    st.markdown("### 📋 Selecione o Cargo")
-    cargo_sel = st.selectbox("Cargo", cargos, label_visibility="collapsed")
-    df_filtro = df[df['Cargo'] == cargo_sel].copy()
-    df_filtro['linha_planilha'] = df_filtro.index + 2
-
-    # KPIs
+    # --- KPIs ---
     total = len(df_filtro)
     feito = df_filtro['Estudado'].sum()
     rest = total - feito
+    
     c1, c2, c3, c4 = st.columns(4)
     c1.markdown(f'<div class="kpi-box"><div class="kpi-label">Total</div><div class="kpi-value">{total}</div></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="kpi-box"><div class="kpi-label">Concluído</div><div class="kpi-value" style="color:{COR_CONCLUIDO}">{feito}</div></div>', unsafe_allow_html=True)
@@ -313,23 +321,20 @@ def main():
 
     st.markdown("---")
 
-    # HEATMAP
+    # --- HEATMAP ---
     st.markdown("### 📅 Atividade Recente")
     heat = renderizar_heatmap(df_filtro)
     if heat: st.altair_chart(heat, use_container_width=True)
     
     st.markdown("---")
 
-    # CARDS COM DONUTS
+    # --- CARDS (Donuts) ---
     st.markdown("### 📈 Progresso por Disciplina")
-    
     stats = df_filtro.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
     stats.columns = ['Disciplina', 'Feito', 'Total']
     cards = [{'Disciplina': 'GERAL', 'Feito': feito, 'Total': total}]
     for _, r in stats.iterrows(): cards.append(r.to_dict())
     
-    # AQUI ESTA O SEGREDO: Usar st.container(border=True)
-    # O CSS injetado acima transforma todos os containers com borda em "Cards" estilizados
     cols = st.columns(3)
     for i, card in enumerate(cards):
         with cols[i % 3]:
@@ -344,7 +349,7 @@ def main():
 
     st.markdown("---")
 
-    # CHECKLIST
+    # --- CHECKLIST ---
     st.markdown("### ✓ Conteúdo")
     for mat in sorted(df_filtro['Disciplinas'].unique()):
         sub = df_filtro[df_filtro['Disciplinas'] == mat]
