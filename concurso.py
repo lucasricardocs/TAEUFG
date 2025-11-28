@@ -9,7 +9,7 @@ DATA: 2025-11-27
 
 DESCRIÇÃO:
 Código unificado com novas animações CSS, cores de alto contraste e
-gráficos de visualização ampliados.
+gráficos de visualização ampliados. Agora com listas expansíveis (Accordions).
 
 REQUISITOS:
 - Python 3.8+
@@ -115,58 +115,74 @@ st.markdown("""
     */
     .header-container {
         display: flex;
-        flex-direction: row;
         align-items: center;
-        justify-content: flex-start;
-        background: #ffffff; /* Fundo Branco */
+        justify-content: center; /* Centraliza o conteúdo principal (texto) */
+        background: #ffffff;
         padding: 1.5rem 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        position: relative;
-        overflow: hidden;
+        position: relative; /* Necessário para posicionamento absoluto dos filhos */
+        overflow: visible; /* Permite sombras externas */
         color: #0f172a;
-        gap: 2rem;
+        min-height: 160px; /* Altura garantida para centralização vertical */
     }
 
     .header-logo {
-        flex-shrink: 0;
+        position: absolute;
+        left: 2rem;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .header-logo img {
-        max-width: 180px;
-        height: auto;
+        height: 100px; /* Aumentado para equilibrar com o texto */
+        width: auto;
         display: block;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
     }
 
     .header-content {
-        flex-grow: 1;
-        text-align: left;
+        text-align: center;
+        z-index: 1;
+        /* O Flexbox do container já centraliza este item horizontalmente e verticalmente */
     }
 
     .header-content h1 { 
-        font-size: 2.5rem; 
+        font-size: 2.8rem; 
         font-weight: 800; 
         margin: 0; 
-        color: #0f172a; /* Texto Escuro */
-        letter-spacing: -1px;
-        line-height: 1.2;
+        color: #0f172a; 
+        letter-spacing: -1.5px;
+        line-height: 1.1;
     }
     
     .header-info { 
-        flex-shrink: 0;
-        text-align: right;
+        position: absolute;
+        top: 1.5rem;   /* Bem no alto */
+        right: 1.5rem; /* Bem na direita */
+        
+        background: rgba(255, 255, 255, 0.95);
+        padding: 8px 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        
         display: flex;
-        flex-direction: column;
-        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        z-index: 2;
     }
     
     .info-row {
-        font-size: 0.9rem;
-        color: #64748b;
+        font-size: 0.95rem;
+        color: #475569;
         font-weight: 600;
         font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     /* ==========================================================================
@@ -236,35 +252,20 @@ st.markdown("""
     }
 
     /* ==========================================================================
-    DISCIPLINA HEADER & LISTA
+    LISTA DE TÓPICOS
     ==========================================================================
     */
-    .disciplina-header {
-        margin-top: 35px;
-        border-bottom: 3px solid; /* Linha mais grossa para contraste */
-        padding-bottom: 8px;
-        margin-bottom: 20px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .disciplina-header:hover {
-        transform: translateX(10px);
-    }
-
     .topic-row {
         display: flex;
         align-items: center;
-        padding: 14px 10px;
+        padding: 10px 10px;
         border-bottom: 1px solid #f1f5f9;
         transition: background-color 0.2s;
         border-radius: 6px;
     }
     
     .topic-row:hover {
-        background-color: #e0f2fe; /* Azul muito claro no hover */
+        background-color: #f8fafc;
     }
     
     .topic-text {
@@ -272,6 +273,7 @@ st.markdown("""
         color: #1e293b; /* Texto escuro para contraste */
         font-weight: 500;
         margin-left: 10px;
+        line-height: 1.4;
     }
     
     .topic-text.done {
@@ -288,6 +290,21 @@ st.markdown("""
         border-radius: 4px;
         margin-left: 8px;
         border: 1px solid #86efac;
+        white-space: nowrap;
+    }
+    
+    /* Estilo para Streamlit Expander ficar mais limpo */
+    .streamlit-expanderHeader {
+        background-color: white !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        color: #334155 !important;
+    }
+    
+    .streamlit-expanderContent {
+        background-color: white !important;
+        border-top: none !important;
+        padding-top: 10px !important;
     }
 
     /* ==========================================================================
@@ -303,10 +320,23 @@ st.markdown("""
     .section-fade:nth-child(3) { animation-delay: 0.3s; }
 
     /* Responsividade */
-    @media (max-width: 768px) {
-        .header-container { flex-direction: column; text-align: center; padding: 1.5rem; gap: 1rem; }
+    @media (max-width: 900px) {
+        .header-container { 
+            flex-direction: column; 
+            text-align: center; 
+            padding: 2rem; 
+            gap: 1.5rem; 
+            min-height: auto;
+        }
+        
+        /* Reset absolute positioning for mobile */
+        .header-logo, .header-info { 
+            position: static; 
+            transform: none; 
+            margin-bottom: 1rem;
+        }
+        
         .header-content { text-align: center; }
-        .header-info { text-align: center; }
         .metric-value { font-size: 2.5rem; }
     }
 </style>
@@ -437,8 +467,8 @@ def criar_grafico_donut(concluido, total, cor_primaria):
     pie = base.mark_arc(
         outerRadius=110,
         innerRadius=85,
-        stroke='white', 
-        strokeWidth=4,
+        stroke='#e2e8f0', # Cinza clarinho solicitado
+        strokeWidth=2,    # Borda de 2px
         cornerRadius=6
     ).encode(
         color=alt.Color("Categoria", 
@@ -460,8 +490,15 @@ def criar_grafico_donut(concluido, total, cor_primaria):
         text=alt.value(f"{percentual}%")
     )
     
-    # Área do gráfico
-    return (pie + texto).properties(width=280, height=280)
+    # Área do gráfico e fundo transparente
+    return (pie + texto).properties(
+        width=280, 
+        height=280
+    ).configure(
+        background='transparent' # Background Transparente
+    ).configure_view(
+        stroke=None
+    )
 
 # ================================================================================
 # 6. APP PRINCIPAL
@@ -471,7 +508,9 @@ def main():
     # Header
     temp = obter_temperatura_local()
     data_formatada = datetime.now().strftime('%d/%m')
-    info_texto = f"Goiânia, {data_formatada} - {temp}º C"
+    
+    # Texto com Emojis
+    info_texto = f"📍 Goiânia | 📅 {data_formatada} | 🌤️ {temp}ºC"
 
     st.markdown(f"""
     <div class="header-container section-fade">
@@ -479,7 +518,7 @@ def main():
             <img src="{LOGO_URL}" alt="Logo">
         </div>
         <div class="header-content">
-            <h1>DASHBOARD ULTIMATE</h1>
+            <h1>CONCURSO CÂMARA DE GOIÂNIA</h1>
             <p style="color:#64748b; margin-top:5px; font-weight:500;">Performance • Constância • Aprovação</p>
         </div>
         <div class="header-info">
@@ -559,7 +598,7 @@ def main():
     # Separador
     st.markdown("---")
 
-    # Lista de Conteúdos
+    # Lista de Conteúdos (EXPANSÍVEL)
     st.markdown("### 📚 Conteúdo Programático")
     lista_disc = sorted(df_cargo['Disciplinas'].unique().tolist())
     filtro = st.selectbox("Filtrar Disciplina:", ["Todas"] + lista_disc)
@@ -569,44 +608,44 @@ def main():
     for disc in view_df['Disciplinas'].unique():
         sub = view_df[view_df['Disciplinas'] == disc]
         cor = CORES.get(disc, '#333')
+        concluidos_disc = sub['Estudado'].sum()
+        total_disc = len(sub)
         
-        # Header da disciplina com a nova classe CSS
-        st.markdown(f"""
-        <div class="disciplina-header" style="border-color:{cor}; color:{cor};">
-            <span style="font-size:1.3rem; font-weight:800;">{disc}</span>
-            <span style="float:right; font-size:1rem; font-weight:600; background:{cor}20; padding:4px 12px; border-radius:20px;">
-                {sub['Estudado'].sum()} / {len(sub)}
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        for idx, row in sub.iterrows():
-            c_chk, c_txt = st.columns([0.05, 0.95])
+        # Título do Expander com contagem
+        expander_label = f"**{disc}** ({concluidos_disc}/{total_disc})"
+        
+        with st.expander(expander_label, expanded=False):
+            # Barra colorida para manter a identidade visual dentro do expander
+            st.markdown(f"<div style='height:4px; width:100%; background-color:{cor}; border-radius:2px; margin-bottom:15px; opacity:0.8;'></div>", unsafe_allow_html=True)
             
-            with c_chk:
-                key = f"chk_{idx}_{row['linha_planilha']}"
-                val = st.checkbox("Status", value=bool(row['Estudado']), key=key, label_visibility="collapsed")
+            for idx, row in sub.iterrows():
+                # Ajuste de Colunas: Checkbox muito próximo do texto (0.03 vs 0.97)
+                c_chk, c_txt = st.columns([0.03, 0.97])
                 
-                if val != bool(row['Estudado']):
-                    with st.spinner("💾"):
-                        if atualizar_status(client, int(row['linha_planilha']), val):
-                            st.toast("Salvo!", icon="✅")
-                            time.sleep(0.5)
-                            st.cache_data.clear()
-                            st.rerun()
+                with c_chk:
+                    key = f"chk_{idx}_{row['linha_planilha']}"
+                    val = st.checkbox("Status", value=bool(row['Estudado']), key=key, label_visibility="collapsed")
+                    
+                    if val != bool(row['Estudado']):
+                        with st.spinner("💾"):
+                            if atualizar_status(client, int(row['linha_planilha']), val):
+                                st.toast("Salvo!", icon="✅")
+                                time.sleep(0.5)
+                                st.cache_data.clear()
+                                st.rerun()
 
-            css_class = "done" if row['Estudado'] else ""
-            badge = f"<span class='topic-date'>Em: {row['Data_Real'].strftime('%d/%m')}</span>" if (row['Estudado'] and pd.notnull(row['Data_Real'])) else ""
-            
-            c_txt.markdown(f"""
-            <div class="topic-row">
-                <div class="topic-text {css_class}">
-                    {row['Conteúdos']} {badge}
+                css_class = "done" if row['Estudado'] else ""
+                badge = f"<span class='topic-date'>Em: {row['Data_Real'].strftime('%d/%m')}</span>" if (row['Estudado'] and pd.notnull(row['Data_Real'])) else ""
+                
+                c_txt.markdown(f"""
+                <div class="topic-row">
+                    <div class="topic-text {css_class}">
+                        {row['Conteúdos']} {badge}
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
-    st.markdown("<br><br><div style='text-align:center; color:#cbd5e1; font-size:0.8rem;'>Dashboard Ultimate v4.1 • High Contrast Edition</div>", unsafe_allow_html=True)
+    st.markdown("<br><br><div style='text-align:center; color:#cbd5e1; font-size:0.8rem;'>Dashboard Ultimate v4.4 • High Contrast Edition</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
