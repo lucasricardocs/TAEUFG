@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ================================================================================
-📊 DASHBOARD DE ESTUDOS - VERSÃO 7.5 (CORREÇÃO CHECKLIST + BOTÃO SALVAR MELHOR)
+📊 DASHBOARD DE ESTUDOS - VERSÃO 7.6 (CARDS UNIFORMES + CLIMA CORRIGIDO)
 ================================================================================
 """
 
@@ -62,14 +62,24 @@ def obter_horario_brasilia():
     return datetime.utcnow() - timedelta(hours=3)
 
 def obter_clima_local() -> str:
+    """Busca temperatura atual com tratamento de erro robusto"""
     try:
-        url = 'https://api.open-meteo.com/v1/forecast'
-        params = {'latitude': -16.6869, 'longitude': -49.2648, 'current': 'temperature_2m', 'timezone': 'America/Sao_Paulo'}
-        r = requests.get(url, params=params, timeout=2)
-        if r.status_code == 200:
-            return f"{round(r.json()['current']['temperature_2m'], 1)}°C"
-    except:
-        return "--"
+        # Usando Open-Meteo (gratuito, sem chave)
+        url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": -16.6869, # Goiânia
+            "longitude": -49.2648,
+            "current_weather": "true",
+            "timezone": "America/Sao_Paulo"
+        }
+        response = requests.get(url, params=params, timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            temp = data.get("current_weather", {}).get("temperature")
+            if temp is not None:
+                return f"{round(temp)}°C"
+    except Exception:
+        return "--" # Retorna traço silenciosamente em caso de erro
     return "--"
 
 def conectar_google_sheets() -> Optional[gspread.Client]:
@@ -95,9 +105,8 @@ def carregar_dados(_client) -> Optional[pd.DataFrame]:
         df = pd.DataFrame(dados_raw)
         if df.empty: return None
         
-        # Conversão Robusta de Status
+        # Tratamento de Status e Booleano
         df['Status'] = df['Status'].astype(str).str.upper().str.strip()
-        # Define o booleano base
         df['Estudado'] = df['Status'].isin(['TRUE', 'VERDADEIRO', '1', 'SIM', 'YES', 'OK'])
         
         col_data = None
@@ -125,23 +134,6 @@ def atualizar_lote(client, updates: List[Dict]) -> bool:
     except:
         return False
 
-def calcular_previsao(df: pd.DataFrame, total_restante: int) -> str:
-    if total_restante == 0: return "Concluído! 🎉"
-    df_feitos = df[df['Estudado'] & df['Data_Real'].notnull()]
-    if df_feitos.empty: return "--"
-    
-    inicio = df_feitos['Data_Real'].min()
-    hoje = datetime.now()
-    dias_corridos = (hoje - inicio).days
-    if dias_corridos < 1: dias_corridos = 1
-    
-    velocidade = len(df_feitos) / dias_corridos
-    if velocidade <= 0: return "--"
-    
-    dias_faltantes = total_restante / velocidade
-    data_fim = hoje + timedelta(days=dias_faltantes)
-    return data_fim.strftime("%d/%b")
-
 # ================================================================================
 # 4. VISUALIZAÇÃO E ESTILO
 # ================================================================================
@@ -167,12 +159,6 @@ def injetar_css_profissional():
         
         [data-testid="stMainBlockContainer"] {{ background-color: {bg_main}; padding: 2rem; max-width: 1600px; }}
         
-        /* ANIMAÇÃO HEADER */
-        @keyframes slideDown {{
-            from {{ transform: translateY(-50px); opacity: 0; }}
-            to {{ transform: translateY(0); opacity: 1; }}
-        }}
-
         /* HEADER 300PX */
         .header-container {{
             background: {header_bg}; border-radius: 24px; padding: 0 3rem;
@@ -180,6 +166,8 @@ def injetar_css_profissional():
             box-shadow: {shadow}; height: 300px; position: relative; border: 1px solid rgba(0,0,0,0.05);
             animation: slideDown 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }}
+        @keyframes slideDown {{ from {{ transform: translateY(-50px); opacity: 0; }} to {{ transform: translateY(0); opacity: 1; }} }}
+        
         .header-left {{ flex: 0 0 30%; height: 100%; display: flex; align-items: center; z-index: 2; }}
         .header-logo {{ height: 90%; object-fit: contain; }}
         .header-center {{ position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }}
@@ -192,7 +180,7 @@ def injetar_css_profissional():
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }}
 
-        /* TÍTULOS */
+        /* TITULOS SECOES */
         .section-title-wrapper {{ margin: 2rem 0 1.5rem 0; display: flex; align-items: center; }}
         .section-title {{
             font-size: 1.5rem; font-weight: 800; color: {txt}; position: relative;
@@ -203,7 +191,19 @@ def injetar_css_profissional():
             height: 4px; background: {COR_DESTAQUE}; border-radius: 2px;
         }}
 
-        /* CARDS */
+        /* KPI CARDS UNIFORMES */
+        .kpi-box {{ 
+            background: {bg_card}; border-radius: 16px; padding: 1.5rem; text-align: center; 
+            box-shadow: {shadow}; border: 1px solid #e2e8f0; transition: all 0.3s ease;
+            /* FIX: Altura fixa e flexbox para centralizar conteudo */
+            height: 160px; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }}
+        .kpi-box:hover {{ transform: translateY(-5px); border-color: {COR_DESTAQUE}; }}
+        .kpi-label {{ font-size: 0.85rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem; }}
+        .kpi-value {{ font-size: 2.8rem; font-weight: 800; color: {txt}; line-height: 1; }}
+
+        /* CARDS DE GRAFICOS (Container Nativo) */
         [data-testid="stVerticalBlockBorderWrapper"] {{
             border-radius: 24px !important; border: 1px solid #e2e8f0 !important;
             background-color: {bg_card} !important; box-shadow: {shadow} !important;
@@ -214,15 +214,6 @@ def injetar_css_profissional():
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
         }}
 
-        /* KPI CARDS */
-        .kpi-box {{ 
-            background: {bg_card}; border-radius: 16px; padding: 1.5rem; text-align: center; 
-            box-shadow: {shadow}; border: 1px solid #e2e8f0; transition: all 0.3s ease;
-        }}
-        .kpi-box:hover {{ transform: translateY(-5px); border-color: {COR_DESTAQUE}; }}
-        .kpi-label {{ font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; }}
-        .kpi-value {{ font-size: 2.5rem; font-weight: 800; color: {txt}; margin: 0.5rem 0; }}
-
         /* CHECKLIST */
         .stExpander {{ border-radius: 12px; border: 1px solid #e2e8f0; background: {bg_card}; }}
         .topic-row {{ padding: 0.75rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; }}
@@ -230,7 +221,7 @@ def injetar_css_profissional():
         .topic-done {{ text-decoration: line-through; color: #94a3b8 !important; }}
         .topic-date {{ font-size: 0.75rem; font-weight: 700; background: {COR_DESTAQUE}; color: white; padding: 2px 8px; border-radius: 4px; }}
         
-        /* TEXTO CARD DONUT */
+        /* TEXTO DENTRO DO CARD DONUT */
         .card-h1 {{ font-size: 1.1rem; font-weight: 800; text-align: center; color: {txt}; text-transform: uppercase; min-height: 3rem; display: flex; align-items: center; justify-content: center; }}
         .card-h2 {{ font-size: 0.9rem; font-weight: 600; text-align: center; color: #64748b; background: {bg_main}; border-radius: 20px; padding: 0.25rem 1rem; width: fit-content; margin: 0.5rem auto 1.5rem auto; }}
 
@@ -290,6 +281,8 @@ def main():
     agora = obter_horario_brasilia()
     meses = {1:'Jan', 2:'Fev', 3:'Mar', 4:'Abr', 5:'Mai', 6:'Jun', 7:'Jul', 8:'Ago', 9:'Set', 10:'Out', 11:'Nov', 12:'Dez'}
     data_txt = f"{agora.day}/{meses[agora.month]}"
+    
+    # Busca Clima com a nova função corrigida
     clima = obter_clima_local()
 
     # --- SIDEBAR ---
@@ -316,7 +309,7 @@ def main():
     df_filtro = df[df['Cargo'] == cargo_sel].copy()
     df_filtro['linha_planilha'] = df_filtro.index + 2
 
-    # --- HEADER ANIMADO ---
+    # --- HEADER ---
     st.markdown(f"""
     <div class="header-container">
         <div class="header-left">
@@ -335,17 +328,18 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    # --- KPIs (Total, Feito, Falta, Previsão) ---
+    # --- KPIs (Total, Feito, Falta, Progresso Geral) ---
     total = len(df_filtro)
     feito = df_filtro['Estudado'].sum()
     rest = total - feito
-    previsao = calcular_previsao(df_filtro, rest)
+    progresso_geral = (feito / total * 100) if total > 0 else 0
     
     c1, c2, c3, c4 = st.columns(4)
-    c1.markdown(f'<div class="kpi-box"><div class="kpi-label">Total</div><div class="kpi-value">{total}</div></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="kpi-box"><div class="kpi-label">Concluído</div><div class="kpi-value" style="color:{COR_CONCLUIDO}">{feito}</div></div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="kpi-box"><div class="kpi-label">Pendente</div><div class="kpi-value" style="color:{COR_PENDENTE}">{rest}</div></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="kpi-box"><div class="kpi-label">Previsão Fim</div><div class="kpi-value" style="color:{COR_DESTAQUE}; font-size: 2rem;">{previsao}</div></div>', unsafe_allow_html=True)
+    # Agora todos usam a mesma estrutura de HTML para ter o mesmo tamanho (definido no CSS .kpi-box)
+    c1.markdown(f'<div class="kpi-box"><div class="kpi-label">Total Tópicos</div><div class="kpi-value">{total}</div></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="kpi-box"><div class="kpi-label">Concluídos</div><div class="kpi-value" style="color:{COR_CONCLUIDO}">{feito}</div></div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="kpi-box"><div class="kpi-label">Pendentes</div><div class="kpi-value" style="color:{COR_PENDENTE}">{rest}</div></div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="kpi-box"><div class="kpi-label">Progresso Geral</div><div class="kpi-value" style="color:{COR_DESTAQUE}">{progresso_geral:.1f}%</div></div>', unsafe_allow_html=True)
 
     # --- HEATMAP ---
     st.markdown('<div class="section-title-wrapper"><div class="section-title">📅 Atividade Recente</div></div>', unsafe_allow_html=True)
@@ -357,6 +351,8 @@ def main():
     st.markdown('<div class="section-title-wrapper"><div class="section-title">📈 Progresso por Disciplina</div></div>', unsafe_allow_html=True)
     stats = df_filtro.groupby('Disciplinas').agg({'Estudado': ['sum', 'count']}).reset_index()
     stats.columns = ['Disciplina', 'Feito', 'Total']
+    
+    # Adiciona "Geral" primeiro
     cards = [{'Disciplina': 'GERAL', 'Feito': feito, 'Total': total}]
     for _, r in stats.iterrows(): cards.append(r.to_dict())
     
@@ -378,48 +374,26 @@ def main():
         done = sub['Estudado'].sum()
         tot = len(sub)
         
-        # Expander com cabeçalho
         with st.expander(f"**{mat}** ({done}/{tot})"):
             with st.form(key=f"f_{mat}"):
                 updates = []
-                # Loop seguro para evitar erro de riscado
                 for _, r in sub.iterrows():
                     c, t = st.columns([0.05, 0.95])
                     k = f"chk_{r['linha_planilha']}"
-                    
-                    # Validação explícita do booleano
                     is_checked = bool(r['Estudado'])
                     val = c.checkbox("", value=is_checked, key=k)
                     
-                    if val != is_checked: 
-                        updates.append({'linha': int(r['linha_planilha']), 'status': val})
+                    if val != is_checked: updates.append({'linha': int(r['linha_planilha']), 'status': val})
                     
-                    # Só aplica classe de risco se REALMENTE estiver concluído
                     cls = "topic-done" if is_checked else ""
-                    
-                    dt_badge = ""
-                    if is_checked and pd.notnull(r['Data_Real']):
-                        dt_badge = f"<span class='topic-date'>{r['Data_Real'].strftime('%d/%m')}</span>"
-                    
-                    t.markdown(f"""
-                    <div class='topic-row'>
-                        <div class='topic-content {cls}'>{r['Conteúdos']}</div>
-                        {dt_badge}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    dt_badge = f"<span class='topic-date'>{r['Data_Real'].strftime('%d/%m')}</span>" if is_checked and pd.notnull(r['Data_Real']) else ""
+                    t.markdown(f"<div class='topic-row'><div class='topic-content {cls}'>{r['Conteúdos']}</div>{dt_badge}</div>", unsafe_allow_html=True)
                 
-                # Botão de Salvar Grande
                 if st.form_submit_button("💾 Salvar Alterações", use_container_width=True):
                     if updates:
                         if atualizar_lote(client, updates):
-                            st.success("Salvo com sucesso!")
-                            time.sleep(1)
-                            st.cache_data.clear()
-                            st.rerun()
-                        else:
-                            st.error("Erro ao salvar.")
-                    else:
-                        st.info("Nenhuma alteração.")
+                            st.success("Salvo!"); time.sleep(1); st.cache_data.clear(); st.rerun()
+                        else: st.error("Erro")
 
     st.markdown(f"<div style='text-align:center;color:#94a3b8;padding:3rem 0'>Atualizado: {agora.strftime('%H:%M')}</div>", unsafe_allow_html=True)
 
